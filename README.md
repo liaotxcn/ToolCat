@@ -23,7 +23,9 @@
 - **`First.go`**  
   - 基础数据结构与算法实现  
 - **`Second.go`**  
-  - 并发数据结构与高性能算法  
+  - 安全并发、Goroutine、Channel
+- **`Third.go`**  
+  - 高级Goroutine模式、Channel、并发实用
 
 ---
 
