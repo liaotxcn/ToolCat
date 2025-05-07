@@ -7,7 +7,7 @@ Python 数据结构与算法(1)
 # ==================== Part 1: 基础数据结构 ====================
 
 class ListOperations:
-    """列表(list)操作大全"""
+    """列表(list)操作"""
 
     @staticmethod
     def demo():
@@ -59,7 +59,7 @@ class StringOperations:
         print("abc".isalpha())  # True
 
         # 字符串格式化
-        name, age = "Alice", 25
+        name, age = "PaiCloud", 100
         print(f"{name} is {age} years old")  # f-string (Python 3.6+)
 
 
@@ -250,7 +250,7 @@ class AlgorithmTemplates:
         left = right = 0
         res = 0
 
-        while right < len(s):
+        while right < len():
             # 右移窗口
             c = s[right]
             window[c] += 1
