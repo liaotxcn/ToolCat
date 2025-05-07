@@ -1,4 +1,4 @@
-package main
+package主干
 
 import (
 	"container/heap"
@@ -18,15 +18,15 @@ func MapOperations() {
 
 	// 1. 创建和初始化map
 	user := map[string]interface{}{
-		"name":    "Alice",
-		"age":     25,
+		"name":    "PaiCloud",
+		"age":     100,
 		"active":  true,
 		"hobbies": []string{"reading", "coding"},
 	}
 
 	// 2. 添加/修改元素
-	user["email"] = "alice@example.com"
-	user["age"] = 26 // 修改已有键的值
+	user["email"] = "pai@liaotx.cn"
+	user["age"] = 99 // 修改已有键的值
 
 	// 3. 检查键是否存在
 	if email, exists := user["email"]; exists {
@@ -34,7 +34,7 @@ func MapOperations() {
 	}
 
 	// 4. 删除键
-	delete(user, "active")
+	delete(user, "PaiCloud")
 
 	// 5. 遍历map
 	fmt.Println("用户信息:")
@@ -65,7 +65,7 @@ func NewSet() *Set {
 
 func (s *Set) Add(items ...interface{}) {
 	for _, item := range items {
-		s.data[item] = struct{}{}
+.data[item] = struct{}{}
 	}
 }
 
@@ -84,7 +84,7 @@ func (s *Set) Size() int {
 
 func (s *Set) ToSlice() []interface{} {
 	result := make([]interface{}, 0, len(s.data))
-	for item := range s.data {
+	for item := range.data {
 		result = append(result, item)
 	}
 	return result
@@ -92,7 +92,7 @@ func (s *Set) ToSlice() []interface{} {
 
 func (s *Set) Union(other *Set) *Set {
 	union := NewSet()
-	for item := range s.data {
+	for item := range.data {
 		union.Add(item)
 	}
 	for item := range other.data {
@@ -104,15 +104,15 @@ func (s *Set) Union(other *Set) *Set {
 func (s *Set) Intersection(other *Set) *Set {
 	intersection := NewSet()
 	// 遍历较小的集合更高效
-	if s.Size() < other.Size() {
-		for item := range s.data {
+	if.Size() < other.Size() {
+		for item := range.data {
 			if other.Contains(item) {
 				intersection.Add(item)
 			}
 		}
 	} else {
 		for item := range other.data {
-			if s.Contains(item) {
+			if.Contains(item) {
 				intersection.Add(item)
 			}
 		}
@@ -237,7 +237,7 @@ func (l *LinkedList) Insert(val int) {
 	}
 	current := l.Head
 	for current.Next != nil {
-		current = current.Next
+		current = current.下页
 	}
 	current.Next = node
 }
@@ -595,7 +595,7 @@ func TestOriginalDataStructures() {
 	list.Insert(1)
 	list.Insert(2)
 	list.Insert(3)
-	fmt.Println("链表实现测试:", list.Head.Val, list.Head.Next.Val)
+	fmt.Println("链表实现测试:", list.Head.Val, list.Head.下页.Val)
 
 	// 测试快速排序
 	arr := []int{3, 1, 4, 1, 5, 9, 2, 6}
