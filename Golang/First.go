@@ -130,10 +130,10 @@ func StringOperations() {
 
 	// 1. 基本操作
 	fmt.Println("原始字符串:", str)
-	fmt.Println("长度:", len(str))                   // 字节长度
-	fmt.Println("字符数:", len([]rune(str)))         // 字符长度
-	fmt.Println("大写:", strings.ToUpper(str))       // 转大写
-	fmt.Println("小写:", strings.ToLower(str))       // 转小写
+	fmt.Println("长度:", len(str))                 // 字节长度
+	fmt.Println("字符数:", len([]rune(str)))        // 字符长度
+	fmt.Println("大写:", strings.ToUpper(str))     // 转大写
+	fmt.Println("小写:", strings.ToLower(str))     // 转小写
 	fmt.Println("修剪空格:", strings.TrimSpace(str)) // 去除首尾空格
 
 	// 2. 分割和连接
