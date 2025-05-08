@@ -32,13 +32,16 @@
 ## 🚀 快速开始  
 ```bash
 git clone https://github.com/liaotxcn/DataStructures-Algorithms.git  # 克隆仓库
-
+```
+```bash
 # 进入目录
 cd DataStructures-Algorithms/
 cd Python/ 
-cd Golang/  
-
+cd Golang/
+```
+```bash
 python First.py  
-go run First.go  
+go run First.go
+```
 
 ### 持续更新中...
