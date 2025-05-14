@@ -21,11 +21,22 @@
 
 ### **Golang 版本** 🦫  
 - **`First.go`**  
-  - 基础数据结构与算法实现  
+  - 基础数据结构(链表、队列、双端队列、栈、集合、图等)
+  - 常用算法(排序、搜索、动态规划等)
+  - 工具实例(字符串处理、切片操作等)
 - **`Second.go`**  
-  - 安全并发、Goroutine、Channel
+  - 并发安全数据结构(Map、Slice、Queue等)
+  - Goroutine管理(工作池、优雅退出等模式)
+  - Channel高级模式(Fan-in、Fan-out、超时控制等)
+  - 原子操作与并发原语(计数器、Once等)
+  - 经典并发模式(生产者消费者等)
 - **`Third.go`**  
   - 高级Goroutine模式、Channel、并发实用
+  - 分片并发安全Map实现(Set、Get、getShard)
+  - 并发安全环形缓冲区(Put、Get)
+  - 动态Worker Pool实现
+  - 高级并发模式(Context、Channel多路复用、限速器、ErrorGroup增强版)
+  - 工具函数实例(FNV32哈希算法实现、并发原语等)
 
 ---
 
