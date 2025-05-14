@@ -1,5 +1,5 @@
 /*
-Package main 实现了Go语言并发编程的核心模式和数据结构
+Go语言并发核心模式和数据结构
 包含以下主要内容：
 1. 并发安全数据结构：Map、Slice、Queue等
 2. Goroutine管理：工作池、优雅退出等模式
@@ -7,7 +7,7 @@ Package main 实现了Go语言并发编程的核心模式和数据结构
 4. 原子操作与并发原语：计数器、Once等
 5. 经典并发模式：生产者消费者等
 */
-package main
+package主干
 
 import (
 	"container/list"
