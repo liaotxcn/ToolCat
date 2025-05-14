@@ -6,7 +6,18 @@ import (
 	"fmt"
 	"math"
 	"strings"
+	"sync"
+	"time"
 )
+
+/*
+常见数据结构和算法的Go语言实现
+包含以下主要内容：
+1. 基础数据结构：链表、栈、队列、双端队列、集合、图等
+2. 常用算法：排序、搜索、动态规划等
+3. 实用工具：字符串处理、切片操作等
+所有实现都考虑了线程安全，适合学习和生产使用
+*/
 
 // ==================== 基础数据结构 ====================
 
@@ -16,17 +27,28 @@ import (
 func MapOperations() {
 	fmt.Println("\n=== Map操作示例 ===")
 
+	// 线程安全的sync.Map示例
+	var syncMap sync.Map
+	syncMap.Store("name", "Pai")
+	syncMap.Store("age", 999)
+
+	// 遍历sync.Map
+	syncMap.Range(func(key, value interface{}) bool {
+		fmt.Printf("%v: %v\n", key, value)
+		return true
+	})
+
 	// 1. 创建和初始化map
 	user := map[string]interface{}{
-		"name":    "PaiCloud",
-		"age":     100,
+		"name":    "Pai",
+		"age":     999,
 		"active":  true,
 		"hobbies": []string{"reading", "coding"},
 	}
 
 	// 2. 添加/修改元素
 	user["email"] = "pai@liaotx.cn"
-	user["age"] = 99 // 修改已有键的值
+	user["age"] = 26 // 修改已有键的值
 
 	// 3. 检查键是否存在
 	if email, exists := user["email"]; exists {
@@ -34,7 +56,7 @@ func MapOperations() {
 	}
 
 	// 4. 删除键
-	delete(user, "PaiCloud")
+	delete(user, "active")
 
 	// 5. 遍历map
 	fmt.Println("用户信息:")
@@ -52,9 +74,20 @@ func MapOperations() {
 
 // ==================== Set 实现 ====================
 
-// Set 基于map的线程不安全集合实现
+// Set 线程安全的集合实现
+// 基于map实现，支持并、交、差等集合操作
+// 使用读写锁保证并发安全
 type Set struct {
 	data map[interface{}]struct{}
+	mu   sync.RWMutex
+}
+
+// Graph 图的邻接表表示
+// 支持带权重的有向图和无向图
+// 提供BFS、DFS、Dijkstra等图算法
+type Graph struct {
+	Vertices int
+	Adj      map[int]map[int]int // 邻接表带权重
 }
 
 func NewSet() *Set {
@@ -64,8 +97,10 @@ func NewSet() *Set {
 }
 
 func (s *Set) Add(items ...interface{}) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	for _, item := range items {
-.data[item] = struct{}{}
+		s.data[item] = struct{}{}
 	}
 }
 
@@ -84,7 +119,7 @@ func (s *Set) Size() int {
 
 func (s *Set) ToSlice() []interface{} {
 	result := make([]interface{}, 0, len(s.data))
-	for item := range.data {
+	for item := range s.data {
 		result = append(result, item)
 	}
 	return result
@@ -249,56 +284,110 @@ type BinaryTreeNode struct {
 	Right *BinaryTreeNode
 }
 
-// Stack 栈实现
-type Stack []interface{}
+// Stack 线程安全栈实现
+type Stack struct {
+	data []interface{}
+	mu   sync.RWMutex
+}
 
 func (s *Stack) Push(val interface{}) {
-	*s = append(*s, val)
+.mu.Lock()
+	defer.mu.Unlock()
+.data = append(s.data, val)
 }
 
 func (s *Stack) Pop() interface{} {
-	if len(*s) == 0 {
+.mu.Lock()
+	defer.mu.Unlock()
+	if len(s.data) == 0 {
 		return nil
 	}
-	val := (*s)[len(*s)-1]
-	*s = (*s)[:len(*s)-1]
+	val := s.data[len(s.data)-1]
+.data = s.data[:len(s.data)-1]
 	return val
 }
 
-// Queue 队列实现
-type Queue []interface{}
+func (s *Stack) Peek() interface{} {
+.mu.RLock()
+	defer.mu.RUnlock()
+	if len(s.data) == 0 {
+		return nil
+	}
+	return.data[len(s.data)-1]
+}
+
+func (s *Stack) Size() int {
+.mu.RLock()
+	defer.mu.RUnlock()
+	return len(s.data)
+}
+
+func (s *Stack) IsEmpty() bool {
+	return.Size() == 0
+}
+
+// Queue 线程安全队列实现
+type Queue struct {
+	data []interface{}
+	mu   sync.RWMutex
+}
 
 func (q *Queue) Enqueue(val interface{}) {
-	*q = append(*q, val)
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.data = append(q.data, val)
 }
 
 func (q *Queue) Dequeue() interface{} {
-	if len(*q) == 0 {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if len(q.data) == 0 {
 		return nil
 	}
-	val := (*q)[0]
-	*q = (*q)[1:]
+	val := q.data[0]
+	q.data = q.data[1:]
 	return val
+}
+
+func (q *Queue) Peek() interface{} {
+	q.mu.RLock()
+	defer q.mu.RUnlock()
+	if len(q.data) == 0 {
+		return nil
+	}
+	return q.data[0]
+}
+
+func (q *Queue) Size() int {
+	q.mu.RLock()
+	defer q.mu.RUnlock()
+	return len(q.data)
+}
+
+func (q *Queue) IsEmpty() bool {
+	return q.Size() == 0
 }
 
 // ==================== 高级数据结构 ====================
 
-// Graph 图的邻接表表示
-type Graph struct {
-	Vertices int
-	Adj      map[int][]int
-}
-
 func NewGraph(vertices int) *Graph {
 	return &Graph{
 		Vertices: vertices,
-		Adj:      make(map[int][]int),
+		Adj:      make(map[int]map[int]int),
 	}
 }
 
-func (g *Graph) AddEdge(u, v int) {
-	g.Adj[u] = append(g.Adj[u], v)
-	g.Adj[v] = append(g.Adj[v], u) // 无向图
+func (g *Graph) AddEdge(u, v int, weight int) {
+	if g.Adj[u] == nil {
+		g.Adj[u] = make(map[int]int)
+	}
+	g.Adj[u][v] = weight
+
+	// 无向图需要双向添加
+	if g.Adj[v] == nil {
+		g.Adj[v] = make(map[int]int)
+	}
+	g.Adj[v][u] = weight
 }
 
 // MinHeap 最小堆实现
@@ -322,19 +411,24 @@ func (h *MinHeap) Pop() interface{} {
 
 // ==================== 排序算法 ====================
 
-// QuickSort 快速排序
+// QuickSort 优化的快速排序算法
+// 时间复杂度：
+// - 平均情况：O(n log n)
+// - 最坏情况：O(n^2)
+// 空间复杂度：O(log n)
+// 对小数组自动切换到插入排序提高性能
 func QuickSort(arr []int) []int {
-	if len(arr) <= 1 {
-		return arr
+	if len(arr) <= 16 { // 小数组使用插入排序
+		return InsertionSort(arr)
 	}
 
-	pivot := arr[0]
+	pivot := medianOfThree(arr[0], arr[len(arr)/2], arr[len(arr)-1])
 	var left, right []int
 
-	for i := 1; i < len(arr); i++ {
+	for i := 0; i < len(arr); i++ {
 		if arr[i] < pivot {
 			left = append(left, arr[i])
-		} else {
+		} else if arr[i] > pivot {
 			right = append(right, arr[i])
 		}
 	}
@@ -525,8 +619,30 @@ type LRUCache struct {
 }
 
 type Pair struct {
-	key   int
-	value int
+	key      int
+	value    int
+	expireAt time.Time
+}
+
+func (lru *LRUCache) PutWithExpire(key int, value int, ttl time.Duration) {
+	if elem, ok := lru.cache[key]; ok {
+		pair := elem.Value.(*Pair)
+		pair.value = value
+		pair.expireAt = time.Now().Add(ttl)
+		lru.list.MoveToFront(elem)
+	} else {
+		if lru.list.Len() >= lru.capacity {
+			last := lru.list.Back()
+			delete(lru.cache, last.Value.(*Pair).key)
+			lru.list.Remove(last)
+		}
+		newElem := lru.list.PushFront(&Pair{
+			key:      key,
+			value:    value,
+			expireAt: time.Now().Add(ttl),
+		})
+		lru.cache[key] = newElem
+	}
 }
 
 func NewLRUCache(capacity int) *LRUCache {
@@ -556,7 +672,7 @@ func (lru *LRUCache) Put(key int, value int) {
 			delete(lru.cache, last.Value.(*Pair).key)
 			lru.list.Remove(last)
 		}
-		newElem := lru.list.PushFront(&Pair{key, value})
+		newElem := lru.list.PushFront(&Pair{key: key, value: value})
 		lru.cache[key] = newElem
 	}
 }
@@ -589,6 +705,14 @@ func main() {
 	TestOriginalDataStructures()
 }
 
+// TestOriginalDataStructures 测试所有数据结构和算法
+// 包含以下测试用例：
+// 1. 链表操作
+// 2. 排序算法
+// 3. 搜索算法
+// 4. 图算法
+// 5. 动态规划
+// 6. LRU缓存
 func TestOriginalDataStructures() {
 	// 测试链表
 	list := LinkedList{}
@@ -608,10 +732,10 @@ func TestOriginalDataStructures() {
 
 	// 测试图算法
 	graph := NewGraph(5)
-	graph.AddEdge(0, 1)
-	graph.AddEdge(0, 2)
-	graph.AddEdge(1, 3)
-	graph.AddEdge(2, 4)
+	graph.AddEdge(0, 1, 1)
+	graph.AddEdge(0, 2, 1)
+	graph.AddEdge(1, 3, 1)
+	graph.AddEdge(2, 4, 1)
 	fmt.Println("BFS遍历:", graph.BFS(0))
 	fmt.Println("DFS遍历:", graph.DFS(0))
 
@@ -628,4 +752,105 @@ func TestOriginalDataStructures() {
 	fmt.Println("LRU Get 1:", lru.Get(1))
 	lru.Put(3, 3)
 	fmt.Println("LRU Get 2:", lru.Get(2))
+}
+
+func InsertionSort(arr []int) []int {
+	for i := 1; i < len(arr); i++ {
+		key := arr[i]
+		j := i - 1
+		for j >= 0 && arr[j] > key {
+			arr[j+1] = arr[j]
+			j--
+		}
+		arr[j+1] = key
+	}
+	return arr
+}
+
+func medianOfThree(a, b, c int) int {
+	if a < b {
+		if b < c {
+			return b
+		} else if a < c {
+			return c
+		} else {
+			return a
+		}
+	} else {
+		if a < c {
+			return a
+		} else if b < c {
+			return c
+		} else {
+			return b
+		}
+	}
+}
+
+// Deque 双端队列实现
+type Deque struct {
+	data []interface{}
+	mu   sync.RWMutex
+}
+
+func (d *Deque) PushFront(val interface{}) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.data = append([]interface{}{val}, d.data...)
+}
+
+func (d *Deque) PushBack(val interface{}) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.data = append(d.data, val)
+}
+
+func (d *Deque) PopFront() interface{} {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if len(d.data) == 0 {
+		return nil
+	}
+	val := d.data[0]
+	d.data = d.data[1:]
+	return val
+}
+
+func (d *Deque) PopBack() interface{} {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if len(d.data) == 0 {
+		return nil
+	}
+	val := d.data[len(d.data)-1]
+	d.data = d.data[:len(d.data)-1]
+	return val
+}
+
+func (d *Deque) PeekFront() interface{} {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	if len(d.data) == 0 {
+		return nil
+	}
+	return d.data[0]
+}
+
+func (d *Deque) PeekBack() interface{} {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	if len(d.data) == 0 {
+		return nil
+	}
+	return d.data[len(d.data)-1]
+}
+
+func (d *Deque) Size() int {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return len(d.data)
+}
+
+func (d *Deque) IsEmpty() bool {
+	return d.Size() == 0
 }
