@@ -14,6 +14,17 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+/*
+高级Goroutine模式、Channel、并发安全、并发实例
+包含以下主要内容：
+1. 分片并发安全Map实现(Set、Get、getShard)
+2. 并发安全环形缓冲区(Put、Get)
+3. 动态Worker Pool实现
+4. 高级并发模式(Context、Channel多路复用、限速器、ErrorGroup增强版)
+5. 工具函数实例(FNV32哈希算法实现、并发原语等)
+所有实现都考虑了线程安全，适合学习和生产使用
+*/
+
 // ==================== 高级并发安全数据结构 ====================
 
 // ConcurrentMapWithShard 分片并发安全Map
