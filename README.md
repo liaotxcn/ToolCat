@@ -1,4 +1,4 @@
-# DataStructures-Algorithms 数据结构与算法 📊  
+# DataStructures-Algorithms 数构与算法 📊  
 
 <div align="center">  
 
@@ -37,7 +37,12 @@
   - 动态Worker Pool实现
   - 高级并发模式(Context、Channel多路复用、限速器、ErrorGroup增强版)
   - 工具函数实例(FNV32哈希算法实现、并发原语等)
-
+- **`Cache elimination 缓存淘汰`**
+  - FIFO   按照数据最早进入顺序淘汰数据
+  - LRU    根据数据最近使用情况淘汰数据
+  - LFU    根据数据访问频率来淘汰数据
+  - ARC    LRU + LFU
+ 
 ---
 
 ## 🚀 快速开始  
