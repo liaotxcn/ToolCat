@@ -15,9 +15,20 @@ func SetupRouter() *gin.Engine {
 	// 全局中间件
 	router.Use(middleware.LogMiddleware())
 
+	// 认证相关路由
+	auth := router.Group("/auth")
+	{
+		userCtrl := &controllers.UserController{}
+		auth.POST("/register", userCtrl.Register)
+		auth.POST("/login", userCtrl.Login)
+	}
+
 	// API分组
 	api := router.Group("/api/v1")
 	{
+		// 使用认证中间件
+		api.Use(middleware.AuthMiddleware())
+
 		// 用户相关路由
 		users := api.Group("/users")
 		{

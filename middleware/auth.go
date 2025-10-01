@@ -1,9 +1,11 @@
 package middleware
 
 import (
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"toolcat/utils"
 )
 
 // AuthMiddleware 认证中间件
@@ -12,19 +14,33 @@ func AuthMiddleware() gin.HandlerFunc {
 		// 获取Authorization头
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			// 对于需要认证的路由，可以在这里返回401
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header is required"})
+			c.Abort()
+			return
 		}
 
-		// 解析Authorization头（示例：Bearer token）
-		if strings.HasPrefix(authHeader, "Bearer ") {
-			_ = authHeader[7:]
-			// 这里可以添加token验证逻辑
-			// 例如：验证token的有效性，获取用户信息等
-			// 如果验证失败，可以返回401
+		// 检查token格式
+		parts := strings.SplitN(authHeader, " ", 2)
+		if !(len(parts) == 2 && parts[0] == "Bearer") {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header format must be Bearer {token}"})
+			c.Abort()
+			return
 		}
 
-		// 继续处理请求
-		c.Next()
+		// 验证token有效性
+	tokenString := parts[1]
+	userID, err := utils.VerifyToken(tokenString)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+		c.Abort()
+		return
+	}
+
+	// 将用户ID存储在上下文
+	c.Set("userID", userID)
+
+	// 继续处理请求
+	c.Next()
 	}
 }
 

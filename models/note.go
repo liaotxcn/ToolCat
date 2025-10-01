@@ -15,6 +15,5 @@ type Note struct {
 
 // AddNoteToMigration 将Note模型添加到迁移函数
 func init() {
-	// 这个init函数会在程序启动时执行
-	// 但我们需要修改现有的MigrateTables函数来包含Note模型
+	// 修改现有的MigrateTables函数来包含Note模型
 }

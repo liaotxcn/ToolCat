@@ -29,12 +29,12 @@ type Tool struct {
 
 // ToolHistory 工具使用历史模型
 type ToolHistory struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	UserID    uint      `json:"user_id"`
-	ToolID    uint      `json:"tool_id"`
-	UsedAt    time.Time `json:"used_at"`
-	Params    string    `gorm:"type:text" json:"params"`
-	Result    string    `gorm:"type:text" json:"result"`
+	ID     uint      `gorm:"primaryKey" json:"id"`
+	UserID uint      `json:"user_id"`
+	ToolID uint      `json:"tool_id"`
+	UsedAt time.Time `json:"used_at"`
+	Params string    `gorm:"type:text" json:"params"`
+	Result string    `gorm:"type:text" json:"result"`
 }
 
 // MigrateTables 执行数据库迁移
