@@ -1,0 +1,623 @@
+# 工具猫(ToolCat) API 接口文档
+
+## 1. 概述
+
+本文档提供工具猫(ToolCat)服务的所有API接口说明，包括认证接口、用户管理接口、工具管理接口和插件管理接口。所有接口基于HTTP协议，使用JSON格式进行数据交换。
+
+## 2. 基础信息
+
+- 服务基础URL: `http://localhost:8080`
+- API版本: v1
+- API基础路径: `/api/v1`
+- 认证方式: JWT (JSON Web Token)
+- 数据格式: JSON
+
+## 3. 认证接口
+
+### 3.1 用户注册
+
+**请求URL**: `/auth/register`
+**请求方法**: POST
+**请求体**: 
+```json
+{
+  "username": "string",    // 用户名(必填，3-50个字符)
+  "password": "string",    // 密码(必填，至少6个字符)
+  "confirm_password": "string", // 确认密码(必填，必须与password一致)
+  "email": "string"         // 邮箱(必填，有效的邮箱格式)
+}
+```
+
+**成功响应**: 
+```json
+{
+  "message": "注册成功",
+  "user": {
+    "id": 1,
+    "username": "testuser",
+    "email": "test@example.com",
+    "created_at": "2025-10-01T10:00:00Z",
+    "updated_at": "2025-10-01T10:00:00Z"
+  }
+}
+```
+
+**失败响应**: 
+- 400 Bad Request: 请求参数验证失败或用户名/邮箱已存在
+```json
+{
+  "error": "错误信息"
+}
+```
+
+### 3.2 用户登录
+
+**请求URL**: `/auth/login`
+**请求方法**: POST
+**请求体**: 
+```json
+{
+  "username": "string",    // 用户名(必填)
+  "password": "string"     // 密码(必填)
+}
+```
+
+**成功响应**: 
+```json
+{
+  "message": "登录成功",
+  "token": "JWT_TOKEN_HERE",
+  "user": {
+    "id": 1,
+    "username": "testuser",
+    "email": "test@example.com",
+    "created_at": "2025-10-01T10:00:00Z",
+    "updated_at": "2025-10-01T10:00:00Z"
+  }
+}
+```
+
+**失败响应**: 
+- 400 Bad Request: 请求参数验证失败
+- 401 Unauthorized: 用户名或密码错误
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+## 4. API 接口 (需要认证)
+
+所有API接口需要在请求头中包含JWT认证令牌：
+```
+Authorization: Bearer YOUR_JWT_TOKEN_HERE
+```
+
+### 4.1 用户管理接口
+
+#### 4.1.1 获取所有用户
+
+**请求URL**: `/api/v1/users`
+**请求方法**: GET
+**请求头**: Authorization: Bearer {token}
+
+**成功响应**: 
+```json
+[
+  {
+    "id": 1,
+    "username": "testuser1",
+    "email": "test1@example.com",
+    "created_at": "2025-10-01T10:00:00Z",
+    "updated_at": "2025-10-01T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "username": "testuser2",
+    "email": "test2@example.com",
+    "created_at": "2025-10-02T11:00:00Z",
+    "updated_at": "2025-10-02T11:00:00Z"
+  }
+]
+```
+
+**失败响应**: 
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 4.1.2 获取单个用户
+
+**请求URL**: `/api/v1/users/:id`
+**请求方法**: GET
+**请求头**: Authorization: Bearer {token}
+**URL参数**: 
+- id: 用户ID
+
+**成功响应**: 
+```json
+{
+  "id": 1,
+  "username": "testuser",
+  "email": "test@example.com",
+  "created_at": "2025-10-01T10:00:00Z",
+  "updated_at": "2025-10-01T10:00:00Z"
+}
+```
+
+**失败响应**: 
+- 404 Not Found: 用户不存在
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 4.1.3 创建用户
+
+**请求URL**: `/api/v1/users`
+**请求方法**: POST
+**请求头**: Authorization: Bearer {token}
+**请求体**: 
+```json
+{
+  "username": "string",    // 用户名(必填，唯一)
+  "password": "string",    // 密码(必填)
+  "email": "string"         // 邮箱(唯一)
+}
+```
+
+**成功响应**: 
+```json
+{
+  "id": 3,
+  "username": "newuser",
+  "password": "hashed_password",
+  "email": "new@example.com",
+  "created_at": "2025-10-03T12:00:00Z",
+  "updated_at": "2025-10-03T12:00:00Z"
+}
+```
+
+**失败响应**: 
+- 400 Bad Request: 请求参数验证失败
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 4.1.4 更新用户
+
+**请求URL**: `/api/v1/users/:id`
+**请求方法**: PUT
+**请求头**: Authorization: Bearer {token}
+**URL参数**: 
+- id: 用户ID
+**请求体**: 
+```json
+{
+  "username": "string",    // 用户名(唯一)
+  "password": "string",    // 密码
+  "email": "string"         // 邮箱(唯一)
+}
+```
+
+**成功响应**: 
+```json
+{
+  "id": 1,
+  "username": "updateduser",
+  "password": "updated_hashed_password",
+  "email": "updated@example.com",
+  "created_at": "2025-10-01T10:00:00Z",
+  "updated_at": "2025-10-04T13:00:00Z"
+}
+```
+
+**失败响应**: 
+- 400 Bad Request: 请求参数验证失败
+- 404 Not Found: 用户不存在
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 4.1.5 删除用户
+
+**请求URL**: `/api/v1/users/:id`
+**请求方法**: DELETE
+**请求头**: Authorization: Bearer {token}
+**URL参数**: 
+- id: 用户ID
+
+**成功响应**: 
+```json
+{
+  "message": "User deleted successfully"
+}
+```
+
+**失败响应**: 
+- 404 Not Found: 用户不存在
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+### 4.2 工具管理接口
+
+#### 4.2.1 获取所有工具
+
+**请求URL**: `/api/v1/tools`
+**请求方法**: GET
+**请求头**: Authorization: Bearer {token}
+
+**成功响应**: 
+```json
+[
+  {
+    "id": 1,
+    "name": "tool1",
+    "description": "Description of tool 1",
+    "icon": "tool1.png",
+    "plugin_name": "plugin1",
+    "is_enabled": true,
+    "created_at": "2025-10-01T10:00:00Z",
+    "updated_at": "2025-10-01T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "name": "tool2",
+    "description": "Description of tool 2",
+    "icon": "tool2.png",
+    "plugin_name": "plugin2",
+    "is_enabled": true,
+    "created_at": "2025-10-02T11:00:00Z",
+    "updated_at": "2025-10-02T11:00:00Z"
+  }
+]
+```
+
+**失败响应**: 
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 4.2.2 获取单个工具
+
+**请求URL**: `/api/v1/tools/:id`
+**请求方法**: GET
+**请求头**: Authorization: Bearer {token}
+**URL参数**: 
+- id: 工具ID
+
+**成功响应**: 
+```json
+{
+  "id": 1,
+  "name": "tool1",
+  "description": "Description of tool 1",
+  "icon": "tool1.png",
+  "plugin_name": "plugin1",
+  "is_enabled": true,
+  "created_at": "2025-10-01T10:00:00Z",
+  "updated_at": "2025-10-01T10:00:00Z"
+}
+```
+
+**失败响应**: 
+- 404 Not Found: 工具不存在
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 4.2.3 创建工具
+
+**请求URL**: `/api/v1/tools`
+**请求方法**: POST
+**请求头**: Authorization: Bearer {token}
+**请求体**: 
+```json
+{
+  "name": "string",         // 工具名称(必填，唯一)
+  "description": "string",  // 工具描述
+  "icon": "string",         // 工具图标路径
+  "plugin_name": "string",  // 插件名称(必填)
+  "is_enabled": true/false   // 是否启用
+}
+```
+
+**成功响应**: 
+```json
+{
+  "id": 3,
+  "name": "newtool",
+  "description": "Description of new tool",
+  "icon": "newtool.png",
+  "plugin_name": "plugin3",
+  "is_enabled": true,
+  "created_at": "2025-10-03T12:00:00Z",
+  "updated_at": "2025-10-03T12:00:00Z"
+}
+```
+
+**失败响应**: 
+- 400 Bad Request: 请求参数验证失败
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 4.2.4 更新工具
+
+**请求URL**: `/api/v1/tools/:id`
+**请求方法**: PUT
+**请求头**: Authorization: Bearer {token}
+**URL参数**: 
+- id: 工具ID
+**请求体**: 
+```json
+{
+  "name": "string",         // 工具名称(唯一)
+  "description": "string",  // 工具描述
+  "icon": "string",         // 工具图标路径
+  "plugin_name": "string",  // 插件名称
+  "is_enabled": true/false   // 是否启用
+}
+```
+
+**成功响应**: 
+```json
+{
+  "id": 1,
+  "name": "updatedtool",
+  "description": "Updated description",
+  "icon": "updatedtool.png",
+  "plugin_name": "plugin1",
+  "is_enabled": false,
+  "created_at": "2025-10-01T10:00:00Z",
+  "updated_at": "2025-10-04T13:00:00Z"
+}
+```
+
+**失败响应**: 
+- 400 Bad Request: 请求参数验证失败
+- 404 Not Found: 工具不存在
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 4.2.5 删除工具
+
+**请求URL**: `/api/v1/tools/:id`
+**请求方法**: DELETE
+**请求头**: Authorization: Bearer {token}
+**URL参数**: 
+- id: 工具ID
+
+**成功响应**: 
+```json
+{
+  "message": "Tool deleted successfully"
+}
+```
+
+**失败响应**: 
+- 404 Not Found: 工具不存在
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 4.2.6 执行工具
+
+**请求URL**: `/api/v1/tools/:id/execute`
+**请求方法**: POST
+**请求头**: Authorization: Bearer {token}
+**URL参数**: 
+- id: 工具ID
+**请求体**: 
+```json
+{
+  // 工具执行所需的参数
+}
+```
+
+**成功响应**: 
+```json
+{
+  "tool_id": 1,
+  "message": "Tool executed successfully"
+}
+```
+
+**失败响应**: 
+- 404 Not Found: 工具不存在
+- 403 Forbidden: 工具已禁用
+```json
+{
+  "error": "错误信息"
+}
+```
+
+### 4.3 插件管理接口
+
+#### 4.3.1 获取所有插件
+
+**请求URL**: `/api/v1/plugins`
+**请求方法**: GET
+**请求头**: Authorization: Bearer {token}
+
+**成功响应**: 
+```json
+{
+  "message": "Get all plugins"
+}
+```
+
+#### 4.3.2 加载插件
+
+**请求URL**: `/api/v1/plugins/load`
+**请求方法**: POST
+**请求头**: Authorization: Bearer {token}
+**请求体**: 
+```json
+{
+  // 插件加载所需的参数
+}
+```
+
+**成功响应**: 
+```json
+{
+  "message": "Load plugin"
+}
+```
+
+#### 4.3.3 卸载插件
+
+**请求URL**: `/api/v1/plugins/unload/:name`
+**请求方法**: POST
+**请求头**: Authorization: Bearer {token}
+**URL参数**: 
+- name: 插件名称
+
+**成功响应**: 
+```json
+{
+  "message": "Unload plugin"
+}
+```
+
+## 5. 其他接口
+
+### 5.1 根路径
+
+**请求URL**: `/`
+**请求方法**: GET
+
+**响应**: 
+```json
+{
+  "message": "欢迎使用工具猫(ToolCat)服务！",
+  "version": "1.0.0",
+  "api_base": "/api/v1",
+  "health_check": "/health",
+  "available_endpoints": ["/api/v1/users", "/api/v1/tools", "/api/v1/plugins", "/health"]
+}
+```
+
+### 5.2 健康检查
+
+**请求URL**: `/health`
+**请求方法**: GET
+
+**响应**: 
+```json
+{
+  "status": "ok"
+}
+```
+
+## 6. 数据模型
+
+### 6.1 用户模型(User)
+```go
+type User struct {
+  ID        uint      `gorm:"primaryKey" json:"id"`
+  Username  string    `gorm:"size:50;not null;unique" json:"username"`
+  Password  string    `gorm:"size:100;not null" json:"password,omitempty"`
+  Email     string    `gorm:"size:100;unique" json:"email"`
+  CreatedAt time.Time `json:"created_at"`
+  UpdatedAt time.Time `json:"updated_at"`
+}
+```
+
+### 6.2 工具模型(Tool)
+```go
+type Tool struct {
+  ID          uint      `gorm:"primaryKey" json:"id"`
+  Name        string    `gorm:"size:100;not null;unique" json:"name"`
+  Description string    `gorm:"type:text" json:"description"`
+  Icon        string    `gorm:"size:255" json:"icon"`
+  PluginName  string    `gorm:"size:100;not null" json:"plugin_name"`
+  IsEnabled   bool      `gorm:"default:true" json:"is_enabled"`
+  CreatedAt   time.Time `json:"created_at"`
+  UpdatedAt   time.Time `json:"updated_at"`
+}
+```
+
+### 6.3 工具使用历史模型(ToolHistory)
+```go
+type ToolHistory struct {
+  ID     uint      `gorm:"primaryKey" json:"id"`
+  UserID uint      `json:"user_id"`
+  ToolID uint      `json:"tool_id"`
+  UsedAt time.Time `json:"used_at"`
+  Params string    `gorm:"type:text" json:"params"`
+  Result string    `gorm:"type:text" json:"result"`
+}
+```
+
+### 6.4 登录历史模型(LoginHistory)
+```go
+type LoginHistory struct {
+  ID        uint      `gorm:"primaryKey" json:"id"`
+  Username  string    `gorm:"size:50;not null" json:"username"`
+  IPAddress string    `gorm:"size:50" json:"ip_address"`
+  Success   bool      `gorm:"not null" json:"success"`
+  Message   string    `gorm:"size:255" json:"message"`
+  UserAgent string    `gorm:"type:text" json:"user_agent"`
+  LoginTime time.Time `json:"login_time"`
+}
+```
+
+## 7. 认证机制
+
+系统使用JWT (JSON Web Token)进行认证。用户登录成功后，服务器会返回一个JWT令牌，该令牌需要在后续的API请求中通过Authorization头传递。
+
+JWT令牌包含用户的身份信息，有效期等。当令牌过期或无效时，API请求会返回401 Unauthorized错误。
+
+## 8. 错误处理
+
+所有API接口都使用标准的HTTP状态码来表示请求的结果：
+- 200 OK: 请求成功
+- 201 Created: 创建成功
+- 400 Bad Request: 请求参数错误
+- 401 Unauthorized: 未授权
+- 403 Forbidden: 禁止访问
+- 404 Not Found: 资源不存在
+- 500 Internal Server Error: 服务器错误
+
+错误响应通常包含一个error字段，描述具体的错误信息。
+
+## 9. 安全提醒
+
+1. 不要在客户端存储用户密码
+2. 妥善保管JWT令牌，避免泄露
+3. 定期更换密码和刷新令牌
+4. 敏感操作前进行二次验证

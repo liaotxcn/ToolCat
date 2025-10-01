@@ -1,0 +1,47 @@
+# 二进制文件
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# 临时文件
+*.tmp
+*.temp
+*.cache
+
+# 日志文件
+*.log
+logs/
+
+# 配置文件
+*.env
+*.local
+config/*.yaml
+config/*.yml
+config/*.json
+
+# Go编译产物
+go.sum
+bin/
+obj/
+
+# IDE配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS生成的文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 测试覆盖率
+coverage.out
+coverage.html
