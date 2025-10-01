@@ -65,15 +65,13 @@ func registerPlugins(router *gin.Engine) {
 		log.Printf("Successfully registered plugin: %s", helloPlugin.Name())
 	}
 
-	// 注册计算器插件
-	calcPlugin := &plugins.CalcPlugin{}
-	if err := plugins.PluginManager.Register(calcPlugin); err != nil {
-		log.Printf("Failed to register plugin %s: %v", calcPlugin.Name(), err)
+	// 注册记事本插件
+	notePlugin := &plugins.NotePlugin{}
+	if err := plugins.PluginManager.Register(notePlugin); err != nil {
+		log.Printf("Failed to register plugin %s: %v", notePlugin.Name(), err)
 	} else {
 		// 注册插件路由
-		calcPlugin.RegisterRoutes(router)
-		log.Printf("Successfully registered plugin: %s", calcPlugin.Name())
+		notePlugin.RegisterRoutes(router)
+		log.Printf("Successfully registered plugin: %s", notePlugin.Name())
 	}
-
-	// 可以在这里注册更多插件
 }
