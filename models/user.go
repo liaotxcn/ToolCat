@@ -40,7 +40,7 @@ type ToolHistory struct {
 // MigrateTables 执行数据库迁移
 func MigrateTables() error {
 	// 自动迁移表结构
-	if err := pkg.DB.AutoMigrate(&User{}, &Tool{}, &ToolHistory{}); err != nil {
+	if err := pkg.DB.AutoMigrate(&User{}, &Tool{}, &ToolHistory{}, &Note{}); err != nil {
 		return err
 	}
 

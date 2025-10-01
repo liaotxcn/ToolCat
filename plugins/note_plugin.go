@@ -3,8 +3,10 @@ package plugins
 import (
 	"errors"
 	"fmt"
-	"sync"
 	"time"
+
+	"toolcat/models"
+	"toolcat/pkg"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,8 +22,7 @@ type Note struct {
 
 // NotePlugin 记事本插件
 type NotePlugin struct {
-	notes map[string]*Note
-	mutex sync.RWMutex
+	// 使用MySQL数据库存储，不需要内存存储字段
 }
 
 // Name 返回插件名称
@@ -41,8 +42,7 @@ func (p *NotePlugin) Version() string {
 
 // Init 初始化插件
 func (p *NotePlugin) Init() error {
-	// 初始化存储结构
-	p.notes = make(map[string]*Note)
+	// 插件初始化
 	fmt.Println("NotePlugin: 记事本插件已初始化")
 	return nil
 }
@@ -219,37 +219,29 @@ func (p *NotePlugin) Execute(params map[string]interface{}) (interface{}, error)
 
 // listNotes 获取所有笔记
 func (p *NotePlugin) listNotes() (interface{}, error) {
-	p.mutex.RLock()
-	defer p.mutex.RUnlock()
-
-	notesList := make([]*Note, 0, len(p.notes))
-	for _, note := range p.notes {
-		notesList = append(notesList, note)
+	var notes []models.Note
+	if err := pkg.DB.Find(&notes).Error; err != nil {
+		return nil, fmt.Errorf("查询笔记失败: %w", err)
 	}
-
-	return gin.H{"notes": notesList, "total": len(notesList)}, nil
+	return gin.H{"notes": notes, "total": len(notes)}, nil
 }
 
 // getNote 获取单个笔记
 func (p *NotePlugin) getNote(id string) (interface{}, error) {
-	p.mutex.RLock()
-	note, exists := p.notes[id]
-	p.mutex.RUnlock()
-
-	if !exists {
+	var note models.Note
+	if err := pkg.DB.Where("id = ?", id).First(&note).Error; err != nil {
 		return nil, errors.New("未找到指定的笔记")
 	}
-
 	return note, nil
 }
 
 // createNote 创建新笔记
 func (p *NotePlugin) createNote(title, content string) (interface{}, error) {
-	// 生成唯一ID（简化实现，使用时间戳）
+	// 生成唯一ID
 	id := fmt.Sprintf("note-%d", time.Now().UnixNano())
 	currentTime := time.Now()
 
-	newNote := &Note{
+	newNote := models.Note{
 		ID:          id,
 		Title:       title,
 		Content:     content,
@@ -257,20 +249,17 @@ func (p *NotePlugin) createNote(title, content string) (interface{}, error) {
 		UpdatedTime: currentTime,
 	}
 
-	p.mutex.Lock()
-	p.notes[id] = newNote
-	p.mutex.Unlock()
+	if err := pkg.DB.Create(&newNote).Error; err != nil {
+		return nil, fmt.Errorf("创建笔记失败: %w", err)
+	}
 
 	return newNote, nil
 }
 
 // updateNote 更新笔记
 func (p *NotePlugin) updateNote(id, title, content string) (interface{}, error) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
-	note, exists := p.notes[id]
-	if !exists {
+	var note models.Note
+	if err := pkg.DB.Where("id = ?", id).First(&note).Error; err != nil {
 		return nil, errors.New("未找到指定的笔记")
 	}
 
@@ -283,19 +272,23 @@ func (p *NotePlugin) updateNote(id, title, content string) (interface{}, error) 
 	}
 	note.UpdatedTime = time.Now()
 
+	if err := pkg.DB.Save(&note).Error; err != nil {
+		return nil, fmt.Errorf("更新笔记失败: %w", err)
+	}
+
 	return note, nil
 }
 
 // deleteNote 删除笔记
 func (p *NotePlugin) deleteNote(id string) (interface{}, error) {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
-	_, exists := p.notes[id]
-	if !exists {
+	var note models.Note
+	if err := pkg.DB.Where("id = ?", id).First(&note).Error; err != nil {
 		return nil, errors.New("未找到指定的笔记")
 	}
 
-	delete(p.notes, id)
+	if err := pkg.DB.Delete(&note).Error; err != nil {
+		return nil, fmt.Errorf("删除笔记失败: %w", err)
+	}
+
 	return gin.H{"message": "删除成功"}, nil
 }
