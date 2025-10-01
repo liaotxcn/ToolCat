@@ -12,6 +12,8 @@ import (
 	"toolcat/pkg"
 	"toolcat/plugins"
 	"toolcat/routers"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -33,7 +35,7 @@ func main() {
 	router := routers.SetupRouter()
 
 	// 注册插件
-	registerPlugins()
+	registerPlugins(router)
 
 	// 启动服务器
 	port := config.Config.Server.Port
@@ -52,14 +54,13 @@ func main() {
 }
 
 // 注册插件
-func registerPlugins() {
+func registerPlugins(router *gin.Engine) {
 	// 注册示例插件
 	helloPlugin := &plugins.HelloPlugin{}
 	if err := plugins.PluginManager.Register(helloPlugin); err != nil {
 		log.Printf("Failed to register plugin %s: %v", helloPlugin.Name(), err)
 	} else {
 		// 注册插件路由
-		router := routers.SetupRouter()
 		helloPlugin.RegisterRoutes(router)
 		log.Printf("Successfully registered plugin: %s", helloPlugin.Name())
 	}
@@ -70,7 +71,6 @@ func registerPlugins() {
 		log.Printf("Failed to register plugin %s: %v", calcPlugin.Name(), err)
 	} else {
 		// 注册插件路由
-		router := routers.SetupRouter()
 		calcPlugin.RegisterRoutes(router)
 		log.Printf("Successfully registered plugin: %s", calcPlugin.Name())
 	}
