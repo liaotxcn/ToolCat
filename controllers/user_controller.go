@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
+	"time"
 
 	"toolcat/models"
 	"toolcat/pkg"
@@ -85,6 +87,8 @@ func (uc *UserController) Login(c *gin.Context) {
 
 	// 绑定JSON请求体
 	if err := c.ShouldBindJSON(&loginRequest); err != nil {
+		// 记录绑定失败的登录尝试
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "请求参数验证失败: " + err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -93,12 +97,16 @@ func (uc *UserController) Login(c *gin.Context) {
 	var user models.User
 	result := pkg.DB.Where("username = ?", loginRequest.Username).First(&user)
 	if result.Error != nil {
+		// 记录用户不存在的登录尝试
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "用户名或密码错误")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
 		return
 	}
 
 	// 验证密码
 	if !utils.CheckPasswordHash(loginRequest.Password, user.Password) {
+		// 记录密码错误的登录尝试
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "用户名或密码错误")
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
 		return
 	}
@@ -106,13 +114,38 @@ func (uc *UserController) Login(c *gin.Context) {
 	// 生成JWT token
 	token, err := utils.GenerateToken(user.ID)
 	if err != nil {
+		// 记录生成token失败的情况
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "生成token失败: " + err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成token失败"})
 		return
 	}
 
+	// 记录登录成功
+	recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), true, "登录成功")
+
 	// 不返回密码信息
 	user.Password = ""
 	c.JSON(http.StatusOK, gin.H{"message": "登录成功", "token": token, "user": user})
+}
+
+// recordLoginHistory 记录登录历史
+func recordLoginHistory(username, ipAddress, userAgent string, success bool, message string) {
+	loginHistory := models.LoginHistory{
+		Username:  username,
+		IPAddress: ipAddress,
+		Success:   success,
+		Message:   message,
+		UserAgent: userAgent,
+		LoginTime: time.Now(),
+	}
+
+	// 异步记录登录历史，不阻塞主流程
+	go func() {
+		if err := pkg.DB.Create(&loginHistory).Error; err != nil {
+			// 记录失败不应影响主流程，可以记录到日志中
+			fmt.Printf("Failed to record login history: %v\n", err)
+		}
+	}()
 }
 
 // GetUsers 获取所有用户
