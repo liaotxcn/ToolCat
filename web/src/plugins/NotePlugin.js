@@ -1,5 +1,7 @@
 // Note插件
 
+import { noteService } from '../services/note.js'
+
 class NotePlugin {
   constructor() {
     this.name = 'NotePlugin'
@@ -9,10 +11,15 @@ class NotePlugin {
   }
 
   // 初始化插件
-  initialize() {
-    console.log('NotePlugin 初始化')
-    // 从本地存储加载笔记
-    this.loadNotes()
+  async initialize() {
+    console.log('NotePlugin 初始化开始')
+    // 从后端API加载笔记
+    try {
+      await this.loadNotesFromAPI()
+      console.log('NotePlugin 初始化完成，当前笔记数量:', this.notes.length)
+    } catch (error) {
+      console.error('笔记插件初始化失败:', error)
+    }
   }
 
   // 获取插件信息
@@ -26,16 +33,17 @@ class NotePlugin {
   }
 
   // 添加笔记
-  addNote(title, content) {
-    const note = {
-      id: Date.now(),
-      title: title,
-      content: content,
-      createdAt: new Date().toISOString()
+  async addNote(title, content) {
+    try {
+      // noteService.createNote会返回经过auth.js响应拦截器处理后的response.data
+      const result = await noteService.createNote({ title, content })
+      // 更新本地笔记列表
+      await this.loadNotesFromAPI()
+      return result
+    } catch (error) {
+      console.error('添加笔记失败:', error)
+      throw error
     }
-    this.notes.push(note)
-    this.saveNotes()
-    return note
   }
 
   // 获取所有笔记
@@ -43,33 +51,41 @@ class NotePlugin {
     return this.notes
   }
 
-  // 删除笔记
-  deleteNote(id) {
-    this.notes = this.notes.filter(note => note.id !== id)
-    this.saveNotes()
-  }
-
-  // 保存笔记到本地存储
-  saveNotes() {
+  // 从后端API加载笔记
+  async loadNotesFromAPI() {
     try {
-      localStorage.setItem('toolcat-notes', JSON.stringify(this.notes))
-    } catch (error) {
-      console.error('保存笔记失败:', error)
-    }
-  }
-
-  // 从本地存储加载笔记
-  loadNotes() {
-    try {
-      const savedNotes = localStorage.getItem('toolcat-notes')
-      if (savedNotes) {
-        this.notes = JSON.parse(savedNotes)
+      const data = await noteService.getAllNotes()
+      // 检查响应格式，根据auth.js中响应拦截器的行为调整
+      if (data && Array.isArray(data)) {
+        // 处理直接返回的笔记数组
+        this.notes = data
+      } else if (data && data.notes && Array.isArray(data.notes)) {
+        // 处理嵌套在notes字段中的笔记数组
+        this.notes = data.notes
+      } else {
+        console.warn('Unexpected response format:', data)
+        this.notes = []
       }
+      console.log('Loaded notes:', this.notes)
     } catch (error) {
-      console.error('加载笔记失败:', error)
+      console.error('从API加载笔记失败:', error)
       this.notes = []
     }
   }
+
+  // 删除笔记
+  async deleteNote(id) {
+    try {
+      await noteService.deleteNote(id)
+      // 更新本地笔记列表
+      this.loadNotesFromAPI()
+    } catch (error) {
+      console.error('删除笔记失败:', error)
+      throw error
+    }
+  }
+
+
 
   // 渲染插件内容
   render() {
@@ -85,30 +101,42 @@ class NotePlugin {
                     <div v-for="note in notes" :key="note.id" class="note-item">
                       <h4>{{ note.title }}</h4>
                       <p>{{ note.content }}</p>
-                      <small>{{ formatDate(note.createdAt) }}</small>
+                      <small>{{ formatDate(note.created_time) }}</small>
                       <button @click="deleteNoteItem(note.id)">删除</button>
                     </div>
                   </div>
                 </div>`,
       data: function() {
+        // 使用外部this引用或直接从插件实例获取数据
+        const pluginInstance = this.plugin || window.notePluginInstance || this;
         return {
           newNoteTitle: '',
           newNoteContent: '',
-          notes: this.getAllNotes()
+          notes: pluginInstance.getAllNotes ? pluginInstance.getAllNotes() : []
         }
       },
       methods: {
-        addNewNote: function() {
+        addNewNote: async function() {
           if (this.newNoteTitle.trim()) {
-            this.addNote(this.newNoteTitle, this.newNoteContent)
-            this.newNoteTitle = ''
-            this.newNoteContent = ''
-            this.notes = this.getAllNotes()
+            try {
+              await this.addNote(this.newNoteTitle, this.newNoteContent)
+              this.newNoteTitle = ''
+              this.newNoteContent = ''
+              this.notes = this.getAllNotes()
+            } catch (error) {
+              console.error('添加笔记失败:', error)
+              alert('添加笔记失败，请稍后重试')
+            }
           }
         },
-        deleteNoteItem: function(id) {
-          this.deleteNote(id)
-          this.notes = this.getAllNotes()
+        deleteNoteItem: async function(id) {
+          try {
+            await this.deleteNote(id)
+            this.notes = this.getAllNotes()
+          } catch (error) {
+            console.error('删除笔记失败:', error)
+            alert('删除笔记失败，请稍后重试')
+          }
         },
         formatDate: function(dateString) {
           return new Date(dateString).toLocaleString()

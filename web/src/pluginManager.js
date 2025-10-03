@@ -17,9 +17,15 @@ class PluginManager {
       console.warn(`插件 ${pluginName} 已经存在，将被覆盖`)
     }
 
-    // 初始化插件
+    // 初始化插件 - 处理同步和异步两种情况
     if (plugin.initialize) {
-      plugin.initialize()
+      const initResult = plugin.initialize()
+      // 检查是否是Promise
+      if (initResult && typeof initResult.then === 'function') {
+        initResult.catch(error => {
+          console.error(`插件 ${pluginName} 初始化失败:`, error)
+        })
+      }
     }
 
     this.plugins[pluginName] = plugin
