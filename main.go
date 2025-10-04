@@ -55,13 +55,14 @@ func main() {
 
 // 注册插件
 func registerPlugins(router *gin.Engine) {
+	// 设置路由引擎到PluginManager
+	plugins.PluginManager.SetRouter(router)
+
 	// 注册示例插件
 	helloPlugin := &plugins.HelloPlugin{}
 	if err := plugins.PluginManager.Register(helloPlugin); err != nil {
 		log.Printf("Failed to register plugin %s: %v", helloPlugin.Name(), err)
 	} else {
-		// 注册插件路由
-		helloPlugin.RegisterRoutes(router)
 		log.Printf("Successfully registered plugin: %s", helloPlugin.Name())
 	}
 
@@ -70,8 +71,13 @@ func registerPlugins(router *gin.Engine) {
 	if err := plugins.PluginManager.Register(notePlugin); err != nil {
 		log.Printf("Failed to register plugin %s: %v", notePlugin.Name(), err)
 	} else {
-		// 注册插件路由
-		notePlugin.RegisterRoutes(router)
 		log.Printf("Successfully registered plugin: %s", notePlugin.Name())
 	}
+
+	// 统一注册所有插件路由
+	// 注意：由于我们使用了新的注册机制，插件在注册时已经自动注册了路由
+	// 这里可以省略，或者保留作为额外的确认步骤
+	// if err := plugins.PluginManager.RegisterAllRoutes(); err != nil {
+	// 	log.Printf("Failed to register all plugin routes: %v", err)
+	// }
 }
