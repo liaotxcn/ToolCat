@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 // 创建axios实例
-export const api = axios.create({
+const api = axios.create({
   baseURL: 'http://localhost:8081',
   timeout: 10000,
   headers: {
@@ -25,24 +25,6 @@ api.interceptors.request.use(
   }
 )
 
-// 模拟数据 - 当API不可用时使用
-const mockData = {
-  '/plugins/note/notes': [
-    {
-      id: '1',
-      title: '示例笔记1',
-      content: '这是第一条示例笔记内容',
-      created_time: new Date().toISOString()
-    },
-    {
-      id: '2',
-      title: '示例笔记2',
-      content: '这是第二条示例笔记内容',
-      created_time: new Date(Date.now() - 86400000).toISOString()
-    }
-  ]
-}
-
 // 响应拦截器 - 处理token过期等情况
 api.interceptors.response.use(
   response => {
@@ -50,19 +32,9 @@ api.interceptors.response.use(
     return response.data
   },
   error => {
-    // 添加降级处理逻辑 - 当API不可用时返回模拟数据
-    const url = error.config?.url
-    console.error('API请求失败，尝试使用模拟数据:', error.message)
-    
-    // 如果请求的URL有对应的模拟数据，则返回模拟数据
-    if (url && mockData[url]) {
-      console.log('使用模拟数据响应请求:', url)
-      return mockData[url]
-    }
-    
     if (error.response) {
       // 处理HTTP错误
-      console.error('API请求错误:', url, error.response.status, error.response.data)
+      console.error('API请求错误:', error.config.url, error.response.status, error.response.data)
       switch (error.response.status) {
         case 401:
           // token过期或无效，清除localStorage中的token并跳转到登录页面
