@@ -6,7 +6,7 @@
 
 ## 2. 基础信息
 
-- 服务基础URL: `http://localhost:8080`
+- 服务基础URL: `http://localhost:8081`
 - API版本: v1
 - API基础路径: `/api/v1`
 - 认证方式: JWT (JSON Web Token)
