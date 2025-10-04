@@ -1,7 +1,6 @@
 package plugins
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -68,36 +67,49 @@ func (p *YourPlugin) Shutdown() error {
 	return nil
 }
 
-// RegisterRoutes 注册插件路由
-func (p *YourPlugin) RegisterRoutes(router *gin.Engine) {
-	// 注册插件相关路由
-	// 路由前缀为 /plugins/插件名称
-	pluginGroup := router.Group(fmt.Sprintf("/plugins/%s", p.Name()))
-	{
-		// 获取插件信息接口
-		pluginGroup.GET("/", func(c *gin.Context) {
-			c.JSON(200, gin.H{
-				"plugin":      p.Name(),
-				"description": p.Description(),
-				"version":     p.Version(),
-				// 可以在这里添加插件的其他元信息
-			})
-		})
-
-		// 示例API接口：获取资源列表
-		pluginGroup.GET("/resources", func(c *gin.Context) {
-			// 这里是处理逻辑
-			// 例如获取查询参数、调用服务层、返回结果等
-			result, err := p.GetResources()
-			if err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(200, result)
-		})
-
-		// 示例API接口：创建资源
-		pluginGroup.POST("/resources", func(c *gin.Context) {
+// GetRoutes 返回插件的路由定义
+// 推荐使用此方法代替 RegisterRoutes
+func (p *YourPlugin) GetRoutes() []Route {
+	return []Route{
+		{
+			Path:         "/",
+			Method:       "GET",
+			Handler: func(c *gin.Context) {
+				c.JSON(200, gin.H{
+					"plugin":      p.Name(),
+					"description": p.Description(),
+					"version":     p.Version(),
+					// 可以在这里添加插件的其他元信息
+				})
+			},
+			Description:  "获取插件信息",
+			AuthRequired: false,
+			Tags:         []string{"info", "metadata"},
+		},
+		{
+			Path:         "/resources",
+			Method:       "GET",
+			Handler: func(c *gin.Context) {
+				// 这里是处理逻辑
+				// 例如获取查询参数、调用服务层、返回结果等
+				result, err := p.GetResources()
+				if err != nil {
+					c.JSON(500, gin.H{"error": err.Error()})
+					return
+				}
+				c.JSON(200, result)
+			},
+			Description:  "获取资源列表",
+			AuthRequired: false,
+			Tags:         []string{"resources", "list"},
+			Params: map[string]string{
+				// 可以在这里定义查询参数
+			},
+		},
+		{
+			Path:         "/resources",
+			Method:       "POST",
+			Handler: func (c *gin.Context) {
 			// 这里是处理逻辑
 			// 例如绑定请求体、验证数据、调用服务层、返回结果等
 			var request struct {
@@ -116,9 +128,30 @@ func (p *YourPlugin) RegisterRoutes(router *gin.Engine) {
 				return
 			}
 			c.JSON(201, result)
-		})
-
+		},
+		Description:  "创建资源",
+		AuthRequired: false,
+		Tags:         []string{"resources", "create"},
+		},
 		// 可以根据需要添加更多路由
+	}
+}
+
+// RegisterRoutes 保留旧的方法以确保兼容性
+// 在使用新的GetRoutes方法后，这个方法实际上不会被调用
+func (p *YourPlugin) RegisterRoutes(router *gin.Engine) {
+	// 这个方法在使用新的GetRoutes时不会被调用
+	// 保留只是为了兼容性
+	log.Printf("%s: 注意：使用了旧的RegisterRoutes方法，建议使用新的GetRoutes方法", p.Name())
+}
+
+// GetDefaultMiddlewares 返回插件的默认中间件
+// 这些中间件会应用到插件的所有路由上
+func (p *YourPlugin) GetDefaultMiddlewares() []gin.HandlerFunc {
+	return []gin.HandlerFunc{
+		// 可以在这里添加认证中间件、日志中间件等
+		// auth.Middleware(),
+		// log.Middleware(),
 	}
 }
 

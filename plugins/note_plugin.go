@@ -60,156 +60,12 @@ func (p *NotePlugin) Shutdown() error {
 	return nil
 }
 
-// RegisterRoutes 注册插件路由
+// RegisterRoutes 保留旧的方法以确保兼容性
+// 在使用新的GetRoutes方法后，这个方法实际上不会被调用
 func (p *NotePlugin) RegisterRoutes(router *gin.Engine) {
-	// 注册插件相关路由，保持原始路径格式以兼容系统
-	pluginGroup := router.Group(fmt.Sprintf("/plugins/%s", p.Name()))
-	{
-		// 获取插件信息
-		pluginGroup.GET("/", func(c *gin.Context) {
-			c.JSON(200, gin.H{
-				"plugin":      p.Name(),
-				"name":        p.Name(),
-				"description": p.Description(),
-				"version":     p.Version(),
-				"endpoints": []string{
-					"GET /plugins/note/ - 获取插件信息",
-					"GET /plugins/note/notes - 获取所有笔记（支持分页和用户关联）",
-					"GET /plugins/note/notes/:id - 获取单个笔记（用户关联）",
-					"POST /plugins/note/notes - 创建新笔记（用户关联）",
-					"PUT /plugins/note/notes/:id - 更新笔记（用户关联）",
-					"DELETE /plugins/note/notes/:id - 删除笔记（用户关联）",
-					"GET /plugins/note/notes/search - 搜索笔记（支持分页和用户关联）",
-				},
-			})
-		})
-
-		// 获取所有笔记（支持分页和用户关联）
-		pluginGroup.GET("/notes", func(c *gin.Context) {
-			// 获取用户ID，这里简化处理，实际应从认证中获取
-			userID := c.DefaultQuery("user_id", "1")
-			userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-			// 获取分页参数
-			page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-			pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
-
-			result, err := p.listNotes(uint(userIDUint), page, pageSize)
-			if err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(200, result)
-		})
-
-		// 获取单个笔记（用户关联）
-		pluginGroup.GET("/notes/:id", func(c *gin.Context) {
-			// 获取用户ID，这里简化处理，实际应从认证中获取
-			userID := c.DefaultQuery("user_id", "1")
-			userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-			// 获取笔记ID
-			id := c.Param("id")
-
-			result, err := p.getNote(uint(userIDUint), id)
-			if err != nil {
-				c.JSON(404, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(200, result)
-		})
-
-		// 创建新笔记（用户关联）
-		pluginGroup.POST("/notes", func(c *gin.Context) {
-			// 获取用户ID，这里简化处理，实际应从认证中获取
-			userID := c.DefaultQuery("user_id", "1")
-			userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-			// 绑定请求体
-			var request struct {
-				Title   string `json:"title" binding:"required,min=1,max=100"`
-				Content string `json:"content" binding:"required,min=1"`
-			}
-
-			if err := c.ShouldBindJSON(&request); err != nil {
-				c.JSON(400, gin.H{"error": err.Error()})
-				return
-			}
-
-			result, err := p.createNote(uint(userIDUint), request.Title, request.Content)
-			if err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(201, result)
-		})
-
-		// 更新笔记（用户关联）
-		pluginGroup.PUT("/notes/:id", func(c *gin.Context) {
-			// 获取用户ID，这里简化处理，实际应从认证中获取
-			userID := c.DefaultQuery("user_id", "1")
-			userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-			// 获取笔记ID
-			id := c.Param("id")
-
-			// 绑定请求体
-			var request struct {
-				Title   string `json:"title" binding:"required,min=1,max=100"`
-				Content string `json:"content" binding:"required,min=1"`
-			}
-
-			if err := c.ShouldBindJSON(&request); err != nil {
-				c.JSON(400, gin.H{"error": err.Error()})
-				return
-			}
-
-			result, err := p.updateNote(uint(userIDUint), id, request.Title, request.Content)
-			if err != nil {
-				c.JSON(404, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(200, result)
-		})
-
-		// 删除笔记（用户关联）
-		pluginGroup.DELETE("/notes/:id", func(c *gin.Context) {
-			// 获取用户ID，这里简化处理，实际应从认证中获取
-			userID := c.DefaultQuery("user_id", "1")
-			userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-			// 获取笔记ID
-			id := c.Param("id")
-
-			result, err := p.deleteNoteHandler(uint(userIDUint), id)
-			if err != nil {
-				c.JSON(404, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(200, result)
-		})
-
-		// 搜索笔记（支持分页和用户关联）
-		pluginGroup.GET("/notes/search", func(c *gin.Context) {
-			// 获取用户ID，这里简化处理，实际应从认证中获取
-			userID := c.DefaultQuery("user_id", "1")
-			userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-			// 获取搜索关键字
-			keyword := c.DefaultQuery("keyword", "")
-
-			// 获取分页参数
-			page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
-			pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
-
-			result, err := p.searchNotes(uint(userIDUint), keyword, page, pageSize)
-			if err != nil {
-				c.JSON(500, gin.H{"error": err.Error()})
-				return
-			}
-			c.JSON(200, result)
-		})
-	}
+	// 这个方法在使用新的GetRoutes时不会被调用
+	// 保留只是为了兼容性
+	fmt.Printf("%s: 注意：使用了旧的RegisterRoutes方法，建议使用新的GetRoutes方法\n", p.Name())
 }
 
 // Execute 执行插件功能
@@ -509,12 +365,19 @@ func (p *NotePlugin) searchNotes(userID uint, keyword string, page, pageSize int
 		nil
 }
 
+// 下面是核心业务方法的实现
+
+// GetDefaultMiddlewares 返回插件的默认中间件
+func (p *NotePlugin) GetDefaultMiddlewares() []gin.HandlerFunc {
+	return []gin.HandlerFunc{}
+}
+
 // GetRoutes 返回插件的路由定义
 func (p *NotePlugin) GetRoutes() []Route {
 	return []Route{
 		{
-			Path:   "/",
-			Method: "GET",
+			Path:         "/",
+			Method:       "GET",
 			Handler: func(c *gin.Context) {
 				c.JSON(200, gin.H{
 					"plugin":      p.Name(),
@@ -534,10 +397,11 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 			Description:  "获取插件信息",
 			AuthRequired: false,
+			Tags:         []string{"info", "metadata"},
 		},
 		{
-			Path:   "/notes",
-			Method: "GET",
+			Path:         "/notes",
+			Method:       "GET",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -556,15 +420,16 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 			Description:  "获取所有笔记（支持分页和用户关联）",
 			AuthRequired: false,
+			Tags:         []string{"notes", "list"},
 			Params: map[string]string{
-				"user_id":   "可选，用户ID",
-				"page":      "可选，页码",
-				"page_size": "可选，每页数量",
+				"user_id":   "用户ID，默认1",
+				"page":      "页码，默认1",
+				"page_size": "每页数量，默认10",
 			},
 		},
 		{
-			Path:   "/notes/:id",
-			Method: "GET",
+			Path:         "/notes/:id",
+			Method:       "GET",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -582,14 +447,15 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 			Description:  "获取单个笔记（用户关联）",
 			AuthRequired: false,
+			Tags:         []string{"notes", "get"},
 			Params: map[string]string{
-				"id":      "必填，笔记ID",
-				"user_id": "可选，用户ID",
+				"user_id": "用户ID，默认1",
+				"id":      "笔记ID",
 			},
 		},
 		{
-			Path:   "/notes",
-			Method: "POST",
+			Path:         "/notes",
+			Method:       "POST",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -615,13 +481,16 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 			Description:  "创建新笔记（用户关联）",
 			AuthRequired: false,
+			Tags:         []string{"notes", "create"},
 			Params: map[string]string{
-				"user_id": "可选，用户ID",
+				"user_id": "用户ID，默认1",
+				"title":   "笔记标题（必填）",
+				"content": "笔记内容（必填）",
 			},
 		},
 		{
-			Path:   "/notes/:id",
-			Method: "PUT",
+			Path:         "/notes/:id",
+			Method:       "PUT",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -650,14 +519,17 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 			Description:  "更新笔记（用户关联）",
 			AuthRequired: false,
+			Tags:         []string{"notes", "update"},
 			Params: map[string]string{
-				"id":      "必填，笔记ID",
-				"user_id": "可选，用户ID",
+				"user_id": "用户ID，默认1",
+				"id":      "笔记ID",
+				"title":   "笔记标题（必填）",
+				"content": "笔记内容（必填）",
 			},
 		},
 		{
-			Path:   "/notes/:id",
-			Method: "DELETE",
+			Path:         "/notes/:id",
+			Method:       "DELETE",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -675,14 +547,15 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 			Description:  "删除笔记（用户关联）",
 			AuthRequired: false,
+			Tags:         []string{"notes", "delete"},
 			Params: map[string]string{
-				"id":      "必填，笔记ID",
-				"user_id": "可选，用户ID",
+				"user_id": "用户ID，默认1",
+				"id":      "笔记ID",
 			},
 		},
 		{
-			Path:   "/notes/search",
-			Method: "GET",
+			Path:         "/notes/search",
+			Method:       "GET",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -704,17 +577,13 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 			Description:  "搜索笔记（支持分页和用户关联）",
 			AuthRequired: false,
+			Tags:         []string{"notes", "search"},
 			Params: map[string]string{
-				"user_id":   "可选，用户ID",
-				"keyword":   "可选，搜索关键字",
-				"page":      "可选，页码",
-				"page_size": "可选，每页数量",
+				"user_id":   "用户ID，默认1",
+				"keyword":   "搜索关键字",
+				"page":      "页码，默认1",
+				"page_size": "每页数量，默认10",
 			},
 		},
 	}
-}
-
-// GetDefaultMiddlewares 返回插件的默认中间件
-func (p *NotePlugin) GetDefaultMiddlewares() []gin.HandlerFunc {
-	return []gin.HandlerFunc{}
 }
