@@ -6,7 +6,7 @@ import (
 )
 
 // Config 应用程序配置结构
-var Config = struct {
+var Config struct {
 	// 服务器配置
 	Server struct {
 		Port int
@@ -24,43 +24,33 @@ var Config = struct {
 	}
 
 	// 日志配置
-	Log struct {
-		Level string
-		Path  string
+	Logger struct {
+		Level       string
+		OutputPath  string
+		ErrorPath   string
+		Development bool
 	}
-}{
-	// 默认配置
-	Server: struct {
-		Port int
-	}{
-		Port: 8081,
-	},
+}
 
-	// MySQL 数据库配置
-	Database: struct {
-		Driver   string
-		Host     string
-		Port     int
-		Username string
-		Password string
-		DBName   string
-		Charset  string
-	}{
-		Driver:   "mysql",
-		Host:     "localhost",
-		Port:     3306,
-		Username: "root",
-		Password: "123456",
-		DBName:   "toolcat",
-		Charset:  "utf8mb4",
-	},
-	Log: struct {
-		Level string
-		Path  string
-	}{
-		Level: "info",
-		Path:  "logs/",
-	},
+// 初始化默认值
+func init() {
+	// 服务器配置
+	Config.Server.Port = 8081
+
+	// 数据库配置
+	Config.Database.Driver = "mysql"
+	Config.Database.Host = "localhost"
+	Config.Database.Port = 3306
+	Config.Database.Username = "root"
+	Config.Database.Password = "123456"
+	Config.Database.DBName = "toolcat"
+	Config.Database.Charset = "utf8mb4"
+
+	// 日志配置
+	Config.Logger.Level = "info"
+	Config.Logger.OutputPath = "stdout"
+	Config.Logger.ErrorPath = "stderr"
+	Config.Logger.Development = false
 }
 
 // LoadConfig 从环境变量加载配置
@@ -97,10 +87,20 @@ func LoadConfig() {
 
 	// 日志配置
 	if logLevel := os.Getenv("LOG_LEVEL"); logLevel != "" {
-		Config.Log.Level = logLevel
+		Config.Logger.Level = logLevel
 	}
 
-	if logPath := os.Getenv("LOG_PATH"); logPath != "" {
-		Config.Log.Path = logPath
+	if logOutputPath := os.Getenv("LOG_OUTPUT_PATH"); logOutputPath != "" {
+		Config.Logger.OutputPath = logOutputPath
+	}
+
+	if logErrorPath := os.Getenv("LOG_ERROR_PATH"); logErrorPath != "" {
+		Config.Logger.ErrorPath = logErrorPath
+	}
+
+	if devMode := os.Getenv("DEV_MODE"); devMode != "" {
+		if dev, err := strconv.ParseBool(devMode); err == nil {
+			Config.Logger.Development = dev
+		}
 	}
 }
