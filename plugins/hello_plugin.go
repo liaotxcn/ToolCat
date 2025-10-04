@@ -61,6 +61,46 @@ func (p *HelloPlugin) RegisterRoutes(router *gin.Engine) {
 	}
 }
 
+// GetRoutes 返回插件的路由定义
+func (p *HelloPlugin) GetRoutes() []Route {
+	return []Route{
+		{
+			Path:         "/",
+			Method:       "GET",
+			Handler: func(c *gin.Context) {
+				c.JSON(200, gin.H{
+					"plugin":      p.Name(),
+					"description": p.Description(),
+					"version":     p.Version(),
+				})
+			},
+			Description:  "获取插件信息",
+			AuthRequired: false,
+		},
+		{
+			Path:         "/say",
+			Method:       "GET",
+			Handler: func(c *gin.Context) {
+				name := c.DefaultQuery("name", "World")
+				result, _ := p.Execute(map[string]interface{}{
+					"name": name,
+				})
+				c.JSON(200, result)
+			},
+			Description:  "Say Hello API",
+			AuthRequired: false,
+			Params: map[string]string{
+				"name": "可选，问候的对象名称",
+			},
+		},
+	}
+}
+
+// GetDefaultMiddlewares 返回插件的默认中间件
+func (p *HelloPlugin) GetDefaultMiddlewares() []gin.HandlerFunc {
+	return []gin.HandlerFunc{}
+}
+
 // Execute 执行插件功能
 func (p *HelloPlugin) Execute(params map[string]interface{}) (interface{}, error) {
 	name, ok := params["name"].(string)
