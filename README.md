@@ -52,8 +52,29 @@ type Plugin interface {
     Version() string           // 插件版本
     Init() error               // 初始化插件
     Shutdown() error           // 关闭插件
+    
+    // 路由管理（新方式）- 推荐使用
+    GetRoutes() []Route
+    GetDefaultMiddlewares() []gin.HandlerFunc
+    
+    // 路由管理（旧方式）- 为兼容性保留
     RegisterRoutes(*gin.Engine) // 注册路由
+    
     Execute(map[string]interface{}) (interface{}, error) // 执行功能
+}
+
+// Route 结构体定义了路由的元数据和处理函数
+// 这是新的路由定义方式核心
+type Route struct {
+    Path         string                 // 路由路径
+    Method       string                 // HTTP 方法（GET, POST, PUT, DELETE 等）
+    Handler      gin.HandlerFunc        // 请求处理函数
+    Middlewares  []gin.HandlerFunc      // 路由特定的中间件
+    Description  string                 // 路由描述
+    AuthRequired bool                   // 是否需要认证
+    Tags         []string               // 路由标签，用于文档生成
+    Params       map[string]string      // 参数说明，用于文档生成
+    Metadata     map[string]interface{} // 自定义元数据
 }
 ```
 
@@ -85,7 +106,7 @@ go run main.go
 1. 实现 `plugins.Plugin` 接口
 2. 在 `main.go` 的 `registerPlugins` 函数中注册插件
 
-### 插件示例
+### 插件示例（使用推荐的 GetRoutes 方法）
 ```go
 // 示例插件结构
 type MyPlugin struct{}
@@ -97,7 +118,76 @@ func (p *MyPlugin) Version() string { return "1.0.0" }
 func (p *MyPlugin) Init() error { /* 初始化逻辑 */ return nil }
 func (p *MyPlugin) Shutdown() error { /* 关闭逻辑 */ return nil }
 
-// 注册插件路由
+// 使用推荐的 GetRoutes 方法注册路由
+func (p *MyPlugin) GetRoutes() []Route {
+    return []Route{
+        {
+            Path:        "/",
+            Method:      "GET",
+            Handler:     p.handleIndex,
+            Description: "插件主页",
+            AuthRequired: false,
+            Tags:        []string{"home"},
+        },
+        {
+            Path:        "/api/data",
+            Method:      "GET",
+            Handler:     p.handleGetData,
+            Description: "获取数据API",
+            AuthRequired: true,
+            Tags:        []string{"data", "api"},
+            Params: map[string]string{
+                "id": "数据ID",
+            },
+        },
+    }
+}
+
+// 定义插件的默认中间件
+func (p *MyPlugin) GetDefaultMiddlewares() []gin.HandlerFunc {
+    return []gin.HandlerFunc{
+        p.logMiddleware,
+    }
+}
+
+// 路由处理函数
+func (p *MyPlugin) handleIndex(c *gin.Context) {
+    c.JSON(200, gin.H{
+        "plugin": p.Name(),
+        "version": p.Version(),
+    })
+}
+
+func (p *MyPlugin) handleGetData(c *gin.Context) {
+    id := c.Query("id")
+    c.JSON(200, gin.H{
+        "id": id,
+        "data": "示例数据",
+    })
+}
+
+// 中间件示例
+func (p *MyPlugin) logMiddleware(c *gin.Context) {
+    // 记录请求日志
+    c.Next()
+}
+
+// 为兼容性保留的 RegisterRoutes 方法
+func (p *MyPlugin) RegisterRoutes(router *gin.Engine) {
+    // 注意：推荐使用 GetRoutes 方法，此方法仅为兼容性保留
+    // 这里可以保留空实现或添加日志提示
+}
+
+// 插件执行逻辑
+func (p *MyPlugin) Execute(params map[string]interface{}) (interface{}, error) {
+    // 实现插件功能
+    return map[string]interface{}{"result": "success"}, nil
+}
+```
+
+### 插件示例（旧的 RegisterRoutes 方法 - 仅为兼容性保留）
+```go
+// 注册插件路由（旧方式 - 不推荐）
 func (p *MyPlugin) RegisterRoutes(router *gin.Engine) {
     group := router.Group(fmt.Sprintf("/plugins/%s", p.Name()))
     {
@@ -107,13 +197,16 @@ func (p *MyPlugin) RegisterRoutes(router *gin.Engine) {
         // 添加更多路由...
     }
 }
-
-// 插件执行逻辑
-func (p *MyPlugin) Execute(params map[string]interface{}) (interface{}, error) {
-    // 实现插件功能
-    return map[string]interface{}{"result": "success"}, nil
-}
 ```
+
+### 两种路由注册方式的对比
+| 特性 | GetRoutes 方法（推荐） | RegisterRoutes 方法（兼容性保留） |
+|------|-----------------------|-----------------------------------|
+| 路由定义 | 使用 Route 结构体数组 | 直接操作 gin.Engine 对象 |
+| 元数据支持 | ✅ 完整支持 | ❌ 不支持 |
+| 自动路由组 | ✅ 自动创建 | ❌ 需要手动创建 |
+| 中间件管理 | ✅ 支持全局和路由级别 | ❌ 需要手动添加 |
+| 文档生成 | ✅ 支持自动生成 API 文档 | ❌ 不支持 |
 
 ## 🤝 贡献指南
 
