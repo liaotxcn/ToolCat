@@ -13,6 +13,7 @@ func SetupRouter() *gin.Engine {
 	router := gin.Default()
 
 	// 全局中间件
+	router.Use(middleware.CORSMiddleware())
 	router.Use(middleware.LogMiddleware())
 
 	// 认证相关路由

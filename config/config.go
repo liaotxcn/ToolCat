@@ -33,7 +33,7 @@ var Config = struct {
 	Server: struct {
 		Port int
 	}{
-		Port: 8080,
+		Port: 8081,
 	},
 
 	// MySQL 数据库配置
