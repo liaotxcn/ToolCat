@@ -23,6 +23,7 @@ func SetupRouter() *gin.Engine {
 		userCtrl := &controllers.UserController{}
 		auth.POST("/register", userCtrl.Register)
 		auth.POST("/login", userCtrl.Login)
+		auth.POST("/refresh-token", userCtrl.RefreshToken)
 	}
 
 	// API分组

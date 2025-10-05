@@ -30,6 +30,13 @@ var Config struct {
 		ErrorPath   string
 		Development bool
 	}
+
+	// JWT配置
+	JWT struct {
+		Secret           string
+		AccessTokenExpiry int // 访问令牌过期时间（分钟）
+		RefreshTokenExpiry int // 刷新令牌过期时间（小时）
+	}
 }
 
 // 初始化默认值
@@ -51,6 +58,11 @@ func init() {
 	Config.Logger.OutputPath = "stdout"
 	Config.Logger.ErrorPath = "stderr"
 	Config.Logger.Development = false
+
+	// JWT配置
+	Config.JWT.Secret = "your-secret-key"
+	Config.JWT.AccessTokenExpiry = 60 // 60分钟
+	Config.JWT.RefreshTokenExpiry = 24 * 7 // 7天
 }
 
 // LoadConfig 从环境变量加载配置
@@ -96,6 +108,23 @@ func LoadConfig() {
 
 	if logErrorPath := os.Getenv("LOG_ERROR_PATH"); logErrorPath != "" {
 		Config.Logger.ErrorPath = logErrorPath
+	}
+
+	// JWT配置
+	if jwtSecret := os.Getenv("JWT_SECRET"); jwtSecret != "" {
+		Config.JWT.Secret = jwtSecret
+	}
+
+	if accessTokenExpiry := os.Getenv("JWT_ACCESS_TOKEN_EXPIRY"); accessTokenExpiry != "" {
+		if expiry, err := strconv.Atoi(accessTokenExpiry); err == nil {
+			Config.JWT.AccessTokenExpiry = expiry
+		}
+	}
+
+	if refreshTokenExpiry := os.Getenv("JWT_REFRESH_TOKEN_EXPIRY"); refreshTokenExpiry != "" {
+		if expiry, err := strconv.Atoi(refreshTokenExpiry); err == nil {
+			Config.JWT.RefreshTokenExpiry = expiry
+		}
 	}
 
 	if devMode := os.Getenv("DEV_MODE"); devMode != "" {

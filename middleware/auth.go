@@ -29,7 +29,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// 验证token有效性
 		tokenString := parts[1]
-		userID, err := utils.VerifyToken(tokenString)
+		userID, _, err := utils.VerifyToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			c.Abort()

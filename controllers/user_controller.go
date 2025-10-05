@@ -111,12 +111,20 @@ func (uc *UserController) Login(c *gin.Context) {
 		return
 	}
 
-	// 生成JWT token
-	token, err := utils.GenerateToken(user.ID)
+	// 生成访问令牌和刷新令牌
+	accessToken, err := utils.GenerateToken(user.ID)
 	if err != nil {
 		// 记录生成token失败的情况
-		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "生成token失败: " + err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成token失败"})
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "生成访问令牌失败: " + err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成访问令牌失败"})
+		return
+	}
+
+	refreshToken, err := utils.GenerateRefreshToken(user.ID)
+	if err != nil {
+		// 记录生成刷新令牌失败的情况
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "生成刷新令牌失败: " + err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成刷新令牌失败"})
 		return
 	}
 
@@ -125,7 +133,54 @@ func (uc *UserController) Login(c *gin.Context) {
 
 	// 不返回密码信息
 	user.Password = ""
-	c.JSON(http.StatusOK, gin.H{"message": "登录成功", "token": token, "user": user})
+	c.JSON(http.StatusOK, gin.H{"message": "登录成功", "access_token": accessToken, "refresh_token": refreshToken, "user": user})
+}
+
+// RefreshToken 刷新访问令牌
+func (uc *UserController) RefreshToken(c *gin.Context) {
+	// 定义刷新令牌请求结构体
+	var refreshRequest struct {
+		RefreshToken string `json:"refresh_token" binding:"required"`
+	}
+
+	// 绑定JSON请求体
+	if err := c.ShouldBindJSON(&refreshRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 验证刷新令牌
+	userID, err := utils.VerifyRefreshToken(refreshRequest.RefreshToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的刷新令牌"})
+		return
+	}
+
+	// 查找用户
+	var user models.User
+	result := pkg.DB.First(&user, userID)
+	if result.Error != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户不存在"})
+		return
+	}
+
+	// 生成新的访问令牌
+	accessToken, err := utils.GenerateToken(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成访问令牌失败"})
+		return
+	}
+
+	// 生成新的刷新令牌（可选：也可以继续使用原有的刷新令牌）
+	refreshToken, err := utils.GenerateRefreshToken(userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成刷新令牌失败"})
+		return
+	}
+
+	// 不返回密码信息
+	user.Password = ""
+	c.JSON(http.StatusOK, gin.H{"message": "令牌刷新成功", "access_token": accessToken, "refresh_token": refreshToken, "user": user})
 }
 
 // recordLoginHistory 记录登录历史
