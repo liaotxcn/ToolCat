@@ -1,10 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"toolcat/config"
 	"toolcat/middleware"
@@ -55,9 +58,19 @@ func main() {
 
 	// 启动服务器
 	port := config.Config.Server.Port
+	// 创建HTTP服务器并配置连接复用参数
+	srv := &http.Server{
+		Addr:         fmt.Sprintf(":%d", port),
+		Handler:      router,
+		ReadTimeout:  15 * time.Second,  // 请求读取超时时间
+		WriteTimeout: 15 * time.Second, // 响应写入超时时间
+		IdleTimeout:  60 * time.Second, // 空闲连接超时时间（影响Keep-Alive）
+		MaxHeaderBytes: 1 << 20,        // 最大请求头大小（1MB）
+	}
+	
 	go func() {
 		pkg.Info("工具猫服务启动成功", zap.String("address", fmt.Sprintf("http://localhost:%d", port)))
-		if err := router.Run(fmt.Sprintf(":%d", port)); err != nil {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			pkg.Fatal("Failed to start server", zap.Error(err))
 		}
 	}()
@@ -67,6 +80,15 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	pkg.Info("Shutting down server...")
+	
+	// 创建超时上下文，用于优雅关闭服务器
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		pkg.Fatal("Server forced to shutdown", zap.Error(err))
+	}
+	
+	pkg.Info("Server exiting")
 }
 
 // 注册插件
