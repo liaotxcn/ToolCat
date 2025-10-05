@@ -15,10 +15,10 @@
 ### 编译运行（所有平台）
 
 1. 确保已安装Go语言环境（版本1.16或更高）
-2. 打开终端，导航到`tools`目录
+2. 打开终端，根目录下
 3. 运行以下命令编译代码：
    ```bash
-   go build -o plugin_scaffold plugin_scaffold.go
+   go build -o plugin_scaffold.exe tools/plugin_scaffold.go
    ```
 4. 运行编译后的程序：
    ```bash
