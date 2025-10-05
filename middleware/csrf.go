@@ -5,10 +5,11 @@ import (
 	"encoding/hex"
 	"net/http"
 
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
 	"toolcat/config"
 	"toolcat/pkg"
+
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 // CSRFMiddleware 跨站请求伪造防护中间件
