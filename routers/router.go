@@ -16,6 +16,7 @@ func SetupRouter() *gin.Engine {
 	router.Use(middleware.CORSMiddleware())
 	router.Use(middleware.LogMiddleware())
 	router.Use(middleware.RequestBufferMiddleware())
+	router.Use(middleware.CSRFMiddleware())
 
 	// 认证相关路由
 	auth := router.Group("/auth")
