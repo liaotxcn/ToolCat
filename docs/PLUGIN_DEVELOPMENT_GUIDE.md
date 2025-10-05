@@ -9,43 +9,42 @@ ToolCat 插件系统允许开发者扩展应用功能，而无需修改核心代
 插件必须实现 `Plugin` 接口。ToolCat 提供了两种路由注册方式：传统的 `RegisterRoutes` 方法和优化后的 `GetRoutes` 方法。推荐使用新的 `GetRoutes` 方法进行路由注册。
 
 ```go
-// Plugin 接口定义了所有插件必须实现的方法
-// 注意：新的 GetRoutes 方法已加入，推荐使用此方法代替 RegisterRoutes
-
+// Plugin 插件接口定义
 type Plugin interface {
-    // 基础信息
-    Name() string
-    Description() string
-    Version() string
+    // 基础信息接口
+    Name() string        // 返回插件名称
+    Description() string // 返回插件描述
+    Version() string     // 返回插件版本
 
-    // 生命周期管理
-    Init() error
-    Shutdown() error
+    // 生命周期接口
+    Init() error     // 初始化插件
+    Shutdown() error // 关闭插件
 
-    // 路由管理（新方式）- 推荐使用
-    GetRoutes() []Route
-    GetDefaultMiddlewares() []gin.HandlerFunc
+    // 路由注册接口
+    // 新版接口：提供路由定义，由PluginManager统一注册
+    GetRoutes() []Route // 获取插件路由定义
+    // 旧版接口：为了兼容现有插件保留
+    RegisterRoutes(router *gin.Engine) // 注册插件路由
 
-    // 路由管理（旧方式）- 为兼容性保留
-    RegisterRoutes(router *gin.Engine)
+    // 执行功能接口
+    Execute(params map[string]interface{}) (interface{}, error) // 执行插件功能
 
-    // 功能执行
-    Execute(params map[string]interface{}) (interface{}, error)
+    // 插件配置接口（可选）
+    GetDefaultMiddlewares() []gin.HandlerFunc // 获取插件默认中间件
 }
 
 // Route 结构体定义了路由的元数据和处理函数
 // 这是新的路由定义方式核心
 
 type Route struct {
-    Path         string                 // 路由路径
-    Method       string                 // HTTP 方法（GET, POST, PUT, DELETE 等）
-    Handler      gin.HandlerFunc        // 请求处理函数
-    Middlewares  []gin.HandlerFunc      // 路由特定的中间件
-    Description  string                 // 路由描述
-    AuthRequired bool                   // 是否需要认证
-    Tags         []string               // 路由标签，用于文档生成
-    Params       map[string]string      // 参数说明，用于文档生成
-    Metadata     map[string]interface{} // 自定义元数据
+    Path         string            // 路由路径（不包含插件前缀）
+    Method       string            // HTTP方法
+    Handler      gin.HandlerFunc   // 处理函数
+    Middlewares  []gin.HandlerFunc // 路由特定中间件
+    Description  string            // 路由描述
+    AuthRequired bool              // 是否需要认证
+    Tags         []string          // 路由标签，用于文档生成
+    Params       map[string]string // 参数说明，用于文档生成
 }
 ```
 
@@ -199,14 +198,15 @@ func (p *MyPlugin) Execute(params map[string]interface{}) (interface{}, error) {
 }
 ```
 
-### 4.8 保留兼容性（可选）
+### 4.8 保留兼容性（建议）
 
-为了确保与旧版系统的兼容性，可以保留 `RegisterRoutes` 方法的空实现：
+为了确保与旧版系统的兼容性，建议保留 `RegisterRoutes` 方法的空实现或添加兼容性提示：
 
 ```go
 func (p *MyPlugin) RegisterRoutes(router *gin.Engine) {
     // 注意：使用GetRoutes方法后，这个方法不会被调用
     // 保留只是为了兼容性
+    log.Printf("%s: 注意：使用了旧的RegisterRoutes方法，建议使用新的GetRoutes方法", p.Name())
 }
 ```
 
@@ -241,22 +241,28 @@ func registerPlugins(router *gin.Engine) {
 
 ## 7. 路由设计最佳实践
 
-1. **使用语义化路径**：设计清晰、有意义的API路径
-2. **统一的命名规范**：使用小写字母和连字符(-)或下划线(_)分隔单词
+1. **使用语义化路径**：设计清晰、有意义的API路径，例如 `/users` 而非 `/getUsers`
+2. **统一的命名规范**：使用小写字母和连字符(-)或下划线(_)分隔单词，保持一致性
 3. **版本化API**：考虑在路由中包含版本信息，如 `/v1/resource`
 4. **使用中间件进行横切关注点**：将认证、日志、错误处理等逻辑抽象为中间件
 5. **完整的路由元数据**：提供详细的路由描述、参数说明等元数据，便于文档生成
 6. **RESTful API 设计**：遵循RESTful原则，使用正确的HTTP方法表示操作类型
+7. **路径参数与查询参数分离**：使用路径参数表示资源标识，查询参数表示过滤、排序等操作
+8. **请求验证中间件**：为需要验证输入的路由创建专门的验证中间件
+9. **合理的错误处理**：为不同类型的错误提供明确的HTTP状态码和错误信息
+10. **示例代码注释**：在路由处理函数中添加简短注释说明其功能和参数
 
 ## 8. 示例插件分析
 
 `sample_optimized_plugin.go` 提供了一个完整的示例，展示如何使用新的路由注册机制开发插件。该示例包含：
 
 - 完整的 `Plugin` 接口实现
-- 使用 `GetRoutes` 方法定义多个路由
+- 使用 `GetRoutes` 方法定义多个路由，包含请求示例
 - 实现路由级别的中间件和全局默认中间件
 - 包含路由元数据、参数说明等信息
-- 保留了兼容性的 `RegisterRoutes` 方法实现
+- 保留了兼容性的 `RegisterRoutes` 方法实现并添加了兼容性提示
+- 提供了多种中间件示例：日志中间件、CORS中间件和请求验证中间件
+- 展示了如何在验证中间件中将处理后的数据存储在上下文中供后续处理函数使用
 
 ## 9. 调试插件
 

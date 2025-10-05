@@ -376,8 +376,8 @@ func (p *NotePlugin) GetDefaultMiddlewares() []gin.HandlerFunc {
 func (p *NotePlugin) GetRoutes() []Route {
 	return []Route{
 		{
-			Path:         "/",
-			Method:       "GET",
+			Path:   "/",
+			Method: "GET",
 			Handler: func(c *gin.Context) {
 				c.JSON(200, gin.H{
 					"plugin":      p.Name(),
@@ -400,8 +400,8 @@ func (p *NotePlugin) GetRoutes() []Route {
 			Tags:         []string{"info", "metadata"},
 		},
 		{
-			Path:         "/notes",
-			Method:       "GET",
+			Path:   "/notes",
+			Method: "GET",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -428,8 +428,8 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 		},
 		{
-			Path:         "/notes/:id",
-			Method:       "GET",
+			Path:   "/notes/:id",
+			Method: "GET",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -454,8 +454,8 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 		},
 		{
-			Path:         "/notes",
-			Method:       "POST",
+			Path:   "/notes",
+			Method: "POST",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -489,8 +489,8 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 		},
 		{
-			Path:         "/notes/:id",
-			Method:       "PUT",
+			Path:   "/notes/:id",
+			Method: "PUT",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -528,8 +528,8 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 		},
 		{
-			Path:         "/notes/:id",
-			Method:       "DELETE",
+			Path:   "/notes/:id",
+			Method: "DELETE",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
@@ -554,8 +554,8 @@ func (p *NotePlugin) GetRoutes() []Route {
 			},
 		},
 		{
-			Path:         "/notes/search",
-			Method:       "GET",
+			Path:   "/notes/search",
+			Method: "GET",
 			Handler: func(c *gin.Context) {
 				// 获取用户ID，这里简化处理，实际应从认证中获取
 				userID := c.DefaultQuery("user_id", "1")
