@@ -15,6 +15,8 @@ func SetupRouter() *gin.Engine {
 	// 全局中间件
 	router.Use(middleware.CORSMiddleware())
 	router.Use(middleware.LogMiddleware())
+	router.Use(middleware.RequestBufferMiddleware())
+	router.Use(middleware.CSRFMiddleware())
 
 	// 认证相关路由
 	auth := router.Group("/auth")
@@ -22,6 +24,7 @@ func SetupRouter() *gin.Engine {
 		userCtrl := &controllers.UserController{}
 		auth.POST("/register", userCtrl.Register)
 		auth.POST("/login", userCtrl.Login)
+		auth.POST("/refresh-token", userCtrl.RefreshToken)
 	}
 
 	// API分组

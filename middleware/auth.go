@@ -3,9 +3,9 @@ package middleware
 import (
 	"net/http"
 	"strings"
+	"toolcat/utils"
 
 	"github.com/gin-gonic/gin"
-	"toolcat/utils"
 )
 
 // AuthMiddleware 认证中间件
@@ -28,19 +28,19 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		// 验证token有效性
-	tokenString := parts[1]
-	userID, err := utils.VerifyToken(tokenString)
-	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
-		c.Abort()
-		return
-	}
+		tokenString := parts[1]
+		userID, _, err := utils.VerifyToken(tokenString)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			c.Abort()
+			return
+		}
 
-	// 将用户ID存储在上下文
-	c.Set("userID", userID)
+		// 将用户ID存储在上下文
+		c.Set("userID", userID)
 
-	// 继续处理请求
-	c.Next()
+		// 继续处理请求
+		c.Next()
 	}
 }
 
