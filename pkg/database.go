@@ -3,21 +3,25 @@ package pkg
 import (
 	"fmt"
 	"log"
+	"os"
 	"time"
+
+	"toolcat/config"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"toolcat/config"
 )
 
 var DB *gorm.DB
 
 // InitDatabase 初始化数据库连接
 func InitDatabase() error {
-	// 构建DSN (Data Source Name)
+	// 加载配置
 	config.LoadConfig()
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local",
+
+	// 构建优化的DSN (Data Source Name)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local&timeout=30s&readTimeout=30s&writeTimeout=30s&collation=utf8mb4_unicode_ci&tls=false",
 		config.Config.Database.Username,
 		config.Config.Database.Password,
 		config.Config.Database.Host,
@@ -26,13 +30,39 @@ func InitDatabase() error {
 		config.Config.Database.Charset,
 	)
 
-	// 创建数据库连接
-	var err error
-	DB, err = gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
-	})
-	if err != nil {
-		return fmt.Errorf("failed to connect database: %w", err)
+	// 根据环境设置日志级别
+	logLevel := logger.Info
+	if !config.Config.Logger.Development {
+		logLevel = logger.Warn // 生产环境使用Warn级别
+	}
+
+	// 配置自定义日志器
+	customLogger := logger.New(
+		log.New(os.Stdout, "[gorm] ", log.LstdFlags),
+		logger.Config{
+			SlowThreshold:             time.Second, // 慢查询阈值
+			LogLevel:                  logLevel,
+			IgnoreRecordNotFoundError: true,
+			Colorful:                  config.Config.Logger.Development,
+		},
+	)
+
+	// 连接重试机制
+	maxRetries := 3
+	var lastErr error
+	for i := 0; i < maxRetries; i++ {
+		DB, lastErr = gorm.Open(mysql.Open(dsn), &gorm.Config{
+			Logger: customLogger,
+		})
+		if lastErr == nil {
+			break
+		}
+		log.Printf("Database connection attempt failed, retrying... attempt=%d/%d, error=%v",
+			i+1, maxRetries, lastErr)
+		time.Sleep(1 * time.Second) // 等待一秒后重试
+	}
+	if lastErr != nil {
+		return fmt.Errorf("failed to connect database after %d retries: %w", maxRetries, lastErr)
 	}
 
 	// 获取底层数据库连接池
@@ -41,12 +71,27 @@ func InitDatabase() error {
 		return fmt.Errorf("failed to get database instance: %w", err)
 	}
 
-	// 设置连接池参数
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
-	sqlDB.SetConnMaxLifetime(time.Hour)
+	// 设置优化的连接池参数
+	sqlDB.SetMaxIdleConns(20)                  // 增加空闲连接数，适应高峰期
+	sqlDB.SetMaxOpenConns(100)                 // 保持最大打开连接数
+	sqlDB.SetConnMaxLifetime(time.Hour)        // 连接最大生命周期
+	sqlDB.SetConnMaxIdleTime(15 * time.Minute) // 添加连接最大空闲时间
 
-	log.Println("Database connection established successfully")
+	// 连接池预热
+	for i := 0; i < 5; i++ {
+		if err := sqlDB.Ping(); err == nil {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	// 连接健康检查
+	if err := sqlDB.Ping(); err != nil {
+		return fmt.Errorf("database ping failed: %w", err)
+	}
+
+	log.Printf("Database connection established successfully host=%s port=%d database=%s",
+		config.Config.Database.Host, config.Config.Database.Port, config.Config.Database.DBName)
 	return nil
 }
 
