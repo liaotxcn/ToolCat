@@ -1,4 +1,4 @@
-# 工具猫(ToolCat) API 接口文档
+# ToolCat API 接口文档
 
 ## 1. 概述
 
@@ -11,6 +11,7 @@
 - API基础路径: `/api/v1`
 - 认证方式: JWT (JSON Web Token)
 - 数据格式: JSON
+- CSRF保护: 启用（对于非GET/HEAD/OPTIONS/TRACE请求）
 
 ## 3. 认证接口
 
@@ -605,7 +606,8 @@ type Note struct {
   Content     string    `gorm:"type:text;not null" json:"content"`
   CreatedTime time.Time `gorm:"index" json:"created_time"`
   UpdatedTime time.Time `json:"updated_time"`
-}```
+}
+```
 
 ## 7. 认证机制
 
@@ -620,11 +622,29 @@ JWT令牌包含用户的身份信息，有效期等。当令牌过期或无效�
 - 201 Created: 创建成功
 - 400 Bad Request: 请求参数错误
 - 401 Unauthorized: 未授权
-- 403 Forbidden: 禁止访问
+- 403 Forbidden: 禁止访问（包含CSRF令牌验证失败）
 - 404 Not Found: 资源不存在
 - 500 Internal Server Error: 服务器错误
 
 错误响应通常包含一个error字段，描述具体的错误信息。
+
+## 9. CSRF保护机制
+
+ToolCat服务启用了CSRF（跨站请求伪造）保护机制，对于非GET/HEAD/OPTIONS/TRACE的请求，需要进行CSRF令牌验证。
+
+### 9.1 CSRF令牌获取
+
+CSRF令牌会通过两种方式提供：
+
+1. **Cookie**：服务器会在响应中设置名为`XSRF-TOKEN`的Cookie
+2. **响应头**：服务器会在响应头中添加`X-CSRF-Token`字段
+
+### 9.2 CSRF令牌使用
+
+对于需要验证CSRF的请求（非GET/HEAD/OPTIONS/TRACE），需要同时满足以下条件：
+
+1. 请求头中包含`X-CSRF-Token`字段，值为获取到的CSRF令牌
+2. 请求中携带包含相同令牌值的`XSRF-TOKEN`Cookie
 
 ## 4.4 Note插件接口
 

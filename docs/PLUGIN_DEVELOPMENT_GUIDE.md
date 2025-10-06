@@ -2,7 +2,7 @@
 
 ## 1. 插件系统概述
 
-ToolCat 插件系统允许开发者扩展应用功能，而无需修改核心代码。本指南将详细介绍如何开发、测试和部署 ToolCat 插件，特别关注优化后的路由注册机制和插件依赖管理功能。
+ToolCat 插件系统允许开发者扩展应用功能，而无需修改核心代码。本指南将详细介绍如何开发、测试和部署 ToolCat 插件，推荐使用优化后的路由注册机制、插件依赖管理和热重载功能。
 
 ## 2. 插件接口定义
 
@@ -456,6 +456,163 @@ func registerMultiplePlugins(router *gin.Engine) {
 }
 ```
 
-## 12. 结语
+## 12. 插件热重载支持
 
-通过本指南，您应该能够理解 ToolCat 的插件系统，包括优化后的路由注册机制和新增的插件依赖管理功能。使用这些功能可以使您的插件开发更加规范、高效和可维护，同时为构建复杂的插件生态系统提供坚实基础。
+ToolCat 插件系统支持插件热重载功能，允许在不重启服务器的情况下启用、禁用和重载插件。这大大提高了插件开发和运维的效率。
+
+### 12.1 热重载相关接口
+
+Plugin 接口新增了以下热重载相关的生命周期方法：
+
+```go
+// Plugin 插件接口定义（包含热重载部分）
+type Plugin interface {
+    // 生命周期接口（新增热重载相关方法）
+    Init() error     // 初始化插件
+    OnEnable() error // 插件启用时调用（热重载相关）
+    OnDisable() error // 插件禁用时调用（热重载相关）
+    Shutdown() error // 关闭插件
+    
+    // 其他现有接口方法...
+}
+```
+
+PluginInfo 结构体扩展了一个字段用于跟踪插件的启用状态：
+
+```go
+// PluginInfo 存储插件的元数据信息（包含热重载部分）
+type PluginInfo struct {
+    // 现有字段...
+    IsEnabled bool    // 插件是否启用
+}
+```
+
+### 12.2 实现热重载方法
+
+插件开发者需要实现 `OnEnable()` 和 `OnDisable()` 方法以支持热重载功能：
+
+```go
+// OnEnable 插件启用时调用
+func (p *MyPlugin) OnEnable() error {
+    // 插件启用时执行的逻辑
+    fmt.Printf("%s: 插件已启用\n", p.Name())
+    
+    // 可以在这里重新初始化资源、恢复服务等
+    return nil
+}
+
+// OnDisable 插件禁用时调用
+func (p *MyPlugin) OnDisable() error {
+    // 插件禁用时执行的逻辑
+    fmt.Printf("%s: 插件已禁用\n", p.Name())
+    
+    // 可以在这里释放临时资源、停止服务等
+    return nil
+}
+```
+
+### 12.3 热重载 API
+
+ToolCat 提供了以下 API 用于管理插件的热重载状态：
+
+```go
+// 插件控制器中的热重载相关方法
+// 获取所有插件信息
+plugins.GET("/", pluginCtrl.GetAllPlugins)
+// 获取插件状态
+plugins.GET("/:name/status", pluginCtrl.GetPluginStatus)
+// 启用插件
+plugins.POST("/:name/enable", pluginCtrl.EnablePlugin)
+// 禁用插件
+plugins.POST("/:name/disable", pluginCtrl.DisablePlugin)
+// 重载插件
+plugins.POST("/:name/reload", pluginCtrl.ReloadPlugin)
+// 获取插件依赖图
+plugins.GET("/dependency-graph", pluginCtrl.GetDependencyGraph)
+```
+
+### 12.4 热重载工作原理
+
+当使用热重载 API 时，PluginManager 会执行以下操作：
+
+1. **启用插件**：设置插件状态为启用，调用 `OnEnable()` 方法，重新注册路由
+2. **禁用插件**：设置插件状态为禁用，调用 `OnDisable()` 方法，移除路由
+3. **重载插件**：先禁用插件，然后启用插件，相当于执行一个完整的循环
+
+系统会保证在操作插件时的线程安全，并且在执行热重载操作时会考虑插件之间的依赖关系。
+
+### 12.5 热重载最佳实践
+
+1. **资源管理**：在 `OnEnable()` 中获取资源，在 `OnDisable()` 中释放资源
+2. **状态保存**：重要状态应保存在持久化存储中，而不是内存中
+3. **错误处理**：在热重载方法中提供适当的错误处理和日志记录
+4. **依赖处理**：在启用插件时检查依赖插件的状态
+5. **数据一致性**：确保热重载不会破坏系统数据的一致性
+
+## 13. CSRF保护处理
+
+ToolCat系统启用了CSRF（跨站请求伪造）保护机制，插件开发者需要了解如何在开发和测试插件时处理CSRF验证。
+
+### 13.1 CSRF保护对插件的影响
+
+对于插件中定义的非GET/HEAD/OPTIONS/TRACE请求，系统会自动应用CSRF保护机制，需要客户端同时在请求头和Cookie中提供有效的CSRF令牌。
+
+### 13.2 插件开发中的CSRF处理
+
+1. **前端插件集成**
+   - 确保前端代码正确获取和使用CSRF令牌
+   - 从Cookie(`XSRF-TOKEN`)或响应头(`X-CSRF-Token`)中获取令牌
+   - 对所有非安全请求在请求头中添加`X-CSRF-Token`字段
+
+2. **API测试**
+   - 使用Apifox/Postman等工具测试API时，需要处理CSRF令牌
+   - 先发送一个GET请求获取CSRF令牌，然后在后续请求中使用，或设定前置脚本操作进行测试
+
+### 13.3 CSRF保护代码示例
+
+以下是在插件中处理CSRF保护的示例代码：
+
+```go
+// 在插件的中间件中添加CSRF令牌到响应中
+func (p *MyPlugin) addCSRFTokenMiddleware(c *gin.Context) {
+    // 检查是否已有CSRF令牌
+    token, err := c.Cookie(config.Config.CSRF.CookieName)
+    if err != nil || token == "" {
+        // 如果没有，生成一个新的令牌
+        token := generateCSRFToken(config.Config.CSRF.TokenLength)
+        // 设置Cookie
+        c.SetCookie(
+            config.Config.CSRF.CookieName,
+            token,
+            config.Config.CSRF.CookieMaxAge,
+            config.Config.CSRF.CookiePath,
+            config.Config.CSRF.CookieDomain,
+            config.Config.CSRF.CookieSecure,
+            config.Config.CSRF.CookieHttpOnly,
+        )
+        // 添加到响应头
+        c.Header(config.Config.CSRF.HeaderName, token)
+    }
+    c.Next()
+}
+
+// 插件路由中使用
+func (p *MyPlugin) GetRoutes() []Route {
+    return []Route{
+        {
+            Path:        "/api/safe-operation",
+            Method:      "POST",
+            Handler:     p.handleSafeOperation,
+            Middlewares: []gin.HandlerFunc{p.addCSRFTokenMiddleware},
+            Description: "需要CSRF保护的操作",
+            AuthRequired: true,
+        },
+    }
+}
+```
+
+## 14. 结语
+
+通过本指南，您应该能够理解 ToolCat 的插件系统，包括优化后的路由注册机制、插件依赖管理功能和热重载支持。使用这些功能可以使您的插件开发更加规范、高效和可维护，同时为构建复杂的插件生态系统提供坚实基础。
+
+随着插件系统的不断完善，ToolCat 能够支持更加灵活和强大的插件扩展，为用户提供更加丰富的功能和更好的体验。
