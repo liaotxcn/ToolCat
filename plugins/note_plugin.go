@@ -28,7 +28,8 @@ type Note struct {
 // NotePlugin 记事本插件
 type NotePlugin struct {
 	// 使用MySQL数据库存储
-	mutex sync.RWMutex // 读写锁用于并发控制
+	mutex         sync.RWMutex    // 读写锁用于并发控制
+	pluginManager *pluginManager
 }
 
 // Name 返回插件名称
@@ -44,6 +45,21 @@ func (p *NotePlugin) Description() string {
 // Version 返回插件版本
 func (p *NotePlugin) Version() string {
 	return "1.0.0"
+}
+
+// GetDependencies 返回依赖的插件
+func (p *NotePlugin) GetDependencies() []string {
+	return []string{} // 不依赖其他插件
+}
+
+// GetConflicts 返回冲突的插件
+func (p *NotePlugin) GetConflicts() []string {
+	return []string{} // 与其他插件无冲突
+}
+
+// SetPluginManager 设置插件管理器
+func (p *NotePlugin) SetPluginManager(manager *pluginManager) {
+	p.pluginManager = manager
 }
 
 // Init 初始化插件

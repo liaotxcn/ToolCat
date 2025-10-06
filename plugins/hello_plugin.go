@@ -7,7 +7,14 @@ import (
 )
 
 // HelloPlugin 示例插件
-type HelloPlugin struct{}
+type HelloPlugin struct{
+	pluginManager *pluginManager
+}
+
+// NewHelloPlugin 创建新的HelloPlugin实例
+func NewHelloPlugin() *HelloPlugin {
+	return &HelloPlugin{}
+}
 
 // Name 返回插件名称
 func (p *HelloPlugin) Name() string {
@@ -22,6 +29,21 @@ func (p *HelloPlugin) Description() string {
 // Version 返回插件版本
 func (p *HelloPlugin) Version() string {
 	return "1.0.0"
+}
+
+// GetDependencies 返回依赖的插件
+func (p *HelloPlugin) GetDependencies() []string {
+	return []string{} // 不依赖其他插件
+}
+
+// GetConflicts 返回冲突的插件
+func (p *HelloPlugin) GetConflicts() []string {
+	return []string{} // 与其他插件无冲突
+}
+
+// SetPluginManager 设置插件管理器
+func (p *HelloPlugin) SetPluginManager(manager *pluginManager) {
+	p.pluginManager = manager
 }
 
 // Init 初始化插件

@@ -25,6 +25,8 @@ type Plugin interface {
 	Name() string        // 返回插件名称
 	Description() string // 返回插件描述
 	Version() string     // 返回插件版本
+	GetDependencies() []string // 返回插件依赖的其他插件名称
+	GetConflicts() []string // 返回与当前插件冲突的插件名称
 
 	// 生命周期接口
 	Init() error     // 初始化插件
@@ -41,12 +43,15 @@ type Plugin interface {
 
 	// 插件配置接口（可选）
 	GetDefaultMiddlewares() []gin.HandlerFunc // 获取插件默认中间件
+	SetPluginManager(manager *pluginManager) // 设置插件管理器引用
 }
 
 // PluginInfo 存储插件信息和路由元数据
 type PluginInfo struct {
 	Plugin       Plugin  // 插件实例
 	Routes       []Route // 插件路由
+	Dependencies []string // 依赖的插件名称列表
+	Conflicts    []string // 冲突的插件名称列表
 	IsRegistered bool    // 路由是否已注册
 }
 
@@ -80,6 +85,25 @@ func (pm *pluginManager) Register(plugin Plugin) error {
 		return fmt.Errorf("插件 '%s' 已存在", name)
 	}
 
+	// 设置插件管理器引用
+	plugin.SetPluginManager(pm)
+
+	// 检查冲突插件
+	conflicts := plugin.GetConflicts()
+	for _, conflictName := range conflicts {
+		if _, exists := pm.plugins[conflictName]; exists {
+			return fmt.Errorf("插件 '%s' 与已注册的插件 '%s' 冲突", name, conflictName)
+		}
+	}
+
+	// 检查依赖插件
+	dependencies := plugin.GetDependencies()
+	for _, depName := range dependencies {
+		if _, exists := pm.plugins[depName]; !exists {
+			return fmt.Errorf("依赖的插件未注册: %s", depName)
+		}
+	}
+
 	// 初始化插件
 	if err := plugin.Init(); err != nil {
 		return fmt.Errorf("插件 '%s' 初始化失败: %w", name, err)
@@ -89,6 +113,8 @@ func (pm *pluginManager) Register(plugin Plugin) error {
 	info := PluginInfo{
 		Plugin:       plugin,
 		Routes:       plugin.GetRoutes(),
+		Dependencies: dependencies,
+		Conflicts:    conflicts,
 		IsRegistered: false,
 	}
 
@@ -283,4 +309,119 @@ func (pm *pluginManager) ExecutePlugin(name string, params map[string]interface{
 	}
 
 	return info.Plugin.Execute(params)
+}
+
+// RegisterPlugins 批量注册插件，自动处理依赖顺序
+func (pm *pluginManager) RegisterPlugins(plugins []Plugin) error {
+	// 1. 构建依赖图
+	dependencyGraph := make(map[string][]string)
+	pluginMap := make(map[string]Plugin)
+
+	for _, plugin := range plugins {
+		name := plugin.Name()
+		pluginMap[name] = plugin
+		dependencyGraph[name] = plugin.GetDependencies()
+	}
+
+	// 2. 拓扑排序
+	sortedNames, err := topologicalSort(dependencyGraph)
+	if err != nil {
+		return err
+	}
+
+	// 3. 按排序结果注册插件
+	for _, name := range sortedNames {
+		if err := pm.Register(pluginMap[name]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// topologicalSort 执行拓扑排序
+func topologicalSort(graph map[string][]string) ([]string, error) {
+	// 计算每个节点的入度
+	inDegree := make(map[string]int)
+	for node := range graph {
+		inDegree[node] = 0
+	}
+
+	for _, dependencies := range graph {
+		for _, dep := range dependencies {
+			inDegree[dep]++
+		}
+	}
+
+	// 将入度为0的节点加入队列
+	queue := []string{}
+	for node, degree := range inDegree {
+		if degree == 0 {
+			queue = append(queue, node)
+		}
+	}
+
+	// 执行拓扑排序
+	sorted := []string{}
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		sorted = append(sorted, current)
+
+		// 减少相邻节点的入度
+		for _, neighbor := range graph[current] {
+			inDegree[neighbor]--
+			if inDegree[neighbor] == 0 {
+				queue = append(queue, neighbor)
+			}
+		}
+	}
+
+	// 检查是否存在环
+	if len(sorted) != len(inDegree) {
+		return nil, fmt.Errorf("插件依赖关系存在循环依赖")
+	}
+
+	return sorted, nil
+}
+
+// CheckDependencies 检查所有插件的依赖关系
+func (pm *pluginManager) CheckDependencies() []error {
+	pm.mutex.RLock()
+	defer pm.mutex.RUnlock()
+
+	var errors []error
+
+	for name, info := range pm.plugins {
+		for _, depName := range info.Dependencies {
+			if _, exists := pm.plugins[depName]; !exists {
+				errors = append(errors, fmt.Errorf("插件 '%s' 依赖的插件 '%s' 未注册", name, depName))
+			}
+		}
+
+		for _, conflictName := range info.Conflicts {
+			if _, exists := pm.plugins[conflictName]; exists {
+				errors = append(errors, fmt.Errorf("插件 '%s' 与插件 '%s' 冲突", name, conflictName))
+			}
+		}
+	}
+
+	return errors
+}
+
+// GetDependencyGraph 获取插件依赖图
+func (pm *pluginManager) GetDependencyGraph() map[string]map[string]bool {
+	pm.mutex.RLock()
+	defer pm.mutex.RUnlock()
+
+	graph := make(map[string]map[string]bool)
+
+	for name, info := range pm.plugins {
+		graph[name] = make(map[string]bool)
+		for _, depName := range info.Dependencies {
+			graph[name][depName] = true
+		}
+	}
+
+	return graph
 }

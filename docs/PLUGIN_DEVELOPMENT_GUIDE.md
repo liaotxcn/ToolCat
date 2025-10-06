@@ -2,7 +2,7 @@
 
 ## 1. 插件系统概述
 
-ToolCat 插件系统允许开发者扩展应用功能，而无需修改核心代码。本指南将详细介绍如何开发、测试和部署 ToolCat 插件，特别关注优化后的路由注册机制。
+ToolCat 插件系统允许开发者扩展应用功能，而无需修改核心代码。本指南将详细介绍如何开发、测试和部署 ToolCat 插件，特别关注优化后的路由注册机制和插件依赖管理功能。
 
 ## 2. 插件接口定义
 
@@ -300,6 +300,162 @@ func registerPlugins(router *gin.Engine) {
 
 新机制使用 `GetRoutes()` 方法返回路由定义，PluginManager 负责统一注册路由；而旧机制需要插件自己通过 `RegisterRoutes()` 方法注册路由。新机制提供了更好的集中管理、元数据支持和中间件机制。
 
-## 11. 结语
+## 11. 插件依赖管理机制
 
-通过本指南，您应该能够理解 ToolCat 的插件系统，特别是优化后的路由注册机制。使用新的 `GetRoutes` 方法可以使您的插件开发更加规范、高效和可维护。
+ToolCat 插件系统支持插件间的依赖管理，允许一个插件声明其依赖于其他插件，并在运行时安全地访问这些依赖的插件。
+
+### 11.1 依赖管理接口
+
+Plugin 接口新增了以下依赖管理相关的方法：
+
+```go
+// Plugin 插件接口定义（包含依赖管理部分）
+type Plugin interface {
+    // 基础信息接口（现有）
+    Name() string        // 返回插件名称
+    Description() string // 返回插件描述
+    Version() string     // 返回插件版本
+    
+    // 生命周期接口（现有）
+    Init() error     // 初始化插件
+    Shutdown() error // 关闭插件
+    
+    // 路由注册接口（现有）
+    GetRoutes() []Route // 获取插件路由定义
+    RegisterRoutes(router *gin.Engine) // 注册插件路由
+    
+    // 执行功能接口（现有）
+    Execute(params map[string]interface{}) (interface{}, error) // 执行插件功能
+    
+    // 插件配置接口（现有，可选）
+    GetDefaultMiddlewares() []gin.HandlerFunc // 获取插件默认中间件
+    
+    // 依赖管理接口（新增）
+    GetDependencies() []string // 获取插件依赖的其他插件名称列表
+    GetConflicts() []string    // 获取与当前插件冲突的插件名称列表
+    SetPluginManager(manager *PluginManager) // 设置插件管理器引用
+}
+```
+
+### 11.2 PluginInfo 结构体的扩展
+
+```go
+// PluginInfo 存储插件的元数据信息（包含依赖管理部分）
+type PluginInfo struct {
+    Name        string                 // 插件名称
+    Description string                 // 插件描述
+    Version     string                 // 插件版本
+    Routes      []Route                // 插件的路由定义
+    Middlewares []gin.HandlerFunc      // 插件的默认中间件
+    Dependencies []string              // 插件依赖的其他插件名称列表
+    Conflicts   []string               // 与当前插件冲突的插件名称列表
+    Status      string                 // 插件状态（"enabled", "disabled", "error"）
+    Error       error                  // 如果插件状态为error，存储错误信息
+    Plugin      Plugin                 // 插件实例引用
+}
+```
+
+### 11.3 声明插件依赖
+
+在插件中实现 GetDependencies 和 GetConflicts 方法以声明依赖关系：
+
+```go
+// 声明插件依赖
+func (p *MyPlugin) GetDependencies() []string {
+    // 返回当前插件依赖的其他插件名称
+    return []string{
+        "sample_optimized",  // 依赖名为"sample_optimized"的插件
+        "hello_plugin"       // 依赖名为"hello_plugin"的插件
+    }
+}
+
+// 声明插件冲突
+func (p *MyPlugin) GetConflicts() []string {
+    // 返回与当前插件冲突的其他插件名称
+    return []string{
+        "legacy_plugin"      // 与名为"legacy_plugin"的插件冲突
+    }
+}
+
+// 设置插件管理器引用
+func (p *MyPlugin) SetPluginManager(manager *plugins.PluginManager) {
+    p.pluginManager = manager
+}
+```
+
+### 11.4 访问依赖的插件
+
+在插件中，可以通过插件管理器访问依赖的插件：
+
+```go
+// 访问依赖的插件示例
+func (p *MyPlugin) SomeFunction() {
+    // 检查依赖的插件是否已注册并启用
+    if p.pluginManager != nil {
+        // 获取依赖的插件实例
+        helloPlugin, err := p.pluginManager.GetPlugin("hello_plugin")
+        if err == nil {
+            // 调用依赖插件的方法
+            result, err := helloPlugin.Execute(map[string]interface{}{
+                "action": "greet",
+                "name":   "ToolCat"
+            })
+            if err == nil {
+                // 处理结果
+                fmt.Printf("Hello plugin result: %v\n", result)
+            }
+        }
+    }
+}
+```
+
+### 11.5 依赖管理的工作原理
+
+PluginManager 会在注册插件时进行以下检查：
+
+1. **冲突检查**：验证当前注册的插件是否与已注册的插件冲突
+2. **依赖检查**：验证当前注册的插件所需的所有依赖是否已注册
+3. **循环依赖检测**：确保插件之间不会形成循环依赖
+
+当使用批量注册方法 `RegisterPlugins()` 时，系统会自动根据依赖关系进行拓扑排序，确保依赖的插件先于依赖它的插件注册。
+
+### 11.6 依赖管理最佳实践
+
+1. **最小化依赖**：仅声明必要的依赖关系，减少插件间的耦合
+2. **版本兼容性**：在插件文档中明确说明兼容的依赖插件版本
+3. **处理依赖缺失**：在 Init() 方法中检查依赖插件是否存在并正确处理缺失情况
+4. **避免循环依赖**：设计插件架构时避免形成循环依赖
+5. **优雅降级**：在依赖插件不可用时，提供功能降级方案
+6. **明确的错误信息**：当依赖问题导致插件初始化失败时，提供清晰的错误信息
+
+### 11.7 批量注册插件
+
+对于具有复杂依赖关系的插件集合，建议使用批量注册方法：
+
+```go
+// 批量注册插件，自动处理依赖关系
+func registerMultiplePlugins(router *gin.Engine) {
+    // 设置路由引擎到PluginManager
+    plugins.PluginManager.SetRouter(router)
+    
+    // 创建插件实例
+    helloPlugin := &plugins.HelloPlugin{}
+    samplePlugin := &plugins.SampleOptimizedPlugin{}
+    dependentPlugin := &plugins.SampleDependentPlugin{}
+    
+    // 批量注册，系统会自动处理依赖顺序
+    pluginList := []plugins.Plugin{
+        helloPlugin,
+        samplePlugin,
+        dependentPlugin,
+    }
+    
+    if err := plugins.PluginManager.RegisterPlugins(pluginList); err != nil {
+        log.Printf("Plugin registration failed: %v", err)
+    }
+}
+```
+
+## 12. 结语
+
+通过本指南，您应该能够理解 ToolCat 的插件系统，包括优化后的路由注册机制和新增的插件依赖管理功能。使用这些功能可以使您的插件开发更加规范、高效和可维护，同时为构建复杂的插件生态系统提供坚实基础。
