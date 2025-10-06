@@ -59,6 +59,26 @@ func (p *SampleDependentPlugin) Shutdown() error {
 	return nil
 }
 
+// OnEnable 插件启用时调用
+func (p *SampleDependentPlugin) OnEnable() error {
+	fmt.Printf("SampleDependentPlugin: 插件已启用，正在检查依赖...\n")
+	// 在启用时检查依赖是否可用
+	for _, depName := range p.GetDependencies() {
+		if _, exists := p.pluginManager.GetPlugin(depName); exists {
+			fmt.Printf("依赖插件 '%s' 可用\n", depName)
+		} else {
+			fmt.Printf("警告: 依赖插件 '%s' 不可用\n", depName)
+		}
+	}
+	return nil
+}
+
+// OnDisable 插件禁用时调用
+func (p *SampleDependentPlugin) OnDisable() error {
+	fmt.Printf("SampleDependentPlugin: 插件已禁用\n")
+	return nil
+}
+
 // GetRoutes 获取路由定义
 func (p *SampleDependentPlugin) GetRoutes() []Route {
 	return []Route{

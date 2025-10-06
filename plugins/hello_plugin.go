@@ -60,6 +60,20 @@ func (p *HelloPlugin) Shutdown() error {
 	return nil
 }
 
+// OnEnable 插件启用时调用
+func (p *HelloPlugin) OnEnable() error {
+	// 插件启用逻辑
+	fmt.Println("HelloPlugin: 插件已启用")
+	return nil
+}
+
+// OnDisable 插件禁用时调用
+func (p *HelloPlugin) OnDisable() error {
+	// 插件禁用逻辑
+	fmt.Println("HelloPlugin: 插件已禁用")
+	return nil
+}
+
 // RegisterRoutes 保留旧的方法以确保兼容性
 // 在使用新的GetRoutes方法后，这个方法实际上不会被调用
 func (p *HelloPlugin) RegisterRoutes(router *gin.Engine) {

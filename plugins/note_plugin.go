@@ -76,6 +76,20 @@ func (p *NotePlugin) Shutdown() error {
 	return nil
 }
 
+// OnEnable 插件启用时调用
+func (p *NotePlugin) OnEnable() error {
+	// 插件启用逻辑
+	fmt.Println("NotePlugin: 记事本插件已启用")
+	return nil
+}
+
+// OnDisable 插件禁用时调用
+func (p *NotePlugin) OnDisable() error {
+	// 插件禁用逻辑
+	fmt.Println("NotePlugin: 记事本插件已禁用")
+	return nil
+}
+
 // RegisterRoutes 保留旧的方法以确保兼容性
 // 在使用新的GetRoutes方法后，这个方法实际上不会被调用
 func (p *NotePlugin) RegisterRoutes(router *gin.Engine) {

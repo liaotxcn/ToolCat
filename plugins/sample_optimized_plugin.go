@@ -14,6 +14,11 @@ type SampleOptimizedPlugin struct {
 	pluginManager *pluginManager
 }
 
+// NewSampleOptimizedPlugin 创建新的SampleOptimizedPlugin实例
+func NewSampleOptimizedPlugin() *SampleOptimizedPlugin {
+	return &SampleOptimizedPlugin{}
+}
+
 // Name 返回插件名称
 func (p *SampleOptimizedPlugin) Name() string {
 	return "sample_optimized"
@@ -53,6 +58,18 @@ func (p *SampleOptimizedPlugin) Init() error {
 // Shutdown 关闭插件
 func (p *SampleOptimizedPlugin) Shutdown() error {
 	log.Printf("%s: 插件已关闭", p.Name())
+	return nil
+}
+
+// OnEnable 插件启用时调用
+func (p *SampleOptimizedPlugin) OnEnable() error {
+	log.Printf("%s: 插件已启用", p.Name())
+	return nil
+}
+
+// OnDisable 插件禁用时调用
+func (p *SampleOptimizedPlugin) OnDisable() error {
+	log.Printf("%s: 插件已禁用", p.Name())
 	return nil
 }
 
