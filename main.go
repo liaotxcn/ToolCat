@@ -118,4 +118,20 @@ func registerPlugins(router *gin.Engine) {
 	// if err := plugins.PluginManager.RegisterAllRoutes(); err != nil {
 	//	log.Printf("Failed to register all plugin routes: %v", err)
 	// }
+
+	// 注册优化插件
+	sampleOptimizedPlugin := plugins.NewSampleOptimizedPlugin()
+	if err := plugins.PluginManager.Register(sampleOptimizedPlugin); err != nil {
+		pkg.Error("Failed to register plugin", zap.String("plugin", sampleOptimizedPlugin.Name()), zap.Error(err))
+	} else {
+		pkg.Info("Successfully registered plugin", zap.String("plugin", sampleOptimizedPlugin.Name()))
+	}
+
+	// 注册依赖插件
+	sampleDependentPlugin := plugins.NewSampleDependentPlugin()
+	if err := plugins.PluginManager.Register(sampleDependentPlugin); err != nil {
+		pkg.Error("Failed to register plugin", zap.String("plugin", sampleDependentPlugin.Name()), zap.Error(err))
+	} else {
+		pkg.Info("Successfully registered plugin", zap.String("plugin", sampleDependentPlugin.Name()))
+	}
 }

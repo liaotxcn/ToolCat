@@ -7,7 +7,14 @@ import (
 )
 
 // HelloPlugin 示例插件
-type HelloPlugin struct{}
+type HelloPlugin struct{
+	pluginManager *pluginManager
+}
+
+// NewHelloPlugin 创建新的HelloPlugin实例
+func NewHelloPlugin() *HelloPlugin {
+	return &HelloPlugin{}
+}
 
 // Name 返回插件名称
 func (p *HelloPlugin) Name() string {
@@ -24,6 +31,21 @@ func (p *HelloPlugin) Version() string {
 	return "1.0.0"
 }
 
+// GetDependencies 返回依赖的插件
+func (p *HelloPlugin) GetDependencies() []string {
+	return []string{} // 不依赖其他插件
+}
+
+// GetConflicts 返回冲突的插件
+func (p *HelloPlugin) GetConflicts() []string {
+	return []string{} // 与其他插件无冲突
+}
+
+// SetPluginManager 设置插件管理器
+func (p *HelloPlugin) SetPluginManager(manager *pluginManager) {
+	p.pluginManager = manager
+}
+
 // Init 初始化插件
 func (p *HelloPlugin) Init() error {
 	// 插件初始化逻辑
@@ -35,6 +57,20 @@ func (p *HelloPlugin) Init() error {
 func (p *HelloPlugin) Shutdown() error {
 	// 插件关闭逻辑
 	fmt.Println("HelloPlugin: 插件已关闭")
+	return nil
+}
+
+// OnEnable 插件启用时调用
+func (p *HelloPlugin) OnEnable() error {
+	// 插件启用逻辑
+	fmt.Println("HelloPlugin: 插件已启用")
+	return nil
+}
+
+// OnDisable 插件禁用时调用
+func (p *HelloPlugin) OnDisable() error {
+	// 插件禁用逻辑
+	fmt.Println("HelloPlugin: 插件已禁用")
 	return nil
 }
 

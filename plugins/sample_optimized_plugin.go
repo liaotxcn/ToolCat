@@ -10,7 +10,14 @@ import (
 // SampleOptimizedPlugin 展示如何使用优化后的插件路由注册机制的示例插件
 // 这个插件演示了新的GetRoutes方法的使用，替代了原来的RegisterRoutes方法
 
-type SampleOptimizedPlugin struct{}
+type SampleOptimizedPlugin struct {
+	pluginManager *pluginManager
+}
+
+// NewSampleOptimizedPlugin 创建新的SampleOptimizedPlugin实例
+func NewSampleOptimizedPlugin() *SampleOptimizedPlugin {
+	return &SampleOptimizedPlugin{}
+}
 
 // Name 返回插件名称
 func (p *SampleOptimizedPlugin) Name() string {
@@ -27,6 +34,21 @@ func (p *SampleOptimizedPlugin) Version() string {
 	return "1.0.0"
 }
 
+// GetDependencies 返回依赖的插件
+func (p *SampleOptimizedPlugin) GetDependencies() []string {
+	return []string{} // 不依赖其他插件
+}
+
+// GetConflicts 返回冲突的插件
+func (p *SampleOptimizedPlugin) GetConflicts() []string {
+	return []string{} // 与其他插件无冲突
+}
+
+// SetPluginManager 设置插件管理器
+func (p *SampleOptimizedPlugin) SetPluginManager(manager *pluginManager) {
+	p.pluginManager = manager
+}
+
 // Init 初始化插件
 func (p *SampleOptimizedPlugin) Init() error {
 	log.Printf("%s: 插件已初始化，使用优化后的路由注册机制", p.Name())
@@ -36,6 +58,18 @@ func (p *SampleOptimizedPlugin) Init() error {
 // Shutdown 关闭插件
 func (p *SampleOptimizedPlugin) Shutdown() error {
 	log.Printf("%s: 插件已关闭", p.Name())
+	return nil
+}
+
+// OnEnable 插件启用时调用
+func (p *SampleOptimizedPlugin) OnEnable() error {
+	log.Printf("%s: 插件已启用", p.Name())
+	return nil
+}
+
+// OnDisable 插件禁用时调用
+func (p *SampleOptimizedPlugin) OnDisable() error {
+	log.Printf("%s: 插件已禁用", p.Name())
 	return nil
 }
 

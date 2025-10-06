@@ -59,16 +59,19 @@ func SetupRouter() *gin.Engine {
 		// 插件相关路由
 		plugins := api.Group("/plugins")
 		{
-			// 插件管理接口
-			plugins.GET("/", func(c *gin.Context) {
-				c.JSON(200, gin.H{"message": "Get all plugins"})
-			})
-			plugins.POST("/load", func(c *gin.Context) {
-				c.JSON(200, gin.H{"message": "Load plugin"})
-			})
-			plugins.POST("/unload/:name", func(c *gin.Context) {
-				c.JSON(200, gin.H{"message": "Unload plugin"})
-			})
+			pluginCtrl := &controllers.PluginController{}
+			// 获取所有插件信息
+			plugins.GET("/", pluginCtrl.GetAllPlugins)
+			// 获取插件状态
+			plugins.GET("/:name/status", pluginCtrl.GetPluginStatus)
+			// 启用插件
+			plugins.POST("/:name/enable", pluginCtrl.EnablePlugin)
+			// 禁用插件
+			plugins.POST("/:name/disable", pluginCtrl.DisablePlugin)
+			// 重载插件
+			plugins.POST("/:name/reload", pluginCtrl.ReloadPlugin)
+			// 获取插件依赖图
+			plugins.GET("/dependency-graph", pluginCtrl.GetDependencyGraph)
 		}
 	}
 
