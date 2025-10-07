@@ -1,0 +1,149 @@
+version: '3.8'
+
+# 定义网络
+networks:
+  toolcat-network:
+    driver: bridge
+
+# 定义卷
+volumes:
+  mysql-data:
+    driver: local
+  logs:
+    driver: local
+
+# 定义服务
+services:
+  # ToolCat应用服务
+  toolcat:
+    # 从当前目录构建Docker镜像
+    build: .
+    # 容器名称
+    container_name: toolcat-app
+    # 重启策略
+    restart: unless-stopped
+    # 网络配置
+    networks:
+      - toolcat-network
+    # 端口映射 (主机端口:容器端口)
+    ports:
+      - "8081:8081"
+    # 环境变量配置
+    environment:
+      # 服务器配置
+      - SERVER_PORT=8081
+      
+      # 数据库配置
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=toolcat_user
+      - DB_PASSWORD=${DB_PASSWORD:-default_password}
+      - DB_NAME=toolcat
+      - DB_CHARSET=utf8mb4
+      
+      # JWT配置
+      - JWT_SECRET=${JWT_SECRET:-default_jwt_secret}
+      - JWT_ACCESS_TOKEN_EXPIRY=60
+      - JWT_REFRESH_TOKEN_EXPIRY=168
+      
+      # CSRF配置
+      - CSRF_ENABLED=true
+      - CSRF_COOKIE_NAME=XSRF-TOKEN
+      - CSRF_HEADER_NAME=X-CSRF-Token
+      
+      # 日志配置
+      - LOG_LEVEL=info
+      - LOG_OUTPUT_PATH=/app/logs/output.log
+      - LOG_ERROR_PATH=/app/logs/error.log
+    # 依赖关系
+    depends_on:
+      mysql:
+        condition: service_healthy
+    # 卷挂载
+    volumes:
+      - logs:/app/logs
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8081/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "512M"
+        reservations:
+          cpus: "0.5"
+          memory: "256M"
+
+  # MySQL数据库服务
+  mysql:
+    # 使用官方MySQL镜像
+    image: mysql:8.0
+    # 容器名称
+    container_name: toolcat-mysql
+    # 重启策略
+    restart: unless-stopped
+    # 网络配置
+    networks:
+      - toolcat-network
+    # 端口映射 (可选，仅当需要从主机直接访问数据库时启用)
+    # ports:
+    #   - "3306:3306"
+    # 环境变量配置
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password}
+      - MYSQL_DATABASE=toolcat
+      - MYSQL_USER=toolcat_user
+      - MYSQL_PASSWORD=${DB_PASSWORD:-default_password}
+    # 卷挂载 (数据持久化)
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # 可选：初始化脚本
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=${MYSQL_ROOT_PASSWORD:-root_password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "1G"
+        reservations:
+          cpus: "0.5"
+          memory: "512M"
+
+
+# 使用说明：
+# 1. 创建.env文件，设置以下环境变量（可选但推荐）：
+#    DB_PASSWORD=your_secure_password
+#    JWT_SECRET=your_secure_jwt_secret
+#    MYSQL_ROOT_PASSWORD=your_root_password
+# 
+# 2. 启动服务：
+#    docker-compose up -d
+# 
+# 3. 停止服务：
+#    docker-compose down
+# 
+# 4. 查看日志：
+#    docker-compose logs -f toolcat
+#    docker-compose logs -f mysql
+# 
+# 5. 进入容器：
+#    docker-compose exec toolcat /bin/sh
+#    docker-compose exec mysql mysql -u root -p
+# 
+# 6. 查看服务状态：
+#    docker-compose ps
+# 
+# 7. 构建并重新启动服务：
+#    docker-compose up --build -d
