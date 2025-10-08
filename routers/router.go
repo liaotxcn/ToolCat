@@ -90,10 +90,9 @@ func SetupRouter() *gin.Engine {
 		})
 	})
 
-	// 健康检查
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "ok"})
-	})
+	// 健康检查 - 健康检查控制器提供更全面的健康状态信息
+	healthCtrl := &controllers.HealthController{}
+	router.GET("/health", healthCtrl.GetHealth)
 
 	return router
 }
