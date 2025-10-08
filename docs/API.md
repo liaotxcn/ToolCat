@@ -624,6 +624,7 @@ JWT令牌包含用户的身份信息，有效期等。当令牌过期或无效�
 - 401 Unauthorized: 未授权
 - 403 Forbidden: 禁止访问（包含CSRF令牌验证失败）
 - 404 Not Found: 资源不存在
+- 429 Too Many Requests: 请求过于频繁，超出限流限制
 - 500 Internal Server Error: 服务器错误
 
 错误响应通常包含一个error字段，描述具体的错误信息。
