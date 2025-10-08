@@ -21,6 +21,8 @@ func SetupRouter() *gin.Engine {
 	// 认证相关路由
 	auth := router.Group("/auth")
 	{
+		//  限流保护，为认证接口添加限流：每秒允许10个请求，突发容量20
+		auth.Use(middleware.RateLimiter(10, 20))
 		userCtrl := &controllers.UserController{}
 		auth.POST("/register", userCtrl.Register)
 		auth.POST("/login", userCtrl.Login)
@@ -32,6 +34,8 @@ func SetupRouter() *gin.Engine {
 	{
 		// 使用认证中间件
 		api.Use(middleware.AuthMiddleware())
+		// 为API接口添加限流：每秒允许20个请求，突发容量50
+		api.Use(middleware.RateLimiter(20, 50))
 
 		// 用户相关路由
 		users := api.Group("/users")
