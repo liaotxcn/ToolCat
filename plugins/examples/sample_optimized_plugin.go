@@ -1,17 +1,18 @@
-package plugins
+package examples
 
 import (
 	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"toolcat/plugins/core"
 )
 
 // SampleOptimizedPlugin 展示如何使用优化后的插件路由注册机制的示例插件
 // 这个插件演示了新的GetRoutes方法的使用，替代了原来的RegisterRoutes方法
 
 type SampleOptimizedPlugin struct {
-	pluginManager *pluginManager
+	pluginManager *core.PluginManager
 }
 
 // NewSampleOptimizedPlugin 创建新的SampleOptimizedPlugin实例
@@ -45,7 +46,7 @@ func (p *SampleOptimizedPlugin) GetConflicts() []string {
 }
 
 // SetPluginManager 设置插件管理器
-func (p *SampleOptimizedPlugin) SetPluginManager(manager *pluginManager) {
+func (p *SampleOptimizedPlugin) SetPluginManager(manager *core.PluginManager) {
 	p.pluginManager = manager
 }
 
@@ -75,8 +76,8 @@ func (p *SampleOptimizedPlugin) OnDisable() error {
 
 // GetRoutes 使用新的方式提供路由定义
 // 替代原来的RegisterRoutes方法
-func (p *SampleOptimizedPlugin) GetRoutes() []Route {
-	return []Route{
+func (p *SampleOptimizedPlugin) GetRoutes() []core.Route {
+	return []core.Route{
 		{
 			Path:         "/",
 			Method:       "GET",

@@ -14,6 +14,8 @@ import (
 	"toolcat/models"
 	"toolcat/pkg"
 	"toolcat/plugins"
+	"toolcat/plugins/examples"
+	"toolcat/plugins/features"
 	"toolcat/routers"
 
 	"github.com/gin-gonic/gin"
@@ -121,7 +123,7 @@ func registerPlugins(router *gin.Engine) {
 	plugins.PluginManager.SetRouter(router)
 
 	// 注册示例插件
-	helloPlugin := &plugins.HelloPlugin{}
+	helloPlugin := &examples.HelloPlugin{}
 	if err := plugins.PluginManager.Register(helloPlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", helloPlugin.Name()), zap.Error(err))
 	} else {
@@ -129,7 +131,7 @@ func registerPlugins(router *gin.Engine) {
 	}
 
 	// 注册记事本插件
-	notePlugin := &plugins.NotePlugin{}
+	notePlugin := &features.NotePlugin{}
 	if err := plugins.PluginManager.Register(notePlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", notePlugin.Name()), zap.Error(err))
 	} else {
@@ -144,7 +146,7 @@ func registerPlugins(router *gin.Engine) {
 	// }
 
 	// 注册优化插件
-	sampleOptimizedPlugin := plugins.NewSampleOptimizedPlugin()
+	sampleOptimizedPlugin := examples.NewSampleOptimizedPlugin()
 	if err := plugins.PluginManager.Register(sampleOptimizedPlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", sampleOptimizedPlugin.Name()), zap.Error(err))
 	} else {
@@ -152,7 +154,7 @@ func registerPlugins(router *gin.Engine) {
 	}
 
 	// 注册依赖插件
-	sampleDependentPlugin := plugins.NewSampleDependentPlugin()
+	sampleDependentPlugin := examples.NewSampleDependentPlugin()
 	if err := plugins.PluginManager.Register(sampleDependentPlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", sampleDependentPlugin.Name()), zap.Error(err))
 	} else {

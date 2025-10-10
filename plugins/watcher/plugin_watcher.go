@@ -1,4 +1,4 @@
-package plugins
+package watcher
 
 import (
 	"encoding/json"
@@ -16,11 +16,18 @@ import (
 	"go.uber.org/zap"
 )
 
+// PluginManager 定义插件管理器接口，避免循环依赖
+type PluginManager interface {
+	ReloadPlugin(name string) error
+	GetPlugin(name string) (interface{}, bool)
+	Unregister(name string) error
+}
+
 // PluginWatcher 插件文件监控器
 type PluginWatcher struct {
 	watcher      *fsnotify.Watcher
 	pluginDir    string
-	manager      *pluginManager
+	manager      PluginManager
 	logger       *pkg.Logger
 	mu           sync.RWMutex
 	watchedFiles map[string]time.Time
@@ -31,7 +38,7 @@ type PluginWatcher struct {
 }
 
 // NewPluginWatcher 创建插件监控器
-func NewPluginWatcher(pluginDir string, manager *pluginManager, logger *pkg.Logger) (*PluginWatcher, error) {
+func NewPluginWatcher(pluginDir string, manager PluginManager, logger *pkg.Logger) (*PluginWatcher, error) {
 	// 创建fsnotify监控器
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {

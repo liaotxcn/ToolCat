@@ -1,4 +1,4 @@
-package plugins
+package core
 
 import (
 	"fmt"
@@ -47,7 +47,7 @@ type Plugin interface {
 
 	// 插件配置接口（可选）
 	GetDefaultMiddlewares() []gin.HandlerFunc // 获取插件默认中间件
-	SetPluginManager(manager *pluginManager)  // 设置插件管理器引用
+	SetPluginManager(manager *PluginManager)  // 设置插件管理器引用
 }
 
 // PluginInfo 存储插件信息和路由元数据
@@ -60,8 +60,24 @@ type PluginInfo struct {
 	IsEnabled    bool     // 插件是否启用
 }
 
-// PluginManager 插件管理器
-var PluginManager = &pluginManager{
+// PluginWatcher 定义插件监控器接口
+type PluginWatcher interface {
+	Start() error
+	Stop()
+}
+
+// PluginManager 插件管理器结构体类型
+type PluginManager struct {
+	plugins   map[string]PluginInfo // 存储插件信息和路由
+	router    *gin.Engine           // 路由引擎引用
+	mutex     *sync.RWMutex         // 读写锁，保证线程安全
+	watcher   PluginWatcher        // 插件文件监控器
+	logger    *pkg.Logger           // 日志记录器
+	pluginDir string                // 插件目录路径
+}
+
+// GlobalPluginManager 全局插件管理器实例
+var GlobalPluginManager = &PluginManager{
 	plugins:   make(map[string]PluginInfo),
 	router:    nil,
 	mutex:     &sync.RWMutex{},
@@ -70,24 +86,15 @@ var PluginManager = &pluginManager{
 	pluginDir: "plugins", // 默认插件目录
 }
 
-type pluginManager struct {
-	plugins   map[string]PluginInfo // 存储插件信息和路由
-	router    *gin.Engine           // 路由引擎引用
-	mutex     *sync.RWMutex         // 读写锁，保证线程安全
-	watcher   *PluginWatcher        // 插件文件监控器
-	logger    *pkg.Logger           // 日志记录器
-	pluginDir string                // 插件目录路径
-}
-
 // SetRouter 设置路由引擎
-func (pm *pluginManager) SetRouter(router *gin.Engine) {
+func (pm *PluginManager) SetRouter(router *gin.Engine) {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 	pm.router = router
 }
 
 // Register 注册插件
-func (pm *pluginManager) Register(plugin Plugin) error {
+func (pm *PluginManager) Register(plugin Plugin) error {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -143,7 +150,7 @@ func (pm *pluginManager) Register(plugin Plugin) error {
 }
 
 // EnablePlugin 启用插件
-func (pm *pluginManager) EnablePlugin(name string) error {
+func (pm *PluginManager) EnablePlugin(name string) error {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -184,7 +191,7 @@ func (pm *pluginManager) EnablePlugin(name string) error {
 }
 
 // DisablePlugin 禁用插件
-func (pm *pluginManager) DisablePlugin(name string) error {
+func (pm *PluginManager) DisablePlugin(name string) error {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -225,7 +232,7 @@ func (pm *pluginManager) DisablePlugin(name string) error {
 
 // ReloadPlugin 重新加载插件
 // 注意：这是一个简化实现，在实际生产环境中可能需要结合插件文件监控等功能
-func (pm *pluginManager) ReloadPlugin(name string) error {
+func (pm *PluginManager) ReloadPlugin(name string) error {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -280,7 +287,7 @@ func (pm *pluginManager) ReloadPlugin(name string) error {
 }
 
 // GetPluginStatus 获取插件状态
-func (pm *pluginManager) GetPluginStatus(name string) (string, bool) {
+func (pm *PluginManager) GetPluginStatus(name string) (string, bool) {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
 
@@ -296,7 +303,7 @@ func (pm *pluginManager) GetPluginStatus(name string) (string, bool) {
 }
 
 // GetAllPluginsInfo 获取所有插件信息
-func (pm *pluginManager) GetAllPluginsInfo() []PluginInfo {
+func (pm *PluginManager) GetAllPluginsInfo() []PluginInfo {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
 
@@ -308,7 +315,7 @@ func (pm *pluginManager) GetAllPluginsInfo() []PluginInfo {
 }
 
 // registerPluginRoutes 注册单个插件的路由
-func (pm *pluginManager) registerPluginRoutes(name string) error {
+func (pm *PluginManager) registerPluginRoutes(name string) error {
 	info, exists := pm.plugins[name]
 	if !exists {
 		return fmt.Errorf("插件 '%s' 不存在", name)
@@ -380,7 +387,7 @@ func (pm *pluginManager) registerPluginRoutes(name string) error {
 }
 
 // Unregister 注销插件
-func (pm *pluginManager) Unregister(name string) error {
+func (pm *PluginManager) Unregister(name string) error {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -404,7 +411,7 @@ func (pm *pluginManager) Unregister(name string) error {
 }
 
 // GetPlugin 获取插件
-func (pm *pluginManager) GetPlugin(name string) (Plugin, bool) {
+func (pm *PluginManager) GetPlugin(name string) (Plugin, bool) {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
 
@@ -416,7 +423,7 @@ func (pm *pluginManager) GetPlugin(name string) (Plugin, bool) {
 }
 
 // ListPlugins 列出所有插件
-func (pm *pluginManager) ListPlugins() []string {
+func (pm *PluginManager) ListPlugins() []string {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
 
@@ -428,7 +435,7 @@ func (pm *pluginManager) ListPlugins() []string {
 }
 
 // GetPluginInfo 获取插件详细信息
-func (pm *pluginManager) GetPluginInfo(name string) (*PluginInfo, bool) {
+func (pm *PluginManager) GetPluginInfo(name string) (*PluginInfo, bool) {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
 
@@ -440,7 +447,7 @@ func (pm *pluginManager) GetPluginInfo(name string) (*PluginInfo, bool) {
 }
 
 // RegisterAllRoutes 注册所有插件的路由
-func (pm *pluginManager) RegisterAllRoutes() error {
+func (pm *PluginManager) RegisterAllRoutes() error {
 	pm.mutex.RLock()
 	// 复制插件名称列表，避免在注册过程中锁定太久
 	pluginNames := make([]string, 0, len(pm.plugins))
@@ -464,7 +471,7 @@ func (pm *pluginManager) RegisterAllRoutes() error {
 }
 
 // GetAllRoutes 获取所有插件的路由信息
-func (pm *pluginManager) GetAllRoutes() map[string][]Route {
+func (pm *PluginManager) GetAllRoutes() map[string][]Route {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
 
@@ -476,7 +483,7 @@ func (pm *pluginManager) GetAllRoutes() map[string][]Route {
 }
 
 // ExecutePlugin 执行插件功能
-func (pm *pluginManager) ExecutePlugin(name string, params map[string]interface{}) (interface{}, error) {
+func (pm *PluginManager) ExecutePlugin(name string, params map[string]interface{}) (interface{}, error) {
 	pm.mutex.RLock()
 	info, exists := pm.plugins[name]
 	pm.mutex.RUnlock()
@@ -494,7 +501,7 @@ func (pm *pluginManager) ExecutePlugin(name string, params map[string]interface{
 }
 
 // RegisterPlugins 批量注册插件，自动处理依赖顺序
-func (pm *pluginManager) RegisterPlugins(plugins []Plugin) error {
+func (pm *PluginManager) RegisterPlugins(plugins []Plugin) error {
 	// 1. 构建依赖图
 	dependencyGraph := make(map[string][]string)
 	pluginMap := make(map[string]Plugin)
@@ -568,7 +575,7 @@ func topologicalSort(graph map[string][]string) ([]string, error) {
 }
 
 // CheckDependencies 检查所有插件的依赖关系
-func (pm *pluginManager) CheckDependencies() []error {
+func (pm *PluginManager) CheckDependencies() []error {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
 
@@ -592,7 +599,7 @@ func (pm *pluginManager) CheckDependencies() []error {
 }
 
 // GetDependencyGraph 获取插件依赖图
-func (pm *pluginManager) GetDependencyGraph() map[string]map[string]bool {
+func (pm *PluginManager) GetDependencyGraph() map[string]map[string]bool {
 	pm.mutex.RLock()
 	defer pm.mutex.RUnlock()
 
@@ -609,21 +616,21 @@ func (pm *pluginManager) GetDependencyGraph() map[string]map[string]bool {
 }
 
 // SetLogger 设置日志记录器
-func (pm *pluginManager) SetLogger(logger *pkg.Logger) {
+func (pm *PluginManager) SetLogger(logger *pkg.Logger) {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 	pm.logger = logger
 }
 
 // SetPluginDir 设置插件目录
-func (pm *pluginManager) SetPluginDir(dir string) {
+func (pm *PluginManager) SetPluginDir(dir string) {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 	pm.pluginDir = dir
 }
 
 // StartPluginWatcher 启动插件监控器
-func (pm *pluginManager) StartPluginWatcher() error {
+func (pm *PluginManager) StartPluginWatcher() error {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
@@ -632,21 +639,13 @@ func (pm *pluginManager) StartPluginWatcher() error {
 		return nil
 	}
 
-	// 创建插件监控器
-	watcher, err := NewPluginWatcher(pm.pluginDir, pm, pm.logger)
-	if err != nil {
-		return fmt.Errorf("创建插件监控器失败: %w", err)
-	}
-
-	// 保存监控器引用
-	pm.watcher = watcher
-
-	// 启动监控器
-	return watcher.Start()
+	// 这里只是一个占位符实现，实际上插件监控器不再在core包中创建
+	// 移除对PluginWatcher的直接依赖，避免循环导入
+	return fmt.Errorf("插件监控器已移至watcher包，不再在此处创建")
 }
 
 // StopPluginWatcher 停止插件监控器
-func (pm *pluginManager) StopPluginWatcher() {
+func (pm *PluginManager) StopPluginWatcher() {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
