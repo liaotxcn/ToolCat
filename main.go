@@ -32,6 +32,9 @@ func main() {
 	}
 	defer pkg.Sync()
 
+	// 设置PluginManager的日志记录器
+	plugins.PluginManager.SetLogger(pkg.GetLogger())
+
 	// 加载配置
 	config.LoadConfig()
 
@@ -55,6 +58,24 @@ func main() {
 
 	// 注册插件
 	registerPlugins(router)
+
+	// 设置插件目录
+	pluginsDir := config.Config.Plugins.Dir
+	if pluginsDir == "" {
+		pluginsDir = "./plugins"
+	}
+	plugins.PluginManager.SetPluginDir(pluginsDir)
+
+	// 根据配置决定是否启动插件监控器
+	if config.Config.Plugins.WatcherEnabled {
+		if err := plugins.PluginManager.StartPluginWatcher(); err != nil {
+			pkg.Error("Failed to start plugin watcher", zap.Error(err))
+		} else {
+			pkg.Info("Plugin watcher started successfully", zap.String("pluginsDir", pluginsDir))
+		}
+	} else {
+		pkg.Info("Plugin watcher is disabled by configuration")
+	}
 
 	// 启动服务器
 	port := config.Config.Server.Port
@@ -80,6 +101,9 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	pkg.Info("Shutting down server...")
+
+	// 停止插件监控器
+	plugins.PluginManager.StopPluginWatcher()
 
 	// 创建超时上下文，用于优雅关闭服务器
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -134,4 +158,7 @@ func registerPlugins(router *gin.Engine) {
 	} else {
 		pkg.Info("Successfully registered plugin", zap.String("plugin", sampleDependentPlugin.Name()))
 	}
+
+	// 所有插件注册完成，输出确认日志
+	pkg.Info("插件已全部注册运行成功")
 }

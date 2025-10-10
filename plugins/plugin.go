@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"toolcat/pkg"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -22,16 +24,16 @@ type Route struct {
 // Plugin 插件接口定义
 type Plugin interface {
 	// 基础信息接口
-	Name() string        // 返回插件名称
-	Description() string // 返回插件描述
-	Version() string     // 返回插件版本
+	Name() string              // 返回插件名称
+	Description() string       // 返回插件描述
+	Version() string           // 返回插件版本
 	GetDependencies() []string // 返回插件依赖的其他插件名称
-	GetConflicts() []string // 返回与当前插件冲突的插件名称
+	GetConflicts() []string    // 返回与当前插件冲突的插件名称
 
 	// 生命周期接口
-	Init() error     // 初始化插件
-	Shutdown() error // 关闭插件
-	OnEnable() error // 插件启用时调用（热重载相关）
+	Init() error      // 初始化插件
+	Shutdown() error  // 关闭插件
+	OnEnable() error  // 插件启用时调用（热重载相关）
 	OnDisable() error // 插件禁用时调用（热重载相关）
 
 	// 路由注册接口
@@ -45,30 +47,36 @@ type Plugin interface {
 
 	// 插件配置接口（可选）
 	GetDefaultMiddlewares() []gin.HandlerFunc // 获取插件默认中间件
-	SetPluginManager(manager *pluginManager) // 设置插件管理器引用
+	SetPluginManager(manager *pluginManager)  // 设置插件管理器引用
 }
 
 // PluginInfo 存储插件信息和路由元数据
 type PluginInfo struct {
-	Plugin       Plugin  // 插件实例
-	Routes       []Route // 插件路由
+	Plugin       Plugin   // 插件实例
+	Routes       []Route  // 插件路由
 	Dependencies []string // 依赖的插件名称列表
 	Conflicts    []string // 冲突的插件名称列表
-	IsRegistered bool    // 路由是否已注册
-	IsEnabled    bool    // 插件是否启用
+	IsRegistered bool     // 路由是否已注册
+	IsEnabled    bool     // 插件是否启用
 }
 
 // PluginManager 插件管理器
 var PluginManager = &pluginManager{
-	plugins: make(map[string]PluginInfo),
-	router:  nil,
-	mutex:   &sync.RWMutex{},
+	plugins:   make(map[string]PluginInfo),
+	router:    nil,
+	mutex:     &sync.RWMutex{},
+	watcher:   nil,
+	logger:    nil,       // 将在SetLogger中设置
+	pluginDir: "plugins", // 默认插件目录
 }
 
 type pluginManager struct {
-	plugins map[string]PluginInfo // 存储插件信息和路由
-	router  *gin.Engine           // 路由引擎引用
-	mutex   *sync.RWMutex         // 读写锁，保证线程安全
+	plugins   map[string]PluginInfo // 存储插件信息和路由
+	router    *gin.Engine           // 路由引擎引用
+	mutex     *sync.RWMutex         // 读写锁，保证线程安全
+	watcher   *PluginWatcher        // 插件文件监控器
+	logger    *pkg.Logger           // 日志记录器
+	pluginDir string                // 插件目录路径
 }
 
 // SetRouter 设置路由引擎
@@ -598,4 +606,52 @@ func (pm *pluginManager) GetDependencyGraph() map[string]map[string]bool {
 	}
 
 	return graph
+}
+
+// SetLogger 设置日志记录器
+func (pm *pluginManager) SetLogger(logger *pkg.Logger) {
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
+	pm.logger = logger
+}
+
+// SetPluginDir 设置插件目录
+func (pm *pluginManager) SetPluginDir(dir string) {
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
+	pm.pluginDir = dir
+}
+
+// StartPluginWatcher 启动插件监控器
+func (pm *pluginManager) StartPluginWatcher() error {
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
+
+	// 如果监控器已存在且正在运行，直接返回
+	if pm.watcher != nil {
+		return nil
+	}
+
+	// 创建插件监控器
+	watcher, err := NewPluginWatcher(pm.pluginDir, pm, pm.logger)
+	if err != nil {
+		return fmt.Errorf("创建插件监控器失败: %w", err)
+	}
+
+	// 保存监控器引用
+	pm.watcher = watcher
+
+	// 启动监控器
+	return watcher.Start()
+}
+
+// StopPluginWatcher 停止插件监控器
+func (pm *pluginManager) StopPluginWatcher() {
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
+
+	if pm.watcher != nil {
+		pm.watcher.Stop()
+		pm.watcher = nil
+	}
 }

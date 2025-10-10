@@ -135,12 +135,12 @@ services:
 #    docker-compose down
 # 
 # 4. 查看日志：
-#    docker-compose logs -f toolcat
-#    docker-compose logs -f mysql
+#    docker-compose logs -f toolcat-app
+#    docker-compose logs -f toolcat-mysql
 # 
 # 5. 进入容器：
-#    docker-compose exec toolcat /bin/sh
-#    docker-compose exec mysql mysql -u root -p
+#    docker-compose exec toolcat-app /bin/sh
+#    docker-compose exec toolcat-mysql mysql -u root -p
 # 
 # 6. 查看服务状态：
 #    docker-compose ps

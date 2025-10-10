@@ -51,6 +51,14 @@ var Config struct {
 		CookieHttpOnly   bool
 		CookieSameSite   string
 	}
+
+	// 插件配置
+	Plugins struct {
+		Dir            string
+		WatcherEnabled bool
+		ScanInterval   int // 秒
+		HotReload      bool
+	}
 }
 
 // 初始化默认值
@@ -89,6 +97,12 @@ func init() {
 	Config.CSRF.CookieSecure = false // 开发环境下为false
 	Config.CSRF.CookieHttpOnly = false // 必须为false以便前端可以读取
 	Config.CSRF.CookieSameSite = "Lax"
+
+	// 插件配置
+	Config.Plugins.Dir = "./plugins"
+	Config.Plugins.WatcherEnabled = true
+	Config.Plugins.ScanInterval = 5 // 5秒
+	Config.Plugins.HotReload = true
 }
 
 // LoadConfig 从环境变量加载配置
@@ -97,6 +111,29 @@ func LoadConfig() {
 	if port := os.Getenv("SERVER_PORT"); port != "" {
 		if p, err := strconv.Atoi(port); err == nil {
 			Config.Server.Port = p
+		}
+	}
+
+	// 插件配置
+	if dir := os.Getenv("PLUGINS_DIR"); dir != "" {
+		Config.Plugins.Dir = dir
+	}
+
+	if watcherEnabled := os.Getenv("PLUGINS_WATCHER_ENABLED"); watcherEnabled != "" {
+		if enabled, err := strconv.ParseBool(watcherEnabled); err == nil {
+			Config.Plugins.WatcherEnabled = enabled
+		}
+	}
+
+	if scanInterval := os.Getenv("PLUGINS_SCAN_INTERVAL"); scanInterval != "" {
+		if interval, err := strconv.Atoi(scanInterval); err == nil {
+			Config.Plugins.ScanInterval = interval
+		}
+	}
+
+	if hotReload := os.Getenv("PLUGINS_HOT_RELOAD"); hotReload != "" {
+		if reload, err := strconv.ParseBool(hotReload); err == nil {
+			Config.Plugins.HotReload = reload
 		}
 	}
 
