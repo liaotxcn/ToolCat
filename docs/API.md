@@ -2,7 +2,7 @@
 
 ## 1. 概述
 
-本文档提供工具猫(ToolCat)服务的所有API接口说明，包括认证接口、用户管理接口、工具管理接口和插件管理接口。所有接口基于HTTP协议，使用JSON格式进行数据交换。
+本文档提供 ToolCat 服务的API接口说明，包括认证接口、用户管理接口、工具管理接口和插件管理接口等。所有接口基于HTTP协议，使用JSON格式进行数据交换。
 
 ## 2. 基础信息
 
@@ -13,9 +13,47 @@
 - 数据格式: JSON
 - CSRF保护: 启用（对于非GET/HEAD/OPTIONS/TRACE请求）
 
-## 3. 认证接口
+## 3. 认证机制
 
-### 3.1 用户注册
+系统使用JWT (JSON Web Token)进行认证。用户登录成功后，服务器会返回一个JWT令牌，该令牌需要在后续的API请求中通过Authorization头传递。
+
+JWT令牌包含用户的身份信息，有效期等。当令牌过期或无效时，API请求会返回401 Unauthorized错误。
+
+## 4. 错误处理
+
+所有API接口都使用标准的HTTP状态码来表示请求的结果：
+- 200 OK: 请求成功
+- 201 Created: 创建成功
+- 400 Bad Request: 请求参数错误
+- 401 Unauthorized: 未授权
+- 403 Forbidden: 禁止访问（包含CSRF令牌验证失败）
+- 404 Not Found: 资源不存在
+- 429 Too Many Requests: 请求过于频繁，超出限流限制
+- 500 Internal Server Error: 服务器错误
+
+错误响应通常包含一个error字段，描述具体的错误信息。
+
+## 5. CSRF保护机制
+
+ToolCat服务启用了CSRF（跨站请求伪造）保护机制，对于非GET/HEAD/OPTIONS/TRACE的请求，需要进行CSRF令牌验证。
+
+### 5.1 CSRF令牌获取
+
+CSRF令牌会通过两种方式提供：
+
+1. **Cookie**：服务器会在响应中设置名为`XSRF-TOKEN`的Cookie
+2. **响应头**：服务器会在响应头中添加`X-CSRF-Token`字段
+
+### 5.2 CSRF令牌使用
+
+对于需要验证CSRF的请求（非GET/HEAD/OPTIONS/TRACE），需要同时满足以下条件：
+
+1. 请求头中包含`X-CSRF-Token`字段，值为获取到的CSRF令牌
+2. 请求中携带包含相同令牌值的`XSRF-TOKEN`Cookie
+
+## 6. 认证接口
+
+### 6.1 用户注册
 
 **请求URL**: `/auth/register`
 **请求方法**: POST
@@ -51,7 +89,7 @@
 }
 ```
 
-### 3.2 用户登录
+### 6.2 用户登录
 
 **请求URL**: `/auth/login`
 **请求方法**: POST
@@ -88,16 +126,16 @@
 }
 ```
 
-## 4. API 接口 (需要认证)
+## 7. API 接口 (需要认证)
 
 所有API接口需要在请求头中包含JWT认证令牌：
 ```
 Authorization: Bearer YOUR_JWT_TOKEN_HERE
 ```
 
-### 4.1 用户管理接口
+### 7.1 用户管理接口
 
-#### 4.1.1 获取所有用户
+#### 7.1.1 获取所有用户
 
 **请求URL**: `/api/v1/users`
 **请求方法**: GET
@@ -131,7 +169,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.1.2 获取单个用户
+#### 7.1.2 获取单个用户
 
 **请求URL**: `/api/v1/users/:id`
 **请求方法**: GET
@@ -159,7 +197,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.1.3 创建用户
+#### 7.1.3 创建用户
 
 **请求URL**: `/api/v1/users`
 **请求方法**: POST
@@ -194,7 +232,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.1.4 更新用户
+#### 7.1.4 更新用户
 
 **请求URL**: `/api/v1/users/:id`
 **请求方法**: PUT
@@ -232,7 +270,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.1.5 删除用户
+#### 7.1.5 删除用户
 
 **请求URL**: `/api/v1/users/:id`
 **请求方法**: DELETE
@@ -256,9 +294,9 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-### 4.2 工具管理接口
+### 7.2 工具管理接口
 
-#### 4.2.1 获取所有工具
+#### 7.2.1 获取所有工具
 
 **请求URL**: `/api/v1/tools`
 **请求方法**: GET
@@ -298,7 +336,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.2.2 获取单个工具
+#### 7.2.2 获取单个工具
 
 **请求URL**: `/api/v1/tools/:id`
 **请求方法**: GET
@@ -329,7 +367,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.2.3 创建工具
+#### 7.2.3 创建工具
 
 **请求URL**: `/api/v1/tools`
 **请求方法**: POST
@@ -368,7 +406,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.2.4 更新工具
+#### 7.2.4 更新工具
 
 **请求URL**: `/api/v1/tools/:id`
 **请求方法**: PUT
@@ -410,7 +448,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.2.5 删除工具
+#### 7.2.5 删除工具
 
 **请求URL**: `/api/v1/tools/:id`
 **请求方法**: DELETE
@@ -434,7 +472,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.2.6 执行工具
+#### 7.2.6 执行工具
 
 **请求URL**: `/api/v1/tools/:id/execute`
 **请求方法**: POST
@@ -465,9 +503,9 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-### 4.3 插件管理接口
+### 7.3 插件管理接口
 
-#### 4.3.1 获取所有插件
+#### 7.3.1 获取所有插件
 
 **请求URL**: `/api/v1/plugins`
 **请求方法**: GET
@@ -480,7 +518,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.3.2 加载插件
+#### 7.3.2 加载插件
 
 **请求URL**: `/api/v1/plugins/load`
 **请求方法**: POST
@@ -499,7 +537,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 4.3.3 卸载插件
+#### 7.3.3 卸载插件
 
 **请求URL**: `/api/v1/plugins/unload/:name`
 **请求方法**: POST
@@ -514,9 +552,9 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-## 5. 其他接口
+## 8. 其他接口
 
-### 5.1 根路径
+### 8.1 根路径
 
 **请求URL**: `/`
 **请求方法**: GET
@@ -532,7 +570,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-### 5.2 健康检查
+### 8.2 健康检查
 
 **请求URL**: `/health`
 **请求方法**: GET
@@ -544,9 +582,9 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-## 6. 数据模型
+## 9. 数据模型
 
-### 6.1 用户模型(User)
+### 9.1 用户模型(User)
 ```go
 type User struct {
   ID        uint      `gorm:"primaryKey" json:"id"`
@@ -558,7 +596,7 @@ type User struct {
 }
 ```
 
-### 6.2 工具模型(Tool)
+### 9.2 工具模型(Tool)
 ```go
 type Tool struct {
   ID          uint      `gorm:"primaryKey" json:"id"`
@@ -572,7 +610,7 @@ type Tool struct {
 }
 ```
 
-### 6.3 工具使用历史模型(ToolHistory)
+### 9.3 工具使用历史模型(ToolHistory)
 ```go
 type ToolHistory struct {
   ID     uint      `gorm:"primaryKey" json:"id"`
@@ -584,7 +622,7 @@ type ToolHistory struct {
 }
 ```
 
-### 6.4 登录历史模型(LoginHistory)
+### 9.4 登录历史模型(LoginHistory)
 ```go
 type LoginHistory struct {
   ID        uint      `gorm:"primaryKey" json:"id"`
@@ -597,7 +635,7 @@ type LoginHistory struct {
 }
 ```
 
-### 6.5 笔记模型(Note)
+### 9.5 笔记模型(Note)
 ```go
 type Note struct {
   ID          string    `gorm:"primaryKey;size:100" json:"id"`
@@ -609,49 +647,11 @@ type Note struct {
 }
 ```
 
-## 7. 认证机制
-
-系统使用JWT (JSON Web Token)进行认证。用户登录成功后，服务器会返回一个JWT令牌，该令牌需要在后续的API请求中通过Authorization头传递。
-
-JWT令牌包含用户的身份信息，有效期等。当令牌过期或无效时，API请求会返回401 Unauthorized错误。
-
-## 8. 错误处理
-
-所有API接口都使用标准的HTTP状态码来表示请求的结果：
-- 200 OK: 请求成功
-- 201 Created: 创建成功
-- 400 Bad Request: 请求参数错误
-- 401 Unauthorized: 未授权
-- 403 Forbidden: 禁止访问（包含CSRF令牌验证失败）
-- 404 Not Found: 资源不存在
-- 429 Too Many Requests: 请求过于频繁，超出限流限制
-- 500 Internal Server Error: 服务器错误
-
-错误响应通常包含一个error字段，描述具体的错误信息。
-
-## 9. CSRF保护机制
-
-ToolCat服务启用了CSRF（跨站请求伪造）保护机制，对于非GET/HEAD/OPTIONS/TRACE的请求，需要进行CSRF令牌验证。
-
-### 9.1 CSRF令牌获取
-
-CSRF令牌会通过两种方式提供：
-
-1. **Cookie**：服务器会在响应中设置名为`XSRF-TOKEN`的Cookie
-2. **响应头**：服务器会在响应头中添加`X-CSRF-Token`字段
-
-### 9.2 CSRF令牌使用
-
-对于需要验证CSRF的请求（非GET/HEAD/OPTIONS/TRACE），需要同时满足以下条件：
-
-1. 请求头中包含`X-CSRF-Token`字段，值为获取到的CSRF令牌
-2. 请求中携带包含相同令牌值的`XSRF-TOKEN`Cookie
-
-## 4.4 Note插件接口
+## 10. Note插件接口
 
 Note插件是一个记事本插件，可以实现事件记录的增删查改功能。所有Note插件接口位于`/plugins/note`路径下。
 
-### 4.4.1 获取插件信息
+### 10.1.1 获取插件信息
 
 **请求URL**: `/plugins/note/`
 **请求方法**: GET
@@ -675,7 +675,7 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 }
 ```
 
-### 4.4.2 获取所有笔记
+### 10.1.2 获取所有笔记
 
 **请求URL**: `/plugins/note/notes`
 **请求方法**: GET
@@ -712,7 +712,7 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 }
 ```
 
-### 4.4.3 获取单个笔记
+### 10.1.3 获取单个笔记
 
 **请求URL**: `/plugins/note/notes/:id`
 **请求方法**: GET
@@ -741,7 +741,7 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 }
 ```
 
-### 4.4.4 创建新笔记
+### 10.1.4 创建新笔记
 
 **请求URL**: `/plugins/note/notes`
 **请求方法**: POST
@@ -775,7 +775,7 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 }
 ```
 
-### 4.4.5 更新笔记
+### 10.1.5 更新笔记
 
 **请求URL**: `/plugins/note/notes/:id`
 **请求方法**: PUT
@@ -812,7 +812,7 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 }
 ```
 
-### 4.4.6 删除笔记
+### 10.1.6 删除笔记
 
 **请求URL**: `/plugins/note/notes/:id`
 **请求方法**: DELETE
@@ -837,7 +837,7 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 }
 ```
 
-### 4.4.7 搜索笔记
+### 10.1.7 搜索笔记
 
 **请求URL**: `/plugins/note/notes/search`
 **请求方法**: GET
@@ -875,7 +875,7 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 }
 ```
 
-## 9. 安全提醒
+## 11. 安全提醒
 
 1. 不要在客户端存储用户密码
 2. 妥善保管JWT令牌，避免泄露
