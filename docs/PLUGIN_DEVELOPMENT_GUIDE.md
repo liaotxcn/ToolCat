@@ -2,7 +2,7 @@
 
 ## 1. 插件系统概述
 
-ToolCat 插件系统允许开发者扩展应用功能，而无需修改核心代码。本指南将详细介绍如何开发、测试和部署 ToolCat 插件，推荐使用优化后的路由注册机制、插件依赖管理和热重载功能。
+ToolCat 插件系统允许开发者扩展应用功能，而无需修改核心代码。本指南将详细介绍如何开发、测试和部署 ToolCat 插件，推荐使用优化后的路由注册机制、插件依赖管理和热重载功能，同时还提供了插件脚手架工具，帮助开发者快速高效地创建符合规范的插件项目结构
 
 ## 2. 插件接口定义
 
@@ -72,7 +72,29 @@ type Route struct {
 
 ## 4. 开发插件的步骤
 
-### 4.1 创建插件结构体
+### 4.1 使用插件脚手架工具（推荐）
+
+ToolCat 提供了插件脚手架工具，可以快速生成符合规范的插件代码。使用方法如下：
+
+```bash
+# 在项目根目录下运行
+cd /path/to/ToolCat
+
+# 交互式模式
+# Windows/Linux/Mac
+go run tools/plugin_scaffold.go
+
+# 非交互式模式
+go run tools/plugin_scaffold.go --name YourPlugin --desc "插件描述" --type api --version "1.0.0" --non-interactive
+```
+
+脚手架工具会自动生成以下文件：
+- `plugins/{plugin_name}_plugin.go` - 插件代码文件，包含完整的Plugin接口实现
+- `plugins/{plugin_name}_plugin.md` - 插件文档文件
+
+### 4.2 手动创建插件结构体
+
+如果需要手动创建插件，可以按照以下步骤进行：
 
 ```go
 package plugins

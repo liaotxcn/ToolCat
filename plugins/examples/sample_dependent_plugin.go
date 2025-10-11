@@ -1,13 +1,14 @@
-package plugins
+package examples
 
 import (
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"toolcat/plugins/core"
 )
 
 // SampleDependentPlugin 示例依赖插件
 type SampleDependentPlugin struct {
-	pluginManager *pluginManager
+	pluginManager *core.PluginManager
 }
 
 // NewSampleDependentPlugin 创建新的示例依赖插件
@@ -41,7 +42,7 @@ func (p *SampleDependentPlugin) GetConflicts() []string {
 }
 
 // SetPluginManager 设置插件管理器
-func (p *SampleDependentPlugin) SetPluginManager(manager *pluginManager) {
+func (p *SampleDependentPlugin) SetPluginManager(manager *core.PluginManager) {
 	p.pluginManager = manager
 }
 
@@ -80,8 +81,8 @@ func (p *SampleDependentPlugin) OnDisable() error {
 }
 
 // GetRoutes 获取路由定义
-func (p *SampleDependentPlugin) GetRoutes() []Route {
-	return []Route{
+func (p *SampleDependentPlugin) GetRoutes() []core.Route {
+	return []core.Route{
 		{
 			Path:         "/",
 			Method:       "GET",

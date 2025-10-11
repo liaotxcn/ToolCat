@@ -1,14 +1,15 @@
-package plugins
+package examples
 
 import (
 	"fmt"
 
 	"github.com/gin-gonic/gin"
+	"toolcat/plugins/core"
 )
 
 // HelloPlugin 示例插件
 type HelloPlugin struct{
-	pluginManager *pluginManager
+	pluginManager *core.PluginManager
 }
 
 // NewHelloPlugin 创建新的HelloPlugin实例
@@ -42,7 +43,7 @@ func (p *HelloPlugin) GetConflicts() []string {
 }
 
 // SetPluginManager 设置插件管理器
-func (p *HelloPlugin) SetPluginManager(manager *pluginManager) {
+func (p *HelloPlugin) SetPluginManager(manager *core.PluginManager) {
 	p.pluginManager = manager
 }
 
@@ -83,8 +84,8 @@ func (p *HelloPlugin) RegisterRoutes(router *gin.Engine) {
 }
 
 // GetRoutes 返回插件的路由定义
-func (p *HelloPlugin) GetRoutes() []Route {
-	return []Route{
+func (p *HelloPlugin) GetRoutes() []core.Route {
+	return []core.Route{
 		{
 			Path:         "/",
 			Method:       "GET",

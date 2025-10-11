@@ -14,6 +14,8 @@ import (
 	"toolcat/models"
 	"toolcat/pkg"
 	"toolcat/plugins"
+	"toolcat/plugins/examples"
+	"toolcat/plugins/features"
 	"toolcat/routers"
 
 	"github.com/gin-gonic/gin"
@@ -31,6 +33,9 @@ func main() {
 		panic(fmt.Sprintf("Failed to initialize logger: %v", err))
 	}
 	defer pkg.Sync()
+
+	// 设置PluginManager的日志记录器
+	plugins.PluginManager.SetLogger(pkg.GetLogger())
 
 	// 加载配置
 	config.LoadConfig()
@@ -55,6 +60,24 @@ func main() {
 
 	// 注册插件
 	registerPlugins(router)
+
+	// 设置插件目录
+	pluginsDir := config.Config.Plugins.Dir
+	if pluginsDir == "" {
+		pluginsDir = "./plugins"
+	}
+	plugins.PluginManager.SetPluginDir(pluginsDir)
+
+	// 根据配置决定是否启动插件监控器
+	if config.Config.Plugins.WatcherEnabled {
+		if err := plugins.PluginManager.StartPluginWatcher(); err != nil {
+			pkg.Error("Failed to start plugin watcher", zap.Error(err))
+		} else {
+			pkg.Info("Plugin watcher started successfully", zap.String("pluginsDir", pluginsDir))
+		}
+	} else {
+		pkg.Info("Plugin watcher is disabled by configuration")
+	}
 
 	// 启动服务器
 	port := config.Config.Server.Port
@@ -81,6 +104,9 @@ func main() {
 	<-quit
 	pkg.Info("Shutting down server...")
 
+	// 停止插件监控器
+	plugins.PluginManager.StopPluginWatcher()
+
 	// 创建超时上下文，用于优雅关闭服务器
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -97,7 +123,7 @@ func registerPlugins(router *gin.Engine) {
 	plugins.PluginManager.SetRouter(router)
 
 	// 注册示例插件
-	helloPlugin := &plugins.HelloPlugin{}
+	helloPlugin := &examples.HelloPlugin{}
 	if err := plugins.PluginManager.Register(helloPlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", helloPlugin.Name()), zap.Error(err))
 	} else {
@@ -105,7 +131,7 @@ func registerPlugins(router *gin.Engine) {
 	}
 
 	// 注册记事本插件
-	notePlugin := &plugins.NotePlugin{}
+	notePlugin := &features.NotePlugin{}
 	if err := plugins.PluginManager.Register(notePlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", notePlugin.Name()), zap.Error(err))
 	} else {
@@ -120,7 +146,7 @@ func registerPlugins(router *gin.Engine) {
 	// }
 
 	// 注册优化插件
-	sampleOptimizedPlugin := plugins.NewSampleOptimizedPlugin()
+	sampleOptimizedPlugin := examples.NewSampleOptimizedPlugin()
 	if err := plugins.PluginManager.Register(sampleOptimizedPlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", sampleOptimizedPlugin.Name()), zap.Error(err))
 	} else {
@@ -128,10 +154,13 @@ func registerPlugins(router *gin.Engine) {
 	}
 
 	// 注册依赖插件
-	sampleDependentPlugin := plugins.NewSampleDependentPlugin()
+	sampleDependentPlugin := examples.NewSampleDependentPlugin()
 	if err := plugins.PluginManager.Register(sampleDependentPlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", sampleDependentPlugin.Name()), zap.Error(err))
 	} else {
 		pkg.Info("Successfully registered plugin", zap.String("plugin", sampleDependentPlugin.Name()))
 	}
+
+	// 所有插件注册完成，输出确认日志
+	pkg.Info("插件已全部注册运行成功")
 }

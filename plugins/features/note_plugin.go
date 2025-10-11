@@ -1,4 +1,4 @@
-package plugins
+package features
 
 import (
 	"errors"
@@ -11,6 +11,7 @@ import (
 
 	"toolcat/models"
 	"toolcat/pkg"
+	"toolcat/plugins/core"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -29,7 +30,7 @@ type Note struct {
 type NotePlugin struct {
 	// 使用MySQL数据库存储
 	mutex         sync.RWMutex    // 读写锁用于并发控制
-	pluginManager *pluginManager
+	pluginManager *core.PluginManager
 }
 
 // Name 返回插件名称
@@ -58,7 +59,7 @@ func (p *NotePlugin) GetConflicts() []string {
 }
 
 // SetPluginManager 设置插件管理器
-func (p *NotePlugin) SetPluginManager(manager *pluginManager) {
+func (p *NotePlugin) SetPluginManager(manager *core.PluginManager) {
 	p.pluginManager = manager
 }
 
@@ -403,8 +404,8 @@ func (p *NotePlugin) GetDefaultMiddlewares() []gin.HandlerFunc {
 }
 
 // GetRoutes 返回插件的路由定义
-func (p *NotePlugin) GetRoutes() []Route {
-	return []Route{
+func (p *NotePlugin) GetRoutes() []core.Route {
+	return []core.Route{
 		{
 			Path:   "/",
 			Method: "GET",

@@ -1,9 +1,10 @@
-package plugins
+package templates
 
 import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"toolcat/plugins/core"
 )
 
 // 插件开发模板
@@ -69,8 +70,8 @@ func (p *YourPlugin) Shutdown() error {
 
 // GetRoutes 返回插件的路由定义
 // 推荐使用此方法代替 RegisterRoutes
-func (p *YourPlugin) GetRoutes() []Route {
-	return []Route{
+func (p *YourPlugin) GetRoutes() []core.Route {
+	return []core.Route{
 		{
 			Path:         "/",
 			Method:       "GET",
