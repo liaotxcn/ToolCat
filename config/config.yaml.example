@@ -43,7 +43,11 @@ csrf:
 
 # 插件配置
 plugins:
+  # 插件目录路径
   dir: ./plugins
+  # 是否启用插件监控器
   watcherEnabled: true
-  scanInterval: 5 # 秒
+  # 插件扫描间隔（秒）
+  scanInterval: 5
+  # 是否启用热重载功能
   hotReload: true

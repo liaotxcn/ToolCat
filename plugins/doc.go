@@ -7,8 +7,5 @@
 // - templates: 插件开发模板
 package plugins
 
-import "toolcat/plugins/core"
-
-// PluginManager 提供对插件系统的统一管理接口
-// 对core包中GlobalPluginManager的公开引用
-var PluginManager = core.GlobalPluginManager
+// 插件系统提供动态加载、管理和热重载插件的能力
+// 请通过init.go中的PluginManager访问插件系统功能

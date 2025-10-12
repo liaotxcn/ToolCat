@@ -71,9 +71,17 @@ type PluginManager struct {
 	plugins   map[string]PluginInfo // 存储插件信息和路由
 	router    *gin.Engine           // 路由引擎引用
 	mutex     *sync.RWMutex         // 读写锁，保证线程安全
-	watcher   PluginWatcher        // 插件文件监控器
+	watcher   PluginWatcher         // 插件文件监控器
 	logger    *pkg.Logger           // 日志记录器
 	pluginDir string                // 插件目录路径
+}
+
+// SetPluginWatcher 设置插件监控器实例
+// 用于解决循环依赖问题，允许外部创建并注入PluginWatcher
+func (pm *PluginManager) SetPluginWatcher(watcher PluginWatcher) {
+	pm.mutex.Lock()
+	defer pm.mutex.Unlock()
+	pm.watcher = watcher
 }
 
 // GlobalPluginManager 全局插件管理器实例
@@ -630,6 +638,7 @@ func (pm *PluginManager) SetPluginDir(dir string) {
 }
 
 // StartPluginWatcher 启动插件监控器
+// 注意：此方法需要外部提供PluginWatcher实例
 func (pm *PluginManager) StartPluginWatcher() error {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
@@ -639,9 +648,8 @@ func (pm *PluginManager) StartPluginWatcher() error {
 		return nil
 	}
 
-	// 这里只是一个占位符实现，实际上插件监控器不再在core包中创建
-	// 移除对PluginWatcher的直接依赖，避免循环导入
-	return fmt.Errorf("插件监控器已移至watcher包，不再在此处创建")
+	// 注意：此方法已被重构，请在应用程序初始化时通过SetPluginWatcher方法设置监控器实例
+	return fmt.Errorf("插件监控器未初始化，请先设置PluginWatcher实例")
 }
 
 // StopPluginWatcher 停止插件监控器

@@ -15,7 +15,6 @@ import (
 	"toolcat/pkg"
 	"toolcat/plugins"
 	"toolcat/plugins/examples"
-	"toolcat/plugins/features"
 	"toolcat/routers"
 
 	"github.com/gin-gonic/gin"
@@ -61,22 +60,9 @@ func main() {
 	// 注册插件
 	registerPlugins(router)
 
-	// 设置插件目录
-	pluginsDir := config.Config.Plugins.Dir
-	if pluginsDir == "" {
-		pluginsDir = "./plugins"
-	}
-	plugins.PluginManager.SetPluginDir(pluginsDir)
-
-	// 根据配置决定是否启动插件监控器
-	if config.Config.Plugins.WatcherEnabled {
-		if err := plugins.PluginManager.StartPluginWatcher(); err != nil {
-			pkg.Error("Failed to start plugin watcher", zap.Error(err))
-		} else {
-			pkg.Info("Plugin watcher started successfully", zap.String("pluginsDir", pluginsDir))
-		}
-	} else {
-		pkg.Info("Plugin watcher is disabled by configuration")
+	// 初始化插件系统
+	if err := plugins.InitPluginSystem(); err != nil {
+		pkg.Error("Failed to initialize plugin system", zap.Error(err))
 	}
 
 	// 启动服务器
@@ -131,12 +117,8 @@ func registerPlugins(router *gin.Engine) {
 	}
 
 	// 注册记事本插件
-	notePlugin := &features.NotePlugin{}
-	if err := plugins.PluginManager.Register(notePlugin); err != nil {
-		pkg.Error("Failed to register plugin", zap.String("plugin", notePlugin.Name()), zap.Error(err))
-	} else {
-		pkg.Info("Successfully registered plugin", zap.String("plugin", notePlugin.Name()))
-	}
+	// 注意：NotePlugin已移至单独的初始化逻辑中，不在此处直接注册
+	pkg.Info("NotePlugin will be registered through plugin system")
 
 	// 统一注册所有插件路由
 	// 注意：由于我们使用了新的注册机制，插件在注册时已经自动注册了路由
