@@ -15,6 +15,7 @@ import (
 	"toolcat/pkg"
 	"toolcat/plugins"
 	"toolcat/plugins/examples"
+	"toolcat/plugins/features"
 	"toolcat/routers"
 
 	"github.com/gin-gonic/gin"
@@ -117,8 +118,12 @@ func registerPlugins(router *gin.Engine) {
 	}
 
 	// 注册记事本插件
-	// 注意：NotePlugin已移至单独的初始化逻辑中，不在此处直接注册
-	pkg.Info("NotePlugin will be registered through plugin system")
+	notePlugin := &features.NotePlugin{}
+	if err := plugins.PluginManager.Register(notePlugin); err != nil {
+		pkg.Error("Failed to register plugin", zap.String("plugin", notePlugin.Name()), zap.Error(err))
+	} else {
+		pkg.Info("Successfully registered plugin", zap.String("plugin", notePlugin.Name()))
+	}
 
 	// 统一注册所有插件路由
 	// 注意：由于我们使用了新的注册机制，插件在注册时已经自动注册了路由
