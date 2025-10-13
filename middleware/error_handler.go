@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -23,31 +24,93 @@ func (eh *ErrorHandler) HandlerFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 记录请求开始时间
 		reqStart := time.Now()
+		requestID := c.GetString("X-Request-ID")
+		if requestID == "" {
+			requestID = generateRequestID()
+			c.Set("X-Request-ID", requestID)
+		}
 
 		// 处理请求
 		c.Next()
 
-		// 如果状态码是4xx或5xx，记录错误日志
-		if c.Writer.Status() >= 400 {
+		// 检查是否有错误
+		if len(c.Errors) > 0 {
+			// 获取最后一个错误作为主要错误
+			err := c.Errors.Last().Err
+			var appErr *pkg.AppError
+			var statusCode int
+
+			// 检查是否为AppError类型
+			if errors.As(err, &appErr) {
+				// 设置请求ID和路径
+				appErr.WithRequestID(requestID).WithPath(c.Request.URL.Path)
+				// 获取对应的HTTP状态码
+				statusCode = pkg.GetHTTPStatus(appErr)
+				// 以统一格式返回错误
+				c.JSON(statusCode, appErr)
+			} else {
+				// 对于非AppError类型的错误，创建一个内部错误
+				appErr = pkg.NewInternalError("Internal server error", err)
+				appErr.WithRequestID(requestID).WithPath(c.Request.URL.Path)
+				statusCode = http.StatusInternalServerError
+				c.JSON(statusCode, appErr)
+			}
+
+			// 记录错误日志
 			duration := time.Since(reqStart)
+			logFields := []zap.Field{
+				zap.String("method", c.Request.Method),
+				zap.String("path", c.Request.URL.Path),
+				zap.String("request_id", requestID),
+				zap.Int("status_code", statusCode),
+				zap.String("error_code", string(appErr.Code)),
+				zap.String("error_message", appErr.Message),
+				zap.Duration("duration", duration),
+				zap.String("remote_addr", c.ClientIP()),
+			}
+
+			// 根据错误类型设置不同的日志级别
+			if statusCode >= 500 {
+				pkg.With(logFields...).Error("Request failed with server error")
+			} else {
+				pkg.With(logFields...).Warn("Request failed with client error")
+			}
+
+			// 确保响应已写入
+			c.Abort()
+			return
+		}
+
+		// 记录成功请求的信息
+		duration := time.Since(reqStart)
+		if c.Writer.Status() >= 400 {
+			// 没有捕获到错误但状态码是4xx，记录警告日志
 			pkg.With(
 				zap.String("method", c.Request.Method),
 				zap.String("path", c.Request.URL.Path),
+				zap.String("request_id", requestID),
 				zap.Int("status_code", c.Writer.Status()),
 				zap.Duration("duration", duration),
 				zap.String("remote_addr", c.ClientIP()),
-			).Warn("Request failed")
+			).Warn("Request completed with non-success status")
 		} else {
 			// 记录成功请求的信息（调试级别）
-			duration := time.Since(reqStart)
-			pkg.Debug("Request processed",
+			pkg.Debug("Request processed successfully",
 				zap.String("method", c.Request.Method),
 				zap.String("path", c.Request.URL.Path),
+				zap.String("request_id", requestID),
 				zap.Int("status_code", c.Writer.Status()),
 				zap.Duration("duration", duration),
 			)
 		}
 	}
+}
+
+// generateRequestID 生成一个简单的请求ID
+func generateRequestID() string {
+	// 在实际项目中，应该使用更安全的方式生成请求ID
+	// 这里为了简化，使用时间戳和随机数的组合
+	return time.Now().Format("20060102150405") + "-" + pkg.RandomString(8)
 }
 
 

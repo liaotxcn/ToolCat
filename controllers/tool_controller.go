@@ -18,7 +18,12 @@ func (tc *ToolController) GetTools(c *gin.Context) {
 	var tools []models.Tool
 	result := pkg.DB.Where("is_enabled = ?", true).Find(&tools)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		// 使用统一错误码系统返回数据库错误
+		dbErr := pkg.NewDatabaseError("Failed to fetch tools", result.Error)
+		dbErr.WithDetails(map[string]interface{}{
+			"filter": "is_enabled = true",
+		})
+		c.Error(dbErr)
 		return
 	}
 
@@ -32,7 +37,8 @@ func (tc *ToolController) GetTool(c *gin.Context) {
 	var tool models.Tool
 	result := pkg.DB.First(&tool, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Tool not found"})
+		// 使用统一错误码系统返回未找到错误
+		c.Error(pkg.NewNotFoundError("Tool not found", nil))
 		return
 	}
 
@@ -43,13 +49,19 @@ func (tc *ToolController) GetTool(c *gin.Context) {
 func (tc *ToolController) CreateTool(c *gin.Context) {
 	var tool models.Tool
 	if err := c.ShouldBindJSON(&tool); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// 使用统一错误码系统返回参数验证错误
+		c.Error(pkg.NewValidationError("Invalid tool data", err))
 		return
 	}
 
 	result := pkg.DB.Create(&tool)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		// 使用统一错误码系统返回数据库错误
+		dbErr := pkg.NewDatabaseError("Failed to create tool", result.Error)
+		dbErr.WithDetails(map[string]interface{}{
+			"tool_name": tool.Name,
+		})
+		c.Error(dbErr)
 		return
 	}
 
@@ -63,18 +75,25 @@ func (tc *ToolController) UpdateTool(c *gin.Context) {
 	var tool models.Tool
 	result := pkg.DB.First(&tool, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Tool not found"})
+		// 使用统一错误码系统返回未找到错误
+		c.Error(pkg.NewNotFoundError("Tool not found", nil))
 		return
 	}
 
 	if err := c.ShouldBindJSON(&tool); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		// 使用统一错误码系统返回参数验证错误
+		c.Error(pkg.NewValidationError("Invalid tool data", err))
 		return
 	}
 
 	result = pkg.DB.Save(&tool)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		// 使用统一错误码系统返回数据库错误
+		dbErr := pkg.NewDatabaseError("Failed to update tool", result.Error)
+		dbErr.WithDetails(map[string]interface{}{
+			"tool_id": id,
+		})
+		c.Error(dbErr)
 		return
 	}
 
@@ -87,12 +106,18 @@ func (tc *ToolController) DeleteTool(c *gin.Context) {
 
 	result := pkg.DB.Delete(&models.Tool{}, id)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		// 使用统一错误码系统返回数据库错误
+		dbErr := pkg.NewDatabaseError("Failed to delete tool", result.Error)
+		dbErr.WithDetails(map[string]interface{}{
+			"tool_id": id,
+		})
+		c.Error(dbErr)
 		return
 	}
 
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Tool not found"})
+		// 使用统一错误码系统返回未找到错误
+		c.Error(pkg.NewNotFoundError("Tool not found", nil))
 		return
 	}
 
@@ -106,12 +131,14 @@ func (tc *ToolController) ExecuteTool(c *gin.Context) {
 	var tool models.Tool
 	result := pkg.DB.First(&tool, id)
 	if result.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Tool not found"})
+		// 使用统一错误码系统返回未找到错误
+		c.Error(pkg.NewNotFoundError("Tool not found", nil))
 		return
 	}
 
 	if !tool.IsEnabled {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Tool is disabled"})
+		// 使用统一错误码系统返回禁止访问错误
+		c.Error(pkg.NewForbiddenError("Tool is disabled", nil))
 		return
 	}
 
@@ -124,12 +151,13 @@ func (tc *ToolController) ExecuteTool(c *gin.Context) {
 
 	result = pkg.DB.Create(&history)
 	if result.Error != nil {
-		// 记录失败不应影响工具执行
-		c.JSON(http.StatusOK, gin.H{
+		// 记录失败不应影响工具执行，但记录错误日志
+		dbErr := pkg.NewDatabaseError("Failed to record tool usage history", result.Error)
+		dbErr.WithDetails(map[string]interface{}{
 			"tool_id": tool.ID,
-			"message": "Tool executed successfully, but history recording failed",
 		})
-		return
+		// 记录但不中断执行
+		c.Error(dbErr)
 	}
 
 	c.JSON(http.StatusOK, gin.H{
