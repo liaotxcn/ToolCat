@@ -27,13 +27,13 @@ func (uc *UserController) Register(c *gin.Context) {
 
 	// 绑定JSON请求体
 	if err := c.ShouldBindJSON(&registerRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(pkg.NewValidationError("Invalid registration data", err))
 		return
 	}
 
 	// 检查两次输入的密码是否一致
 	if registerRequest.Password != registerRequest.ConfirmPassword {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "两次输入的密码不一致"})
+		c.Error(pkg.NewValidationError("Passwords do not match", nil))
 		return
 	}
 
@@ -41,21 +41,21 @@ func (uc *UserController) Register(c *gin.Context) {
 	var existingUser models.User
 	result := pkg.DB.Where("username = ?", registerRequest.Username).First(&existingUser)
 	if result.Error == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "用户名已存在"})
+		c.Error(pkg.NewConflictError("Username already exists", nil))
 		return
 	}
 
 	// 检查邮箱是否已存在
 	result = pkg.DB.Where("email = ?", registerRequest.Email).First(&existingUser)
 	if result.Error == nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "邮箱已被注册"})
+		c.Error(pkg.NewConflictError("Email already registered", nil))
 		return
 	}
 
 	// 对密码进行哈希处理
 	passwordHash, err := utils.HashPassword(registerRequest.Password)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "密码加密失败"})
+		c.Error(pkg.NewInternalError("Failed to encrypt password", err))
 		return
 	}
 
@@ -68,7 +68,12 @@ func (uc *UserController) Register(c *gin.Context) {
 
 	result = pkg.DB.Create(&newUser)
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+		dbErr := pkg.NewDatabaseError("Failed to register user", result.Error)
+		dbErr.WithDetails(map[string]interface{}{
+			"username": registerRequest.Username,
+			"email":    registerRequest.Email,
+		})
+		c.Error(dbErr)
 		return
 	}
 
@@ -89,7 +94,7 @@ func (uc *UserController) Login(c *gin.Context) {
 	if err := c.ShouldBindJSON(&loginRequest); err != nil {
 		// 记录绑定失败的登录尝试
 		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "请求参数验证失败: " + err.Error())
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(pkg.NewValidationError("Missing required login fields", err))
 		return
 	}
 
@@ -99,7 +104,7 @@ func (uc *UserController) Login(c *gin.Context) {
 	if result.Error != nil {
 		// 记录用户不存在的登录尝试
 		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "用户名或密码错误")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
+		c.Error(pkg.NewAuthError("Invalid username or password", nil))
 		return
 	}
 
@@ -107,7 +112,7 @@ func (uc *UserController) Login(c *gin.Context) {
 	if !utils.CheckPasswordHash(loginRequest.Password, user.Password) {
 		// 记录密码错误的登录尝试
 		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "用户名或密码错误")
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
+		c.Error(pkg.NewAuthError("Invalid username or password", nil))
 		return
 	}
 
@@ -116,7 +121,7 @@ func (uc *UserController) Login(c *gin.Context) {
 	if err != nil {
 		// 记录生成token失败的情况
 		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "生成访问令牌失败: " + err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成访问令牌失败"})
+		c.Error(pkg.NewInternalError("Failed to generate access token", err))
 		return
 	}
 
@@ -124,7 +129,7 @@ func (uc *UserController) Login(c *gin.Context) {
 	if err != nil {
 		// 记录生成刷新令牌失败的情况
 		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "生成刷新令牌失败: " + err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成刷新令牌失败"})
+		c.Error(pkg.NewInternalError("Failed to generate refresh token", err))
 		return
 	}
 
@@ -145,14 +150,14 @@ func (uc *UserController) RefreshToken(c *gin.Context) {
 
 	// 绑定JSON请求体
 	if err := c.ShouldBindJSON(&refreshRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(pkg.NewValidationError("Refresh token is required", err))
 		return
 	}
 
 	// 验证刷新令牌
 	userID, err := utils.VerifyRefreshToken(refreshRequest.RefreshToken)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "无效的刷新令牌"})
+		c.Error(pkg.NewAuthError("Invalid refresh token", err))
 		return
 	}
 
@@ -160,21 +165,21 @@ func (uc *UserController) RefreshToken(c *gin.Context) {
 	var user models.User
 	result := pkg.DB.First(&user, userID)
 	if result.Error != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户不存在"})
+		c.Error(pkg.NewNotFoundError("User not found", nil))
 		return
 	}
 
 	// 生成新的访问令牌
 	accessToken, err := utils.GenerateToken(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成访问令牌失败"})
+		c.Error(pkg.NewInternalError("Failed to generate access token", err))
 		return
 	}
 
 	// 生成新的刷新令牌（可选：也可以继续使用原有的刷新令牌）
 	refreshToken, err := utils.GenerateRefreshToken(userID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "生成刷新令牌失败"})
+		c.Error(pkg.NewInternalError("Failed to generate refresh token", err))
 		return
 	}
 

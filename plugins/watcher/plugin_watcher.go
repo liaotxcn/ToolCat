@@ -11,16 +11,23 @@ import (
 
 	"toolcat/config"
 	"toolcat/pkg"
+	"toolcat/plugins/loader"
 
 	"github.com/fsnotify/fsnotify"
 	"go.uber.org/zap"
 )
 
+// Plugin 定义watcher包中使用的最小插件接口
+type Plugin interface {
+	Name() string
+}
+
 // PluginManager 定义插件管理器接口，避免循环依赖
 type PluginManager interface {
 	ReloadPlugin(name string) error
-	GetPlugin(name string) (interface{}, bool)
+	GetPlugin(name string) (Plugin, bool)
 	Unregister(name string) error
+	Register(plugin Plugin) error
 }
 
 // PluginWatcher 插件文件监控器
@@ -28,6 +35,7 @@ type PluginWatcher struct {
 	watcher      *fsnotify.Watcher
 	pluginDir    string
 	manager      PluginManager
+	loader       *loader.PluginLoader
 	logger       *pkg.Logger
 	mu           sync.RWMutex
 	watchedFiles map[string]time.Time
@@ -51,10 +59,14 @@ func NewPluginWatcher(pluginDir string, manager PluginManager, logger *pkg.Logge
 		scanInterval = config.Config.Plugins.ScanInterval
 	}
 
+	// 创建插件加载器
+	pluginLoader := loader.NewPluginLoader(logger)
+
 	pw := &PluginWatcher{
 		watcher:      watcher,
 		pluginDir:    pluginDir,
 		manager:      manager,
+		loader:       pluginLoader,
 		logger:       logger,
 		watchedFiles: make(map[string]time.Time),
 		scanInterval: time.Duration(scanInterval) * time.Second,
@@ -267,19 +279,25 @@ func (pw *PluginWatcher) handlePluginChange(path string) {
 	// 检查插件是否已注册
 	if _, exists := pw.manager.GetPlugin(pluginName); exists {
 		// 重新加载现有插件
-		if err := pw.manager.ReloadPlugin(pluginName); err != nil {
-			pw.logger.Error("重新加载插件失败",
-				zap.String("pluginName", pluginName),
-				zap.Error(err))
+		if config.Config.Plugins.HotReload {
+			if err := pw.manager.ReloadPlugin(pluginName); err != nil {
+				pw.logger.Error("重新加载插件失败",
+					zap.String("pluginName", pluginName),
+					zap.Error(err))
+			} else {
+				pw.logger.Info("插件已成功重新加载", zap.String("pluginName", pluginName))
+			}
 		} else {
-			pw.logger.Info("插件已成功重新加载", zap.String("pluginName", pluginName))
+			pw.logger.Info("热重载功能已禁用", zap.String("pluginName", pluginName))
 		}
 	} else {
 		// 注册新插件
-		// 需要实现动态加载新插件的逻辑
-		pw.logger.Info("发现新插件，需要注册", zap.String("pluginName", pluginName))
-		// 调用plugin包的Open和Lookup函数来加载插件
-		// 然后调用pw.manager.Register(loadedPlugin)
+		if config.Config.Plugins.HotReload {
+			pw.logger.Info("发现新插件，尝试动态加载", zap.String("pluginName", pluginName))
+			pw.tryLoadNewPlugin(pluginName)
+		} else {
+			pw.logger.Info("热重载功能已禁用，无法加载新插件", zap.String("pluginName", pluginName))
+		}
 	}
 
 	// 更新文件处理时间
@@ -330,6 +348,39 @@ func isDirectory(path string) bool {
 		return false
 	}
 	return fileInfo.IsDir()
+}
+
+// tryLoadNewPlugin 尝试动态加载新插件
+func (pw *PluginWatcher) tryLoadNewPlugin(pluginName string) {
+	// 检查.so文件是否存在
+	soPath := loader.GetPluginPath(pw.pluginDir, pluginName)
+	if _, err := os.Stat(soPath); os.IsNotExist(err) {
+		pw.logger.Warn("插件编译文件不存在，跳过加载", 
+			zap.String("pluginName", pluginName), 
+			zap.String("expectedPath", soPath))
+		return
+	}
+
+	// 尝试加载插件
+	pluginInstance, err := pw.loader.LoadPlugin(soPath, pluginName)
+	if err != nil {
+		pw.logger.Error("动态加载插件失败", 
+			zap.String("pluginName", pluginName), 
+			zap.Error(err))
+		return
+	}
+
+	// 注册插件
+	if err := pw.manager.Register(pluginInstance); err != nil {
+		pw.logger.Error("注册插件失败", 
+			zap.String("pluginName", pluginName), 
+			zap.Error(err))
+		// 加载失败，卸载插件
+		pw.loader.UnloadPlugin(pluginName)
+		return
+	}
+
+	pw.logger.Info("插件已成功动态加载并注册", zap.String("pluginName", pluginName))
 }
 
 // PluginManifest 插件清单结构，用于描述插件信息

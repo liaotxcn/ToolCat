@@ -1,0 +1,53 @@
+# ToolCat配置文件示例
+# 将此文件复制为 config.yaml 使用自定义配置
+
+# 服务器配置
+server:
+  port: 8081
+
+# 数据库配置
+database:
+  driver: mysql
+  host: localhost
+  port: 3306
+  username: root
+  password: "123456"
+  dbname: toolcat
+  charset: utf8mb4
+
+# 日志配置
+logger:
+  level: info # debug, info, warn, error
+  outputPath: stdout
+  errorPath: stderr
+  development: false
+
+# JWT配置
+jwt:
+  secret: "your-secret-key"
+  accessTokenExpiry: 60 # 分钟
+  refreshTokenExpiry: 168 # 小时 (7天)
+
+# CSRF配置
+csrf:
+  enabled: true
+  cookieName: XSRF-TOKEN
+  headerName: X-CSRF-Token
+  tokenLength: 32
+  cookieMaxAge: 604800 # 秒 (7天)
+  cookiePath: /
+  cookieDomain: ""
+  cookieSecure: false
+  cookieHttpOnly: false
+  cookieSameSite: Lax
+
+# 插件配置
+plugins:
+  # 插件目录路径
+  dir: ./plugins
+  # 是否启用插件监控器
+  watcherEnabled: true
+  # 插件扫描间隔（秒）
+  scanInterval: 5
+  # 是否启用热重载功能
+  hotReload: true

@@ -47,7 +47,13 @@ func (hc *HealthController) GetHealth(c *gin.Context) {
 	if overallStatus == "ok" {
 		c.JSON(200, result)
 	} else {
-		c.JSON(503, result)
+		// 使用统一错误码系统返回服务不可用错误
+		serviceErr := pkg.NewServiceUnavailableError("System health is degraded", nil)
+		serviceErr.WithDetails(map[string]interface{}{
+			"database_healthy": dbHealth["healthy"].(bool),
+			"plugin_count":     pluginHealth["pluginCount"].(int),
+		})
+		c.Error(serviceErr)
 	}
 }
 
@@ -61,10 +67,15 @@ func checkDatabaseHealth() gin.H {
 	duration := time.Since(startTime).Milliseconds()
 
 	if err != nil {
-		pkg.Error("Database health check failed", zap.Error(err))
+		// 使用统一错误码系统创建数据库错误
+		dbErr := pkg.NewDatabaseError("Database health check failed", err)
+		dbErr.WithDetails(map[string]interface{}{
+			"query": "SELECT 1",
+		})
+		pkg.Error("Database health check failed", zap.Error(dbErr))
 		return gin.H{
 			"healthy":      false,
-			"error":        err.Error(),
+			"error":        dbErr.Error(),
 			"responseTime": duration,
 		}
 	}

@@ -61,22 +61,9 @@ func main() {
 	// 注册插件
 	registerPlugins(router)
 
-	// 设置插件目录
-	pluginsDir := config.Config.Plugins.Dir
-	if pluginsDir == "" {
-		pluginsDir = "./plugins"
-	}
-	plugins.PluginManager.SetPluginDir(pluginsDir)
-
-	// 根据配置决定是否启动插件监控器
-	if config.Config.Plugins.WatcherEnabled {
-		if err := plugins.PluginManager.StartPluginWatcher(); err != nil {
-			pkg.Error("Failed to start plugin watcher", zap.Error(err))
-		} else {
-			pkg.Info("Plugin watcher started successfully", zap.String("pluginsDir", pluginsDir))
-		}
-	} else {
-		pkg.Info("Plugin watcher is disabled by configuration")
+	// 初始化插件系统
+	if err := plugins.InitPluginSystem(); err != nil {
+		pkg.Error("Failed to initialize plugin system", zap.Error(err))
 	}
 
 	// 启动服务器
@@ -92,7 +79,7 @@ func main() {
 	}
 
 	go func() {
-		pkg.Info("工具猫服务启动成功", zap.String("address", fmt.Sprintf("http://localhost:%d", port)))
+		pkg.Info("ToolCat 服务启动成功", zap.String("address", fmt.Sprintf("http://localhost:%d", port)))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			pkg.Fatal("Failed to start server", zap.Error(err))
 		}
@@ -122,7 +109,7 @@ func registerPlugins(router *gin.Engine) {
 	// 设置路由引擎到PluginManager
 	plugins.PluginManager.SetRouter(router)
 
-	// 注册示例插件
+	// 注册Hello插件
 	helloPlugin := &examples.HelloPlugin{}
 	if err := plugins.PluginManager.Register(helloPlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", helloPlugin.Name()), zap.Error(err))
@@ -130,7 +117,7 @@ func registerPlugins(router *gin.Engine) {
 		pkg.Info("Successfully registered plugin", zap.String("plugin", helloPlugin.Name()))
 	}
 
-	// 注册记事本插件
+	// 注册Note插件
 	notePlugin := &features.NotePlugin{}
 	if err := plugins.PluginManager.Register(notePlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", notePlugin.Name()), zap.Error(err))
