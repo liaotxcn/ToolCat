@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,6 +14,7 @@ import (
 	"toolcat/middleware"
 	"toolcat/models"
 	"toolcat/pkg"
+	"toolcat/pkg/migrate/migration"
 	"toolcat/plugins"
 	"toolcat/plugins/examples"
 	"toolcat/plugins/features"
@@ -45,6 +47,21 @@ func main() {
 		pkg.Fatal("Failed to initialize database", zap.Error(err))
 	}
 	defer pkg.CloseDatabase()
+
+	// 执行数据库迁移
+	if config.Config.AutoMigrate {
+		log.Println("Starting database migrations...")
+		mm := migration.NewMigrationManager()
+		if err := mm.Init(); err != nil {
+			log.Printf("Warning: Failed to initialize migration manager: %v", err)
+		} else {
+			if err := mm.Up(); err != nil {
+				log.Printf("Warning: Migration errors: %v", err)
+			} else {
+				log.Println("Database migrations completed successfully")
+			}
+		}
+	}
 
 	// 执行数据库迁移
 	if err := models.MigrateTables(); err != nil {

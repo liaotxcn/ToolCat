@@ -63,6 +63,9 @@ var Config struct {
 		CookieSameSite string
 	}
 
+	// 数据库迁移配置
+	AutoMigrate bool
+
 	// 插件配置
 	Plugins struct {
 		Dir            string
@@ -112,6 +115,9 @@ func init() {
 	Config.CSRF.CookieSecure = false   // 开发环境下为false
 	Config.CSRF.CookieHttpOnly = false // 必须为false以便前端可以读取
 	Config.CSRF.CookieSameSite = "Lax"
+
+	// 数据库迁移配置
+	Config.AutoMigrate = true
 
 	// 插件配置
 	Config.Plugins.Dir = "./plugins"
