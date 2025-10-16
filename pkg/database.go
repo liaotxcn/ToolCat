@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"toolcat/config"
+	"toolcat/pkg/metrics"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
 )
 
 var DB *gorm.DB
@@ -51,9 +53,20 @@ func InitDatabase() error {
 	maxRetries := 3
 	var lastErr error
 	for i := 0; i < maxRetries; i++ {
-		DB, lastErr = gorm.Open(mysql.Open(dsn), &gorm.Config{
+		// 创建带有性能监控的GORM配置
+		gormConfig := &gorm.Config{
 			Logger: customLogger,
-		})
+			NamingStrategy: schema.NamingStrategy{
+				SingularTable: true, // 使用单数表名
+			},
+		}
+
+		// 添加GORM性能监控插件
+		DB, lastErr = gorm.Open(mysql.Open(dsn), gormConfig)
+		if lastErr == nil {
+			// 记录连接建立指标
+			metrics.RecordDatabaseQuery("connect", "system", 0)
+		}
 		if lastErr == nil {
 			break
 		}
@@ -89,6 +102,18 @@ func InitDatabase() error {
 	if err := sqlDB.Ping(); err != nil {
 		return fmt.Errorf("database ping failed: %w", err)
 	}
+
+	// 启动数据库连接监控
+	go func() {
+		ticker := time.NewTicker(30 * time.Second)
+		for range ticker.C {
+			stats := sqlDB.Stats()
+			idle := stats.Idle
+			open := stats.OpenConnections
+			metrics.UpdateDatabaseConnections(open)
+			log.Printf("Database connection stats: idle=%d, open=%d", idle, open)
+		}
+	}()
 
 	log.Printf("Database connection established successfully host=%s port=%d database=%s",
 		config.Config.Database.Host, config.Config.Database.Port, config.Config.Database.DBName)

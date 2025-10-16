@@ -1,8 +1,12 @@
 package controllers
 
 import (
+	"net/http"
 	"time"
+
 	"toolcat/pkg"
+	"toolcat/pkg/metrics"
+
 	"toolcat/plugins"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +18,9 @@ type HealthController struct{}
 
 // GetHealth 全面健康检查
 func (hc *HealthController) GetHealth(c *gin.Context) {
+	// 开始时间
+	startTime := time.Now()
+
 	// 初始化健康检查结果
 	result := gin.H{
 		"status":    "ok",
@@ -44,9 +51,9 @@ func (hc *HealthController) GetHealth(c *gin.Context) {
 	result["status"] = overallStatus
 
 	// 根据整体状态设置HTTP状态码
-	if overallStatus == "ok" {
-		c.JSON(200, result)
-	} else {
+	statusCode := 200
+	if overallStatus != "ok" {
+		statusCode = 503
 		// 使用统一错误码系统返回服务不可用错误
 		serviceErr := pkg.NewServiceUnavailableError("System health is degraded", nil)
 		serviceErr.WithDetails(map[string]interface{}{
@@ -55,6 +62,30 @@ func (hc *HealthController) GetHealth(c *gin.Context) {
 		})
 		c.Error(serviceErr)
 	}
+
+	// 记录请求持续时间
+	duration := time.Since(startTime).Seconds()
+	pkg.Info("Health check completed", 
+		zap.Float64("duration", duration),
+		zap.String("status", overallStatus))
+
+	// 记录健康检查指标
+	metrics.RecordHTTPRequest("GET", "/health", http.StatusText(statusCode), duration)
+	if !dbHealth["healthy"].(bool) {
+		metrics.RecordError("database", "health_check")
+	}
+
+	// 更新插件统计指标
+	totalPlugins := pluginHealth["pluginCount"].(int)
+	enabledPlugins := 0
+	for _, status := range pluginHealth["pluginStatuses"].([]gin.H) {
+		if status["enabled"].(bool) {
+			enabledPlugins++
+		}
+	}
+	metrics.UpdatePluginStats(totalPlugins, enabledPlugins)
+
+	c.JSON(statusCode, result)
 }
 
 // checkDatabaseHealth 检查数据库连接健康状态
