@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -84,14 +85,15 @@ func init() {
 	// 服务器配置
 	Config.Server.Port = 8081
 
-	// 数据库配置
+	// 数据库配置（非敏感字段默认值）
 	Config.Database.Driver = "mysql"
 	Config.Database.Host = "localhost"
 	Config.Database.Port = 3306
-	Config.Database.Username = "root"
-	Config.Database.Password = "123456"
 	Config.Database.DBName = "toolcat"
 	Config.Database.Charset = "utf8mb4"
+	// 敏感字段（数据库用户名和密码）将通过环境变量或配置文件设置
+	Config.Database.Username = ""
+	Config.Database.Password = ""
 
 	// 日志配置
 	Config.Logger.Level = "info"
@@ -100,7 +102,7 @@ func init() {
 	Config.Logger.Development = false
 
 	// JWT配置
-	Config.JWT.Secret = "your-secret-key"
+	Config.JWT.Secret = "" // 敏感信息，将通过环境变量或配置文件设置
 	Config.JWT.AccessTokenExpiry = 60      // 60分钟
 	Config.JWT.RefreshTokenExpiry = 24 * 7 // 7天
 
@@ -124,6 +126,75 @@ func init() {
 	Config.Plugins.WatcherEnabled = true
 	Config.Plugins.ScanInterval = 5 // 5秒
 	Config.Plugins.HotReload = true
+}
+
+// ValidateConfig 验证配置的有效性，特别是敏感信息
+func ValidateConfig() error {
+	// 检查必要的敏感配置项
+	if Config.Database.Username == "" {
+		return fmt.Errorf("数据库用户名未配置，请设置DB_USERNAME环境变量或在配置文件中指定")
+	}
+	
+	if Config.Database.Password == "" {
+		return fmt.Errorf("数据库密码未配置，请设置DB_PASSWORD环境变量或在配置文件中指定")
+	}
+	
+	if Config.JWT.Secret == "" {
+		return fmt.Errorf("JWT密钥未配置，请设置JWT_SECRET环境变量或在配置文件中指定")
+	}
+	
+	return nil
+}
+
+// SanitizeConfig 清理配置中的敏感信息，用于日志输出
+func SanitizeConfig() map[string]interface{} {
+	// 创建配置的安全副本用于日志输出
+	sanitized := map[string]interface{}{
+		"Server": map[string]interface{}{
+			"Port": Config.Server.Port,
+		},
+		"Database": map[string]interface{}{
+			"Driver":  Config.Database.Driver,
+			"Host":    Config.Database.Host,
+			"Port":    Config.Database.Port,
+			"Username": Config.Database.Username,
+			"Password": "***", // 隐藏密码
+			"DBName":   Config.Database.DBName,
+			"Charset":  Config.Database.Charset,
+		},
+		"Logger": map[string]interface{}{
+			"Level":       Config.Logger.Level,
+			"OutputPath":  Config.Logger.OutputPath,
+			"ErrorPath":   Config.Logger.ErrorPath,
+			"Development": Config.Logger.Development,
+		},
+		"JWT": map[string]interface{}{
+			"Secret":             "***", // 隐藏密钥
+			"AccessTokenExpiry":  Config.JWT.AccessTokenExpiry,
+			"RefreshTokenExpiry": Config.JWT.RefreshTokenExpiry,
+		},
+		"CSRF": map[string]interface{}{
+			"Enabled":        Config.CSRF.Enabled,
+			"CookieName":     Config.CSRF.CookieName,
+			"HeaderName":     Config.CSRF.HeaderName,
+			"TokenLength":    Config.CSRF.TokenLength,
+			"CookieMaxAge":   Config.CSRF.CookieMaxAge,
+			"CookiePath":     Config.CSRF.CookiePath,
+			"CookieDomain":   Config.CSRF.CookieDomain,
+			"CookieSecure":   Config.CSRF.CookieSecure,
+			"CookieHttpOnly": Config.CSRF.CookieHttpOnly,
+			"CookieSameSite": Config.CSRF.CookieSameSite,
+		},
+		"AutoMigrate": Config.AutoMigrate,
+		"Plugins": map[string]interface{}{
+			"Dir":            Config.Plugins.Dir,
+			"WatcherEnabled": Config.Plugins.WatcherEnabled,
+			"ScanInterval":   Config.Plugins.ScanInterval,
+			"HotReload":      Config.Plugins.HotReload,
+		},
+	}
+	
+	return sanitized
 }
 
 // LoadConfigFile 从配置文件加载配置
@@ -346,9 +417,11 @@ func GetAbsConfigFilePath() (string, error) {
 }
 
 // LoadConfig 从配置文件和环境变量加载配置
-func LoadConfig() {
+func LoadConfig() error {
 	// 首先从配置文件加载配置
-	LoadConfigFile()
+	if err := LoadConfigFile(); err != nil {
+		return fmt.Errorf("加载配置文件失败: %w", err)
+	}
 
 	// 然后从环境变量加载配置，环境变量会覆盖配置文件的值
 	// 配置文件路径
@@ -362,7 +435,9 @@ func LoadConfig() {
 			Config.ConfigFiles.Type = "yaml"
 		}
 		// 重新从新的配置文件加载
-		LoadConfigFile()
+		if err := LoadConfigFile(); err != nil {
+			return fmt.Errorf("加载指定配置文件失败: %w", err)
+		}
 	}
 
 	// 服务器端口
@@ -453,6 +528,21 @@ func LoadConfig() {
 			Config.Logger.Development = dev
 		}
 	}
+	
+	// 数据库用户名 - 敏感信息，优先使用环境变量
+	if Config.Database.Username == "" {
+		Config.Database.Username = os.Getenv("DB_USERNAME")
+	}
+	
+	// 数据库密码 - 敏感信息，优先使用环境变量
+	if Config.Database.Password == "" {
+		Config.Database.Password = os.Getenv("DB_PASSWORD")
+	}
+	
+	// JWT密钥 - 敏感信息，优先使用环境变量
+	if Config.JWT.Secret == "" {
+		Config.JWT.Secret = os.Getenv("JWT_SECRET")
+	}
 
 	// CSRF配置
 	if csrfEnabled := os.Getenv("CSRF_ENABLED"); csrfEnabled != "" {
@@ -504,4 +594,7 @@ func LoadConfig() {
 	if cookieSameSite := os.Getenv("CSRF_COOKIE_SAME_SITE"); cookieSameSite != "" {
 		Config.CSRF.CookieSameSite = cookieSameSite
 	}
+	
+	// 验证配置有效性
+	return ValidateConfig()
 }

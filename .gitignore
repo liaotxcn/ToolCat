@@ -15,11 +15,15 @@
 logs/
 
 # 配置文件
-*.env
-*.local
 config/*.yaml
 config/*.yml
 config/*.json
+
+# 环境变量文件
+.env
+.env.local
+.env.production
+.env.*.local
 
 # Go编译产物
 go.sum

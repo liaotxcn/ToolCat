@@ -40,7 +40,12 @@ func main() {
 	plugins.PluginManager.SetLogger(pkg.GetLogger())
 
 	// 加载配置
-	config.LoadConfig()
+	if err := config.LoadConfig(); err != nil {
+		pkg.Fatal("Failed to load configuration", zap.Error(err))
+	}
+	
+	// 输出清理后的配置信息（隐藏敏感数据）
+	pkg.Info("Configuration loaded successfully", zap.Any("config", config.SanitizeConfig()))
 
 	// 初始化数据库
 	if err := pkg.InitDatabase(); err != nil {
