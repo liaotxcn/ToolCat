@@ -7,13 +7,15 @@ server:
 
 # 数据库配置
 database:
+  # 数据库驱动类型，可选值：mysql（默认）或 postgres
   driver: mysql
   host: localhost
+  # 端口：MySQL默认3306，PostgreSQL默认5432
   port: 3306
   username: root
   password: "123456"
   dbname: toolcat
-  charset: utf8mb4
+  charset: utf8mb4 # 仅MySQL使用，PostgreSQL会忽略此参数
 
 # 日志配置
 logger:
@@ -51,3 +53,14 @@ plugins:
   scanInterval: 5
   # 是否启用热重载功能
   hotReload: true
+
+# Prometheus配置（用于应用自身的指标暴露）
+prometheus:
+  # 是否启用指标暴露
+  enabled: true
+  # 指标路径
+  metricsPath: '/metrics'
+  # 启用Go运行时指标
+  enableGoMetrics: true
+  # 启用HTTP指标
+  enableHTTPMetrics: true
