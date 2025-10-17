@@ -58,8 +58,9 @@ func main() {
 	defer pkg.CloseDatabase()
 
 	// 执行数据库迁移
-	if config.Config.AutoMigrate {
-		log.Println("Starting database migrations...")
+	// 如果禁用了自动迁移，使用SQL迁移文件
+	if !config.Config.AutoMigrate {
+		log.Println("Starting SQL migrations...")
 		mm := migration.NewMigrationManager()
 		if err := mm.Init(); err != nil {
 			log.Printf("Warning: Failed to initialize migration manager: %v", err)
@@ -67,14 +68,17 @@ func main() {
 			if err := mm.Up(); err != nil {
 				log.Printf("Warning: Migration errors: %v", err)
 			} else {
-				log.Println("Database migrations completed successfully")
+				log.Println("SQL migrations completed successfully")
 			}
 		}
-	}
-
-	// 执行数据库迁移
-	if err := models.MigrateTables(); err != nil {
-		pkg.Warn("Failed to migrate database tables", zap.Error(err))
+	} else {
+		// 仅当启用自动迁移时才使用GORM自动迁移
+		log.Println("Starting GORM auto-migration...")
+		if err := models.MigrateTables(); err != nil {
+			pkg.Warn("Failed to migrate database tables", zap.Error(err))
+		} else {
+			log.Println("GORM auto-migration completed successfully")
+		}
 	}
 
 	// 初始化路由

@@ -43,6 +43,9 @@ csrf:
   cookieHttpOnly: false
   cookieSameSite: Lax
 
+# 数据库迁移配置
+autoMigrate: false # 设为false禁用GORM自动迁移，使用SQL迁移文件
+
 # 插件配置
 plugins:
   # 插件目录路径
