@@ -7,10 +7,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"toolcat/config"
 	"toolcat/pkg"
 
 	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database"
 	"github.com/golang-migrate/migrate/v4/database/mysql"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 )
 
@@ -18,12 +21,20 @@ import (
 type MigrationManager struct {
 	migrationsDir string
 	migrate       *migrate.Migrate
+	driverName    string // 数据库驱动名称
 }
 
 // NewMigrationManager 创建新的迁移管理器
 func NewMigrationManager() *MigrationManager {
+	// 获取数据库驱动名称
+	driverName := config.Config.Database.Driver
+	if driverName == "" {
+		driverName = "mysql" // 默认MySQL
+	}
+
 	return &MigrationManager{
 		migrationsDir: filepath.Join("pkg", "migrate", "data_sql"),
+		driverName:    driverName,
 	}
 }
 
@@ -40,8 +51,26 @@ func (mm *MigrationManager) Init() error {
 		return fmt.Errorf("failed to get database connection: %w", err)
 	}
 
-	// 初始化数据库驱动
-	driver, err := mysql.WithInstance(sqlDB, &mysql.Config{})
+	// 确保driverName被设置
+	if mm.driverName == "" {
+		mm.driverName = config.Config.Database.Driver
+		if mm.driverName == "" {
+			mm.driverName = "mysql" // 默认MySQL
+		}
+	}
+
+	// 根据数据库驱动类型初始化迁移驱动
+	var driver database.Driver
+
+	switch mm.driverName {
+	case "postgres":
+		driver, err = postgres.WithInstance(sqlDB, &postgres.Config{})
+	case "mysql":
+		fallthrough
+	default:
+		driver, err = mysql.WithInstance(sqlDB, &mysql.Config{})
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to create migration driver: %w", err)
 	}
@@ -54,7 +83,7 @@ func (mm *MigrationManager) Init() error {
 	}
 
 	// 创建迁移实例
-	mm.migrate, err = migrate.NewWithInstance("iofs", source, "mysql", driver)
+	mm.migrate, err = migrate.NewWithInstance("iofs", source, mm.driverName, driver)
 	if err != nil {
 		return fmt.Errorf("failed to create migrate instance: %w", err)
 	}
@@ -235,10 +264,83 @@ func (mm *MigrationManager) GenerateInitialMigrations() error {
 
 // generateCreateTablesSQL 生成创建表的SQL
 func (mm *MigrationManager) generateCreateTablesSQL(db *sql.DB) (string, error) {
-	// 这里可以基于当前模型生成创建表SQL
-	// 或者从数据库中获取当前表结构生成SQL
-	// 简单实现：返回当前模型的创建表SQL
-	return `-- Initial schema creation
+	// 获取数据库驱动类型
+	driverName := "mysql" // 默认MySQL
+	if mm.driverName != "" {
+		driverName = mm.driverName
+	}
+
+	if driverName == "postgres" {
+		// PostgreSQL版本的SQL
+		return `-- Initial schema creation (PostgreSQL)
+
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE (username),
+    UNIQUE (email)
+);
+
+-- 创建更新时间触发器函数
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 为users表添加更新时间触发器
+CREATE TRIGGER update_users_timestamp
+BEFORE UPDATE ON users
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- Notes table
+CREATE TABLE IF NOT EXISTS notes (
+    id SERIAL NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT,
+    user_id INTEGER NOT NULL,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_note_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+-- 为notes表添加更新时间触发器
+CREATE TRIGGER update_notes_timestamp
+BEFORE UPDATE ON notes
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- Login history table
+CREATE TABLE IF NOT EXISTS login_histories (
+    id SERIAL NOT NULL,
+    username VARCHAR(50) NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
+    user_agent TEXT,
+    success BOOLEAN NOT NULL DEFAULT FALSE,
+    error_message TEXT,
+    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+
+-- 创建索引
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_notes_user_id ON notes(user_id);
+CREATE INDEX idx_login_histories_username ON login_histories(username);
+CREATE INDEX idx_login_histories_created_at ON login_histories(created_at);
+`, nil
+	}
+
+	// MySQL版本的SQL (默认)
+	return `-- Initial schema creation (MySQL)
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (

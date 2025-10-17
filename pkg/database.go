@@ -9,7 +9,9 @@ import (
 	"toolcat/config"
 	"toolcat/pkg/metrics"
 
+	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -22,15 +24,35 @@ func InitDatabase() error {
 	// 加载配置
 	config.LoadConfig()
 
-	// 构建优化的DSN (Data Source Name)
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local&timeout=30s&readTimeout=30s&writeTimeout=30s&collation=utf8mb4_unicode_ci&tls=false",
-		config.Config.Database.Username,
-		config.Config.Database.Password,
-		config.Config.Database.Host,
-		config.Config.Database.Port,
-		config.Config.Database.DBName,
-		config.Config.Database.Charset,
-	)
+	var dsn string
+	var dialector gorm.Dialector
+
+	// 根据数据库驱动类型构建连接字符串
+	switch config.Config.Database.Driver {
+	case "postgres":
+		// PostgreSQL连接字符串
+		dsn = fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=Asia/Shanghai",
+			config.Config.Database.Host,
+			config.Config.Database.Port,
+			config.Config.Database.Username,
+			config.Config.Database.Password,
+			config.Config.Database.DBName,
+		)
+		dialector = postgres.Open(dsn)
+	case "mysql":
+		fallthrough
+	default:
+		// MySQL连接字符串
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=True&loc=Local&timeout=30s&readTimeout=30s&writeTimeout=30s&collation=utf8mb4_unicode_ci&tls=false",
+			config.Config.Database.Username,
+			config.Config.Database.Password,
+			config.Config.Database.Host,
+			config.Config.Database.Port,
+			config.Config.Database.DBName,
+			config.Config.Database.Charset,
+		)
+		dialector = mysql.Open(dsn)
+	}
 
 	// 根据环境设置日志级别
 	logLevel := logger.Info
@@ -62,7 +84,7 @@ func InitDatabase() error {
 		}
 
 		// 添加GORM性能监控插件
-		DB, lastErr = gorm.Open(mysql.Open(dsn), gormConfig)
+		DB, lastErr = gorm.Open(dialector, gormConfig)
 		if lastErr == nil {
 			// 记录连接建立指标
 			metrics.RecordDatabaseQuery("connect", "system", 0)
@@ -105,7 +127,7 @@ func InitDatabase() error {
 
 	// 启动数据库连接监控
 	go func() {
-		ticker := time.NewTicker(30 * time.Second)
+		ticker := time.NewTicker(5 * time.Minute) // 监测时间间隔
 		for range ticker.C {
 			stats := sqlDB.Stats()
 			idle := stats.Idle
@@ -115,8 +137,18 @@ func InitDatabase() error {
 		}
 	}()
 
-	log.Printf("Database connection established successfully host=%s port=%d database=%s",
-		config.Config.Database.Host, config.Config.Database.Port, config.Config.Database.DBName)
+	// 输出数据库连接成功日志
+	dbType := "MySQL"
+	if config.Config.Database.Driver == "postgres" {
+		dbType = "PostgreSQL"
+	}
+	Info("数据库连接成功",
+		zap.String("database_type", dbType),
+		zap.String("driver", config.Config.Database.Driver),
+		zap.String("host", config.Config.Database.Host),
+		zap.Int("port", config.Config.Database.Port),
+		zap.String("database", config.Config.Database.DBName),
+	)
 	return nil
 }
 

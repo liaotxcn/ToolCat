@@ -14,8 +14,8 @@ import (
 	"toolcat/middleware"
 	"toolcat/models"
 	"toolcat/pkg"
-	"toolcat/pkg/migrate/migration"
 	"toolcat/pkg/metrics"
+	"toolcat/pkg/migrate/migration"
 	"toolcat/plugins"
 	"toolcat/plugins/examples"
 	"toolcat/plugins/features"
@@ -44,7 +44,7 @@ func main() {
 	if err := config.LoadConfig(); err != nil {
 		pkg.Fatal("Failed to load configuration", zap.Error(err))
 	}
-	
+
 	// 输出清理后的配置信息（隐藏敏感数据）
 	pkg.Info("Configuration loaded successfully", zap.Any("config", config.SanitizeConfig()))
 
