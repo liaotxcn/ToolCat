@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -63,12 +64,23 @@ var Config struct {
 		CookieSameSite string
 	}
 
+	// 数据库迁移配置
+	AutoMigrate bool
+
 	// 插件配置
 	Plugins struct {
 		Dir            string
 		WatcherEnabled bool
 		ScanInterval   int // 秒
 		HotReload      bool
+	}
+
+	// Prometheus配置
+	Prometheus struct {
+		Enabled           bool
+		MetricsPath       string
+		EnableGoMetrics   bool
+		EnableHTTPMetrics bool
 	}
 }
 
@@ -81,14 +93,15 @@ func init() {
 	// 服务器配置
 	Config.Server.Port = 8081
 
-	// 数据库配置
+	// 数据库配置（非敏感字段默认值）
 	Config.Database.Driver = "mysql"
 	Config.Database.Host = "localhost"
-	Config.Database.Port = 3306
-	Config.Database.Username = "root"
-	Config.Database.Password = "123456"
+	Config.Database.Port = 3306 // MySQL默认端口，PostgreSQL默认端口为5432
 	Config.Database.DBName = "toolcat"
 	Config.Database.Charset = "utf8mb4"
+	// 敏感字段（数据库用户名和密码）将通过环境变量或配置文件设置
+	Config.Database.Username = ""
+	Config.Database.Password = ""
 
 	// 日志配置
 	Config.Logger.Level = "info"
@@ -97,7 +110,7 @@ func init() {
 	Config.Logger.Development = false
 
 	// JWT配置
-	Config.JWT.Secret = "your-secret-key"
+	Config.JWT.Secret = ""                 // 敏感信息，将通过环境变量或配置文件设置
 	Config.JWT.AccessTokenExpiry = 60      // 60分钟
 	Config.JWT.RefreshTokenExpiry = 24 * 7 // 7天
 
@@ -113,11 +126,111 @@ func init() {
 	Config.CSRF.CookieHttpOnly = false // 必须为false以便前端可以读取
 	Config.CSRF.CookieSameSite = "Lax"
 
+	// 数据库迁移配置
+	Config.AutoMigrate = true
+
 	// 插件配置
 	Config.Plugins.Dir = "./plugins"
 	Config.Plugins.WatcherEnabled = true
 	Config.Plugins.ScanInterval = 5 // 5秒
 	Config.Plugins.HotReload = true
+
+	// Prometheus配置
+	Config.Prometheus.Enabled = true
+	Config.Prometheus.MetricsPath = "/metrics"
+	Config.Prometheus.EnableGoMetrics = true
+	Config.Prometheus.EnableHTTPMetrics = true
+}
+
+// ValidateConfig 验证配置的有效性，特别是敏感信息
+func ValidateConfig() error {
+	// 检查必要的敏感配置项
+	if Config.Database.Username == "" {
+		return fmt.Errorf("数据库用户名未配置，请设置DB_USERNAME环境变量或在配置文件中指定")
+	}
+
+	if Config.Database.Password == "" {
+		return fmt.Errorf("数据库密码未配置，请设置DB_PASSWORD环境变量或在配置文件中指定")
+	}
+
+	if Config.JWT.Secret == "" {
+		return fmt.Errorf("JWT密钥未配置，请设置JWT_SECRET环境变量或在配置文件中指定")
+	}
+
+	return nil
+}
+
+// mapToPrometheusConfig 将map映射到Prometheus配置
+func mapToPrometheusConfig(configMap map[string]interface{}) {
+	if enabled, ok := configMap["enabled"]; ok {
+		Config.Prometheus.Enabled = convertToBool(enabled)
+	}
+	if metricsPath, ok := configMap["metricsPath"].(string); ok {
+		Config.Prometheus.MetricsPath = metricsPath
+	}
+	if enableGoMetrics, ok := configMap["enableGoMetrics"]; ok {
+		Config.Prometheus.EnableGoMetrics = convertToBool(enableGoMetrics)
+	}
+	if enableHTTPMetrics, ok := configMap["enableHTTPMetrics"]; ok {
+		Config.Prometheus.EnableHTTPMetrics = convertToBool(enableHTTPMetrics)
+	}
+}
+
+// SanitizeConfig 清理配置中的敏感信息，用于日志输出
+func SanitizeConfig() map[string]interface{} {
+	// 创建配置的安全副本用于日志输出
+	sanitized := map[string]interface{}{
+		"Server": map[string]interface{}{
+			"Port": Config.Server.Port,
+		},
+		"Database": map[string]interface{}{
+			"Driver":   Config.Database.Driver,
+			"Host":     Config.Database.Host,
+			"Port":     Config.Database.Port,
+			"Username": Config.Database.Username,
+			"Password": "***", // 隐藏密码
+			"DBName":   Config.Database.DBName,
+			"Charset":  Config.Database.Charset,
+		},
+		"Logger": map[string]interface{}{
+			"Level":       Config.Logger.Level,
+			"OutputPath":  Config.Logger.OutputPath,
+			"ErrorPath":   Config.Logger.ErrorPath,
+			"Development": Config.Logger.Development,
+		},
+		"JWT": map[string]interface{}{
+			"Secret":             "***", // 隐藏密钥
+			"AccessTokenExpiry":  Config.JWT.AccessTokenExpiry,
+			"RefreshTokenExpiry": Config.JWT.RefreshTokenExpiry,
+		},
+		"CSRF": map[string]interface{}{
+			"Enabled":        Config.CSRF.Enabled,
+			"CookieName":     Config.CSRF.CookieName,
+			"HeaderName":     Config.CSRF.HeaderName,
+			"TokenLength":    Config.CSRF.TokenLength,
+			"CookieMaxAge":   Config.CSRF.CookieMaxAge,
+			"CookiePath":     Config.CSRF.CookiePath,
+			"CookieDomain":   Config.CSRF.CookieDomain,
+			"CookieSecure":   Config.CSRF.CookieSecure,
+			"CookieHttpOnly": Config.CSRF.CookieHttpOnly,
+			"CookieSameSite": Config.CSRF.CookieSameSite,
+		},
+		"AutoMigrate": Config.AutoMigrate,
+		"Plugins": map[string]interface{}{
+			"Dir":            Config.Plugins.Dir,
+			"WatcherEnabled": Config.Plugins.WatcherEnabled,
+			"ScanInterval":   Config.Plugins.ScanInterval,
+			"HotReload":      Config.Plugins.HotReload,
+		},
+		"Prometheus": map[string]interface{}{
+			"Enabled":           Config.Prometheus.Enabled,
+			"MetricsPath":       Config.Prometheus.MetricsPath,
+			"EnableGoMetrics":   Config.Prometheus.EnableGoMetrics,
+			"EnableHTTPMetrics": Config.Prometheus.EnableHTTPMetrics,
+		},
+	}
+
+	return sanitized
 }
 
 // LoadConfigFile 从配置文件加载配置
@@ -177,6 +290,10 @@ func LoadConfigFile() error {
 
 	if pluginsMap, ok := configMap["plugins"].(map[string]interface{}); ok {
 		mapToPluginsConfig(pluginsMap)
+	}
+
+	if prometheusMap, ok := configMap["prometheus"].(map[string]interface{}); ok {
+		mapToPrometheusConfig(prometheusMap)
 	}
 
 	return nil
@@ -340,9 +457,11 @@ func GetAbsConfigFilePath() (string, error) {
 }
 
 // LoadConfig 从配置文件和环境变量加载配置
-func LoadConfig() {
+func LoadConfig() error {
 	// 首先从配置文件加载配置
-	LoadConfigFile()
+	if err := LoadConfigFile(); err != nil {
+		return fmt.Errorf("加载配置文件失败: %w", err)
+	}
 
 	// 然后从环境变量加载配置，环境变量会覆盖配置文件的值
 	// 配置文件路径
@@ -356,7 +475,9 @@ func LoadConfig() {
 			Config.ConfigFiles.Type = "yaml"
 		}
 		// 重新从新的配置文件加载
-		LoadConfigFile()
+		if err := LoadConfigFile(); err != nil {
+			return fmt.Errorf("加载指定配置文件失败: %w", err)
+		}
 	}
 
 	// 服务器端口
@@ -390,6 +511,10 @@ func LoadConfig() {
 	}
 
 	// 数据库配置
+	if driver := os.Getenv("DB_DRIVER"); driver != "" {
+		Config.Database.Driver = driver
+	}
+
 	if host := os.Getenv("DB_HOST"); host != "" {
 		Config.Database.Host = host
 	}
@@ -448,6 +573,21 @@ func LoadConfig() {
 		}
 	}
 
+	// 数据库用户名 - 敏感信息，优先使用环境变量
+	if Config.Database.Username == "" {
+		Config.Database.Username = os.Getenv("DB_USERNAME")
+	}
+
+	// 数据库密码 - 敏感信息，优先使用环境变量
+	if Config.Database.Password == "" {
+		Config.Database.Password = os.Getenv("DB_PASSWORD")
+	}
+
+	// JWT密钥 - 敏感信息，优先使用环境变量
+	if Config.JWT.Secret == "" {
+		Config.JWT.Secret = os.Getenv("JWT_SECRET")
+	}
+
 	// CSRF配置
 	if csrfEnabled := os.Getenv("CSRF_ENABLED"); csrfEnabled != "" {
 		if enabled, err := strconv.ParseBool(csrfEnabled); err == nil {
@@ -498,4 +638,30 @@ func LoadConfig() {
 	if cookieSameSite := os.Getenv("CSRF_COOKIE_SAME_SITE"); cookieSameSite != "" {
 		Config.CSRF.CookieSameSite = cookieSameSite
 	}
+
+	// Prometheus配置
+	if enabled := os.Getenv("PROMETHEUS_ENABLED"); enabled != "" {
+		if b, err := strconv.ParseBool(enabled); err == nil {
+			Config.Prometheus.Enabled = b
+		}
+	}
+
+	if metricsPath := os.Getenv("PROMETHEUS_METRICS_PATH"); metricsPath != "" {
+		Config.Prometheus.MetricsPath = metricsPath
+	}
+
+	if enableGoMetrics := os.Getenv("PROMETHEUS_ENABLE_GO_METRICS"); enableGoMetrics != "" {
+		if b, err := strconv.ParseBool(enableGoMetrics); err == nil {
+			Config.Prometheus.EnableGoMetrics = b
+		}
+	}
+
+	if enableHTTPMetrics := os.Getenv("PROMETHEUS_ENABLE_HTTP_METRICS"); enableHTTPMetrics != "" {
+		if b, err := strconv.ParseBool(enableHTTPMetrics); err == nil {
+			Config.Prometheus.EnableHTTPMetrics = b
+		}
+	}
+
+	// 验证配置有效性
+	return ValidateConfig()
 }
