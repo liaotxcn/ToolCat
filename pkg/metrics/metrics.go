@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -160,10 +161,10 @@ func UpdateSystemMetrics() {
 	uptime := time.Since(startTime).Seconds()
 	systemUptime.Set(uptime)
 
-	// TODO: 添加内存使用监控（需要使用runtime包）
-	// var memStats runtime.MemStats
-	// runtime.ReadMemStats(&memStats)
-	// memoryUsage.Set(float64(memStats.Alloc))
+	// 更新内存使用监控
+	var memStats runtime.MemStats
+	runtime.ReadMemStats(&memStats)
+	memoryUsage.Set(float64(memStats.Alloc))
 }
 
 // RecordError 记录错误
