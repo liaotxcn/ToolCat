@@ -1,0 +1,37 @@
+global:
+  scrape_interval: 15s # 默认抓取间隔
+  evaluation_interval: 15s # 规则评估间隔
+
+# Alertmanager配置
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           # - alertmanager:9093
+
+# 告警规则配置
+# rule_files:
+#   - "first_rules.yml"
+#   - "second_rules.yml"
+
+# 抓取配置
+scrape_configs:
+  # ToolCat应用监控
+  - job_name: 'toolcat'
+    metrics_path: '/metrics' # ToolCat应用的指标路径
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['toolcat:8081'] # ToolCat应用容器名称和端口
+        labels:
+          instance: 'toolcat-app'
+          environment: 'production'
+
+  # Prometheus自身监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # 节点导出器监控（可选，如需监控服务器资源）
+  # - job_name: 'node'
+  #   static_configs:
+  #     - targets: ['node-exporter:9100']
