@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"net/http"
+	"fmt"
 	"runtime"
 	"time"
 
@@ -126,14 +126,16 @@ func (mm *MetricsManager) HTTPMonitoringMiddleware() gin.HandlerFunc {
 
 		duration := time.Since(start).Seconds()
 		status := c.Writer.Status()
+		statusCode := fmt.Sprintf("%d", status)
 
-		httpRequestsTotal.WithLabelValues(method, path, http.StatusText(status)).Inc()
-		httpRequestDuration.WithLabelValues(method, path, http.StatusText(status)).Observe(duration)
+		httpRequestsTotal.WithLabelValues(method, path, statusCode).Inc()
+		httpRequestDuration.WithLabelValues(method, path, statusCode).Observe(duration)
 	}
 }
 
 // RecordHTTPRequest 记录HTTP请求（直接调用方式）
 func RecordHTTPRequest(method, endpoint, status string, duration float64) {
+	// 确保status是状态码的数字字符串表示
 	httpRequestsTotal.WithLabelValues(method, endpoint, status).Inc()
 	httpRequestDuration.WithLabelValues(method, endpoint, status).Observe(duration)
 }

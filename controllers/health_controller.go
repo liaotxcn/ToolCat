@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"net/http"
+	"fmt"
 	"time"
 
 	"toolcat/pkg"
@@ -65,12 +65,12 @@ func (hc *HealthController) GetHealth(c *gin.Context) {
 
 	// 记录请求持续时间
 	duration := time.Since(startTime).Seconds()
-	pkg.Info("Health check completed", 
+	pkg.Info("Health check completed",
 		zap.Float64("duration", duration),
 		zap.String("status", overallStatus))
 
-	// 记录健康检查指标
-	metrics.RecordHTTPRequest("GET", "/health", http.StatusText(statusCode), duration)
+	// 记录健康检查指标 - 使用数字字符串格式作为状态码标签
+	metrics.RecordHTTPRequest("GET", "/health", fmt.Sprintf("%d", statusCode), duration)
 	if !dbHealth["healthy"].(bool) {
 		metrics.RecordError("database", "health_check")
 	}
