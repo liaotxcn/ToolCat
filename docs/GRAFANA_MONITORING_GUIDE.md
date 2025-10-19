@@ -107,25 +107,50 @@ docker-compose up -d
 
 ## 常见问题排查
 
-### Grafana无法连接到Prometheus
+### Grafana面板显示"无数据"或"No Data"
 
-**症状**：面板显示"No data"或连接错误
+**症状**：Grafana面板显示"无数据"或"No Data"，但Prometheus服务看起来正常运行
 
 **排查步骤**：
 
-1. 确认Prometheus服务正在运行：`docker-compose ps prometheus`
-2. 检查Grafana数据源配置是否正确
-3. 检查Prometheus是否成功抓取到ToolCat指标：访问 http://localhost:9090/targets
+1. **验证Prometheus数据采集**：
+   - 访问 http://localhost:9090 打开Prometheus界面
+   - 点击顶部菜单的"Status" > "Targets"，检查ToolCat应用的抓取状态是否为"UP"
+   - 如果状态显示为"DOWN"，检查错误消息并修复连接问题
+
+2. **检查应用metrics端点**：
+   - 确认ToolCat应用的/metrics端点是否正常工作
+   - 可以通过以下命令检查：`curl http://localhost:8081/metrics`
+   - 如果返回404或其他错误，需要检查应用的metrics初始化代码
+
+3. **调整查询时间范围**：
+   - 在Grafana界面右上角调整时间范围，尝试选择更长的时间段（如Last 6 hours）
+   - 确认是否有历史数据显示
+
+4. **检查Prometheus配置**：
+   - 查看Prometheus配置文件是否正确配置了抓取间隔和目标
+   - 检查配置文件路径：`pkg/metrics/prometheus.yml`
+   - 确保抓取间隔设置合理（建议15秒或30秒）
+
+5. **验证Grafana数据源连接**：
+   - 在Grafana中进入数据源配置页面
+   - 点击"Save & Test"按钮，确认连接状态
+   - 如果显示连接成功但仍无数据，尝试重新保存数据源配置
+
+6. **检查指标名称是否正确**：
+   - 在Grafana面板中编辑查询，确认指标名称是否与Prometheus中实际采集的指标名称一致
+   - 可以在Prometheus的Graph页面中使用自动补全功能确认正确的指标名称
 
 ### 监控指标不更新
 
-**症状**：图表显示旧数据或不变化
+**症状**：图表显示旧数据或数据长时间不变化
 
 **排查步骤**：
 
 1. 确认ToolCat应用正常运行且/metrics端点可访问
-2. 检查Prometheus抓取配置是否正确
-3. 验证Grafana仪表盘的刷新间隔设置
+2. 检查Prometheus抓取配置，确认抓取间隔设置
+3. 验证Grafana仪表盘的刷新间隔设置（默认10秒）
+4. 检查系统时间同步，确保各容器间时间一致
 
 ### 仪表盘未自动加载
 
@@ -133,9 +158,25 @@ docker-compose up -d
 
 **排查步骤**：
 
-1. 检查Docker卷挂载是否正确
-2. 检查provisioning配置文件格式是否正确
+1. 检查Docker卷挂载是否正确：`docker-compose ps grafana`
+2. 检查provisioning配置文件格式是否正确：`pkg/grafana/provisioning/dashboards/`
 3. 查看Grafana日志：`docker-compose logs grafana`
+4. 尝试手动导入仪表盘JSON文件
+
+### 常见指标查询问题
+
+如果在使用指标查询时遇到问题，可以尝试以下基础查询验证系统是否正常：
+
+```
+# 检查基本的HTTP请求指标
+sum(http_requests_total) by (method, endpoint)
+
+# 检查系统指标（如果已配置）
+process_resident_memory_bytes{job="toolcat"}
+
+# 检查数据库连接
+go_sql_stats_open_connections{database="toolcat"}
+```
 
 ## 高级配置
 

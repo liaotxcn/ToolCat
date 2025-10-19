@@ -38,6 +38,35 @@
 
 每个迁移文件应包含单一的SQL语句或相关的SQL语句集合，确保迁移可以原子性地应用和回滚。
 
+### 3.4 迁移文件示例
+
+**创建用户表示例（001_create_users_table.up.sql）**：
+```sql
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) NOT NULL UNIQUE,
+  email VARCHAR(100) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+**回滚创建用户表（001_create_users_table.down.sql）**：
+```sql
+DROP TABLE IF EXISTS users;
+```
+
+**添加用户状态字段示例（002_add_user_status.up.sql）**：
+```sql
+ALTER TABLE users ADD COLUMN status ENUM('active', 'inactive', 'suspended') DEFAULT 'active' AFTER password;
+```
+
+**回滚添加用户状态字段（002_add_user_status.down.sql）**：
+```sql
+ALTER TABLE users DROP COLUMN status;
+```
+
 ## 4. 工具使用方法
 
 ### 4.1 基本命令格式
@@ -62,6 +91,12 @@ Database connection established successfully host=localhost port=3306 database=t
 Migrations applied successfully
 ```
 
+**操作步骤：**
+1. 确保数据库服务正在运行
+2. 执行上述命令
+3. 观察输出是否有错误信息
+4. 可以使用`status`命令验证迁移是否成功应用
+
 #### 4.2.2 down - 回滚最后一个应用的迁移
 
 ```bash
@@ -69,6 +104,11 @@ go run ./pkg/migrate/main.go down
 ```
 
 此命令会回滚最后一个应用的迁移。
+
+**注意事项：**
+- 回滚操作会删除数据，请谨慎使用，特别是在生产环境
+- 每次执行只会回滚一个迁移版本
+- 如果需要回滚多个版本，可以多次执行此命令
 
 #### 4.2.3 status - 查看当前迁移状态
 
@@ -85,6 +125,11 @@ Current version: 1
 Available versions: 1 2 3
 ```
 
+**状态说明：**
+- `Current version`：当前已应用到数据库的最新迁移版本
+- `Available versions`：所有可用的迁移版本文件
+- 如果数据库处于脏状态，会显示警告信息
+
 #### 4.2.4 create - 创建新的迁移文件
 
 ```bash
@@ -100,6 +145,17 @@ go run ./pkg/migrate/main.go create <migration_name>
 ```
 Created migration files: pkg/migrate/data_sql/002_add_user_table.up.sql, pkg/migrate/data_sql/002_add_user_table.down.sql
 ```
+
+**使用示例：**
+```bash
+# 创建添加工具表的迁移文件
+go run ./pkg/migrate/main.go create add_tools_table
+
+# 创建添加索引的迁移文件
+go run ./pkg/migrate/main.go create add_indexes_to_users_table
+```
+
+创建后，需要手动编辑生成的SQL文件，添加相应的SQL语句。
 
 #### 4.2.5 init - 初始化迁移环境
 
@@ -136,9 +192,20 @@ Failed to apply migrations: failed to apply migrations: Dirty database version 1
 ```
 
 **解决方法：**
-1. 检查并修复导致迁移失败的问题
+1. 检查并修复导致迁移失败的问题（通常是SQL语法错误或数据库约束冲突）
 2. 手动修改数据库使其与迁移文件预期状态一致
-3. 重置迁移表或修复脏标记
+3. 解决脏标记方法：
+   ```bash
+   # 连接到MySQL数据库
+   mysql -h localhost -u root -p toolcat
+   
+   # 查看schema_migrations表
+   SELECT * FROM schema_migrations;
+   
+   # 将dirty字段设置为0
+   UPDATE schema_migrations SET dirty = 0;
+   ```
+4. 如果问题无法解决，可以考虑重置迁移状态，但请注意这将丢失迁移历史
 
 ### 6.2 迁移文件路径问题
 
