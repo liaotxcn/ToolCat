@@ -14,7 +14,6 @@ import (
 	"toolcat/middleware"
 	"toolcat/models"
 	"toolcat/pkg"
-	"toolcat/pkg/metrics"
 	"toolcat/pkg/migrate/migration"
 	"toolcat/plugins"
 	"toolcat/plugins/examples"
@@ -48,8 +47,7 @@ func main() {
 	// 输出清理后的配置信息（隐藏敏感数据）
 	pkg.Info("Configuration loaded successfully", zap.Any("config", config.SanitizeConfig()))
 
-	// 初始化监控指标
-	pkg.Info("Initializing monitoring metrics...")
+	// 监控指标将在路由设置中初始化
 
 	// 初始化数据库
 	if err := pkg.InitDatabase(); err != nil {
@@ -88,21 +86,14 @@ func main() {
 	errHandler := middleware.NewErrorHandler()
 	router.Use(errHandler.HandlerFunc())
 
-	// 初始化并注册监控指标
-	metricsManager := metrics.NewMetricsManager()
-	// 注册全局HTTP请求监控中间件
-	router.Use(metricsManager.HTTPMonitoringMiddleware())
+	// 监控指标和中间件已在路由设置中配置
 
 	// 注册插件
 	registerPlugins(router)
 
-	// 注册Prometheus指标导出路由
-	metricsManager.RegisterMetricsRouter(router)
+	// Prometheus指标导出路由已在路由设置中注册
 
-	// 启动指标更新器
-	metricsManager.StartMetricsUpdater(1 * time.Minute)
-
-	pkg.Info("Monitoring system initialized successfully")
+	// 监控系统已在路由设置中初始化
 
 	// 初始化插件系统
 	if err := plugins.InitPluginSystem(); err != nil {

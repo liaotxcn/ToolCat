@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.7'
 
 # 定义网络
 networks:
@@ -18,47 +18,6 @@ volumes:
   postgres-data:
     driver: local
 
-# 定义配置
-configs:
-  prometheus_config:
-    content: |
-      global:
-        scrape_interval: 15s # 默认抓取间隔
-        evaluation_interval: 15s # 规则评估间隔
-
-      # Alertmanager配置
-      # alerting:
-      #   alertmanagers:
-      #     - static_configs:
-      #         - targets:
-      #           # - alertmanager:9093
-
-      # 告警规则配置
-      # rule_files:
-      #   - "first_rules.yml"
-      #   - "second_rules.yml"
-
-      # 抓取配置
-      scrape_configs:
-        # ToolCat应用监控
-        - job_name: 'toolcat'
-          metrics_path: '/metrics' # ToolCat应用的指标路径
-          scrape_interval: 10s
-          static_configs:
-            - targets: ['toolcat:8081'] # ToolCat应用容器名称和端口
-              labels:
-                instance: 'toolcat-app'
-                environment: 'production'
-
-        # Prometheus自身监控
-        - job_name: 'prometheus'
-          static_configs:
-            - targets: ['localhost:9090']
-
-        # 节点导出器监控（可选，如需监控服务器资源）
-        # - job_name: 'node'
-        #   static_configs:
-        #     - targets: ['node-exporter:9100']
 
 # 定义服务
 services:
@@ -105,8 +64,7 @@ services:
       - LOG_ERROR_PATH=/app/logs/error.log
     # 依赖关系
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     # 卷挂载
     volumes:
       - logs:/app/logs
@@ -117,15 +75,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    # 资源限制
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: "512M"
-        reservations:
-          cpus: "0.5"
-          memory: "256M"
 
   # MySQL数据库服务
   mysql:
@@ -159,15 +108,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    # 资源限制
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: "1G"
-        reservations:
-          cpus: "0.5"
-          memory: "512M"
     # 默认启用，如需禁用可通过docker-compose命令参数控制
     # 示例: docker-compose up -d --scale mysql=0 postgres
   
@@ -202,15 +142,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-    # 资源限制
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: "1G"
-        reservations:
-          cpus: "0.5"
-          memory: "512M"
     # 默认禁用，如需启用可通过docker-compose命令参数控制
     # 示例: docker-compose up -d --scale mysql=0 postgres
 
@@ -225,9 +156,7 @@ services:
       - "9090:9090"
     volumes:
       - prometheus-data:/prometheus
-    configs:
-      - source: prometheus_config
-        target: /etc/prometheus/prometheus.yml
+      - ./pkg/metrics/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -236,14 +165,6 @@ services:
       - '--web.enable-lifecycle'
     depends_on:
       - toolcat
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: "512M"
-        reservations:
-          cpus: "0.25"
-          memory: "256M"
 
   # Grafana可视化服务
   grafana:
@@ -264,14 +185,6 @@ services:
       - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     depends_on:
       - prometheus
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: "512M"
-        reservations:
-          cpus: "0.25"
-          memory: "256M"
 
 
 # 使用说明：
