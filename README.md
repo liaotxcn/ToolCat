@@ -112,6 +112,8 @@ ToolCat 在微内核架构的基础上，融入了分层架构的设计思想，
 - 详细的请求/响应日志
 - 支持自定义监控指标
 - 分层架构将监控功能独立封装，确保系统各层运行状态的可观测性
+- 集成 Prometheus 和 Grafana 监控系统，提供可视化仪表盘
+- 支持自定义告警规则配置
 
 ### 🚀 开发友好
 - 完整的插件开发文档和示例
@@ -138,6 +140,8 @@ ToolCat采用微内核+分层架构，项目结构清晰地反映了这一设计
 ├── docker-compose.yaml  # Docker Compose配置
 ├── docs/                # 项目文档
 │   ├── API.md                # API文档
+│   ├── DATABASE_MIGRATION.md  # 数据库迁移指南
+│   ├── GRAFANA_MONITORING_GUIDE.md  # 监控系统指南
 │   ├── PLUGIN_DEVELOPMENT_GUIDE.md  # 插件开发指南
 │   └── PLUGIN_SCAFFOLD_USAGE.md     # 插件脚手架指南
 ├── go.mod               
@@ -151,6 +155,9 @@ ToolCat采用微内核+分层架构，项目结构清晰地反映了这一设计
 │   └── rate_limiter.go       # 限流
 ├── models/              # 数据模型[数据层]
 ├── pkg/                 # 公共包[基础设施层]
+│   ├── grafana/              # Grafana
+│   ├── metrics/              # 监控指标
+│   ├── migrate/              # 数据库迁移工具
 ├── plugins/             # 插件系统[微内核架构核心]
 │   ├── core/                 # 核心插件功能
 │   ├── doc.go                # 插件包文档
@@ -302,8 +309,14 @@ docker-compose up -d
    首次启动时，Docker Compose会自动：
    - 构建ToolCat应用的Docker镜像
    - 创建MySQL数据库容器
+   - 配置Prometheus和Grafana监控系统
    - 配置网络和卷
    - 启动所有服务
+   
+   服务启动后，可以访问以下地址：
+   - ToolCat应用：http://localhost:8081
+   - Prometheus监控：http://localhost:9090
+   - Grafana仪表盘：http://localhost:3000（默认账号密码：admin/admin）
 
 4. 验证服务状态
 查看所有服务是否正常运行：
@@ -327,6 +340,12 @@ docker-compose logs -f toolcat-mysql // 查看数据库日志
 docker-compose exec toolcat-app /bin/sh             // 进入应用容器
 docker-compose exec toolcat-mysql mysql -u root -p  // 进入数据库容器
 docker-compose up --build -d        // 重新构建并启动服务
+
+// 清理旧容器和卷数据
+docker-compose down -v 
+docker system prune -f
+docker-compose build --no-cache     // 重建镜像
+docker-compose up --force-recreate -d   // 使用--force-recreate选项启动
 ```
 
 #### 2. 本地开发环境设置
@@ -372,21 +391,34 @@ go build
 
 ---
 
-## API文档
+## 项目文档
 
-详细请阅读: [API文档](./docs/API.md)
-
-## 插件开发指南 
-
-详细请阅读: [插件开发指南](./docs/PLUGIN_DEVELOPMENT_GUIDE.md)
-
-## 脚手架工具
-
-详细请阅读: [插件脚手架工具](./docs/PLUGIN_SCAFFOLD_USAGE.md)
+### 详细请阅读
+[API文档](./docs/API.md)
+[插件开发指南](./docs/PLUGIN_DEVELOPMENT_GUIDE.md)
+[插件脚手架工具](./docs/PLUGIN_SCAFFOLD_USAGE.md)
+[数据库迁移指南](./docs/DATABASE_MIGRATION.md)
+[监控系统指南](./docs/GRAFANA_MONITORING_GUIDE.md)
 
 ### 🔧 创建新插件
 
 在ToolCat的微内核+分层架构下，创建新插件是扩展系统功能的主要方式。插件是一个实现了`Plugin`接口的Go结构体，通过这个接口，插件可以与核心系统进行交互。微内核架构提供了插件的灵活性，而分层架构则为插件内部的代码组织提供了良好的指导。
+
+### 📊 数据库迁移工具
+
+ToolCat提供了高效强大的数据库迁移工具，位于`pkg/migrate`目录，支持数据库结构的版本化管理：
+- 支持迁移的应用、回滚、状态查询等功能
+- 基于`golang-migrate`库实现
+- 自动生成版本号，避免冲突
+- 支持迁移状态检查和脏状态处理
+
+### 📈 监控系统
+
+ToolCat集成了完整 Prometheus + Grafana 监控系统：
+- 自动采集应用运行指标
+- 预置多种可视化仪表盘
+- 支持自定义告警规则
+- 实时监控系统健康状态和性能指标
 
 创建新插件非常简单，只需遵循以下步骤：
 1. 实现 `plugins.Plugin` 接口，定义插件的基本信息、生命周期和功能
