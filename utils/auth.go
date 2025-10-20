@@ -22,14 +22,15 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-// GenerateToken 生成JWT访问令牌
-func GenerateToken(userID uint) (string, error) {
+// GenerateToken 生成JWT访问令牌（包含tenant_id）
+func GenerateToken(userID uint, tenantID uint) (string, error) {
 	// 创建token
 	claims := jwt.MapClaims{
-		"user_id": userID,
-		"type":    "access",
-		"exp":     time.Now().Add(time.Minute * time.Duration(config.Config.JWT.AccessTokenExpiry)).Unix(),
-		"iat":     time.Now().Unix(),
+		"user_id":   userID,
+		"tenant_id": tenantID,
+		"type":      "access",
+		"exp":       time.Now().Add(time.Minute * time.Duration(config.Config.JWT.AccessTokenExpiry)).Unix(),
+		"iat":       time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -43,14 +44,15 @@ func GenerateToken(userID uint) (string, error) {
 	return tokenString, nil
 }
 
-// GenerateRefreshToken 生成JWT刷新令牌
-func GenerateRefreshToken(userID uint) (string, error) {
+// GenerateRefreshToken 生成JWT刷新令牌（包含tenant_id）
+func GenerateRefreshToken(userID uint, tenantID uint) (string, error) {
 	// 创建刷新令牌
 	claims := jwt.MapClaims{
-		"user_id": userID,
-		"type":    "refresh",
-		"exp":     time.Now().Add(time.Hour * time.Duration(config.Config.JWT.RefreshTokenExpiry)).Unix(),
-		"iat":     time.Now().Unix(),
+		"user_id":   userID,
+		"tenant_id": tenantID,
+		"type":      "refresh",
+		"exp":       time.Now().Add(time.Hour * time.Duration(config.Config.JWT.RefreshTokenExpiry)).Unix(),
+		"iat":       time.Now().Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -64,8 +66,8 @@ func GenerateRefreshToken(userID uint) (string, error) {
 	return tokenString, nil
 }
 
-// VerifyToken 验证JWT令牌
-func VerifyToken(tokenString string) (uint, string, error) {
+// VerifyToken 验证JWT令牌，返回userID、token类型与tenantID
+func VerifyToken(tokenString string) (uint, string, uint, error) {
 	// 解析token
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// 验证签名算法
@@ -76,19 +78,27 @@ func VerifyToken(tokenString string) (uint, string, error) {
 	})
 
 	if err != nil {
-		return 0, "", err
+		return 0, "", 0, err
 	}
 
 	// 提取claims
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return 0, "", errors.New("invalid token")
+		return 0, "", 0, errors.New("invalid token")
 	}
 
 	// 提取userID
 	userIDFloat, ok := claims["user_id"].(float64)
 	if !ok {
-		return 0, "", errors.New("invalid user_id in token")
+		return 0, "", 0, errors.New("invalid user_id in token")
+	}
+
+	// 提取tenantID（可选，默认为0）
+	var tenantID uint
+	if tid, hasTid := claims["tenant_id"].(float64); hasTid {
+		tenantID = uint(tid)
+	} else {
+		tenantID = 0
 	}
 
 	// 提取令牌类型
@@ -97,20 +107,20 @@ func VerifyToken(tokenString string) (uint, string, error) {
 		tokenType = "access" // 默认类型
 	}
 
-	return uint(userIDFloat), tokenType, nil
+	return uint(userIDFloat), tokenType, tenantID, nil
 }
 
-// VerifyRefreshToken 验证JWT刷新令牌
-func VerifyRefreshToken(tokenString string) (uint, error) {
-	userID, tokenType, err := VerifyToken(tokenString)
+// VerifyRefreshToken 验证JWT刷新令牌，返回userID与tenantID
+func VerifyRefreshToken(tokenString string) (uint, uint, error) {
+	userID, tokenType, tenantID, err := VerifyToken(tokenString)
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
 
 	// 验证是否为刷新令牌
 	if tokenType != "refresh" {
-		return 0, errors.New("not a refresh token")
+		return 0, 0, errors.New("not a refresh token")
 	}
 
-	return userID, nil
+	return userID, tenantID, nil
 }

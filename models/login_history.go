@@ -16,6 +16,7 @@ type LoginHistory struct {
 	Success   bool      `gorm:"not null" json:"success"`          // 登录是否成功
 	Message   string    `gorm:"size:255" json:"message"`          // 登录结果消息/失败原因
 	UserAgent string    `gorm:"type:text" json:"user_agent"`      // 用户代理信息
+	TenantID  uint      `gorm:"index" json:"tenant_id"`
 	LoginTime time.Time `json:"login_time"`                       // 登录时间
 }
 

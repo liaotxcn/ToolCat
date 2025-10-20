@@ -29,15 +29,16 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		// 验证token有效性
 		tokenString := parts[1]
-		userID, _, err := utils.VerifyToken(tokenString)
+		userID, _, tenantID, err := utils.VerifyToken(tokenString)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			c.Abort()
 			return
 		}
 
-		// 将用户ID存储在上下文
+		// 将用户ID与租户ID存储在上下文
 		c.Set("userID", userID)
+		c.Set("tenantID", tenantID)
 
 		// 继续处理请求
 		c.Next()

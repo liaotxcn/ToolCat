@@ -29,7 +29,7 @@ type Note struct {
 // NotePlugin 记事本插件
 type NotePlugin struct {
 	// 使用MySQL数据库存储
-	mutex         sync.RWMutex    // 读写锁用于并发控制
+	mutex         sync.RWMutex // 读写锁用于并发控制
 	pluginManager *core.PluginManager
 }
 
@@ -113,6 +113,13 @@ func (p *NotePlugin) Execute(params map[string]interface{}) (interface{}, error)
 			userID = uint(id)
 		}
 	}
+	// 从参数中提取租户ID（可选）
+	tenantID := uint(0)
+	if tenantParam, ok := params["tenant_id"].(string); ok {
+		if tid, err := strconv.ParseUint(tenantParam, 10, 32); err == nil {
+			tenantID = uint(tid)
+		}
+	}
 
 	switch action {
 	case "list":
@@ -124,18 +131,18 @@ func (p *NotePlugin) Execute(params map[string]interface{}) (interface{}, error)
 		if pageSizeParam, ok := params["page_size"].(float64); ok {
 			pageSize = int(pageSizeParam)
 		}
-		return p.listNotes(userID, page, pageSize)
+		return p.listNotes(userID, tenantID, page, pageSize)
 
 	case "get":
 		if noteID, ok := params["id"].(string); ok {
-			return p.getNote(userID, noteID)
+			return p.getNote(userID, tenantID, noteID)
 		}
 		return nil, errors.New("缺少笔记ID参数")
 
 	case "create":
 		if title, ok := params["title"].(string); ok && title != "" {
 			if content, ok := params["content"].(string); ok && content != "" {
-				return p.createNote(userID, title, content)
+				return p.createNote(userID, tenantID, title, content)
 			}
 			return nil, errors.New("内容不能为空")
 		}
@@ -145,7 +152,7 @@ func (p *NotePlugin) Execute(params map[string]interface{}) (interface{}, error)
 		if noteID, ok := params["id"].(string); ok {
 			if title, ok := params["title"].(string); ok && title != "" {
 				if content, ok := params["content"].(string); ok && content != "" {
-					return p.updateNote(userID, noteID, title, content)
+					return p.updateNote(userID, tenantID, noteID, title, content)
 				}
 				return nil, errors.New("内容不能为空")
 			}
@@ -155,7 +162,7 @@ func (p *NotePlugin) Execute(params map[string]interface{}) (interface{}, error)
 
 	case "delete":
 		if noteID, ok := params["id"].(string); ok {
-			return p.deleteNoteHandler(userID, noteID)
+			return p.deleteNoteHandler(userID, tenantID, noteID)
 		}
 		return nil, errors.New("缺少笔记ID参数")
 
@@ -172,7 +179,7 @@ func (p *NotePlugin) Execute(params map[string]interface{}) (interface{}, error)
 		if pageSizeParam, ok := params["page_size"].(float64); ok {
 			pageSize = int(pageSizeParam)
 		}
-		return p.searchNotes(userID, keyword, page, pageSize)
+		return p.searchNotes(userID, tenantID, keyword, page, pageSize)
 
 	default:
 		return gin.H{
@@ -193,7 +200,7 @@ func (p *NotePlugin) Execute(params map[string]interface{}) (interface{}, error)
 }
 
 // listNotes 获取当前用户的所有笔记
-func (p *NotePlugin) listNotes(userID uint, page, pageSize int) (interface{}, error) {
+func (p *NotePlugin) listNotes(userID uint, tenantID uint, page, pageSize int) (interface{}, error) {
 	// 获取读锁
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
@@ -201,7 +208,6 @@ func (p *NotePlugin) listNotes(userID uint, page, pageSize int) (interface{}, er
 	var notes []models.Note
 	var total int64
 
-	// 设置默认分页参数
 	if page <= 0 {
 		page = 1
 	}
@@ -209,23 +215,20 @@ func (p *NotePlugin) listNotes(userID uint, page, pageSize int) (interface{}, er
 		pageSize = 10
 	}
 
-	// 计算偏移量
 	offset := (page - 1) * pageSize
 
-	// 获取总数
-	db := pkg.DB.Where("user_id = ?", userID)
+	db := pkg.DB.Where("user_id = ? AND tenant_id = ?", userID, tenantID)
+
 	if err := db.Model(&models.Note{}).Count(&total).Error; err != nil {
 		log.Printf("Database error when counting notes: %v", err)
 		return nil, fmt.Errorf("获取笔记列表失败，请稍后重试")
 	}
 
-	// 获取分页数据，按创建时间倒序
 	if err := db.Offset(offset).Limit(pageSize).Order("created_time DESC").Find(&notes).Error; err != nil {
 		log.Printf("Database error when fetching notes: %v", err)
 		return nil, fmt.Errorf("获取笔记列表失败，请稍后重试")
 	}
 
-	// 计算总页数
 	totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
 
 	return gin.H{
@@ -239,86 +242,73 @@ func (p *NotePlugin) listNotes(userID uint, page, pageSize int) (interface{}, er
 }
 
 // getNote 获取单个笔记
-func (p *NotePlugin) getNote(userID uint, noteID string) (interface{}, error) {
-	// 获取读锁
+func (p *NotePlugin) getNote(userID uint, tenantID uint, noteID string) (interface{}, error) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
 	var note models.Note
-	db := pkg.DB.Where("id = ? AND user_id = ?", noteID, userID)
+	db := pkg.DB.Where("id = ? AND user_id = ? AND tenant_id = ?", noteID, userID, tenantID)
 	if err := db.First(&note).Error; err != nil {
 		return nil, fmt.Errorf("笔记不存在或无权访问")
 	}
-
 	return note, nil
 }
 
 // createNote 创建新笔记
-func (p *NotePlugin) createNote(userID uint, title, content string) (interface{}, error) {
-	// 获取写锁
+func (p *NotePlugin) createNote(userID uint, tenantID uint, title, content string) (interface{}, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	// 创建新笔记
 	note := models.Note{
 		ID:          uuid.New().String(),
 		Title:       title,
 		Content:     content,
 		UserID:      userID,
+		TenantID:    tenantID,
 		CreatedTime: time.Now(),
 		UpdatedTime: time.Now(),
 	}
 
-	// 保存到数据库
 	if err := pkg.DB.Create(&note).Error; err != nil {
 		log.Printf("Database error when creating note: %v", err)
 		return nil, fmt.Errorf("创建笔记失败，请稍后重试")
 	}
-
 	return note, nil
 }
 
 // updateNote 更新笔记
-func (p *NotePlugin) updateNote(userID uint, noteID, title, content string) (interface{}, error) {
-	// 获取写锁
+func (p *NotePlugin) updateNote(userID uint, tenantID uint, noteID, title, content string) (interface{}, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	// 检查笔记是否存在且属于当前用户
 	var note models.Note
-	db := pkg.DB.Where("id = ? AND user_id = ?", noteID, userID)
+	db := pkg.DB.Where("id = ? AND user_id = ? AND tenant_id = ?", noteID, userID, tenantID)
 	if err := db.First(&note).Error; err != nil {
 		return nil, fmt.Errorf("笔记不存在或无权访问")
 	}
 
-	// 更新笔记
 	note.Title = title
 	note.Content = content
 	note.UpdatedTime = time.Now()
 
-	// 保存到数据库
 	if err := pkg.DB.Save(&note).Error; err != nil {
 		log.Printf("Database error when updating note: %v", err)
 		return nil, fmt.Errorf("更新笔记失败，请稍后重试")
 	}
-
 	return note, nil
 }
 
 // deleteNoteHandler 删除笔记的处理器
-func (p *NotePlugin) deleteNoteHandler(userID uint, noteID string) (interface{}, error) {
-	// 获取写锁
+func (p *NotePlugin) deleteNoteHandler(userID uint, tenantID uint, noteID string) (interface{}, error) {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	// 检查笔记是否存在且属于当前用户
 	var note models.Note
-	db := pkg.DB.Where("id = ? AND user_id = ?", noteID, userID)
+	db := pkg.DB.Where("id = ? AND user_id = ? AND tenant_id = ?", noteID, userID, tenantID)
 	if err := db.First(&note).Error; err != nil {
 		return nil, fmt.Errorf("笔记不存在或无权访问")
 	}
 
-	// 删除笔记
 	if err := pkg.DB.Delete(&note).Error; err != nil {
 		log.Printf("Database error when deleting note: %v", err)
 		return nil, fmt.Errorf("删除笔记失败，请稍后重试")
@@ -328,35 +318,30 @@ func (p *NotePlugin) deleteNoteHandler(userID uint, noteID string) (interface{},
 }
 
 // deleteNote 删除笔记（用户关联）
-func (p *NotePlugin) deleteNote(userID uint, noteID string) error {
+func (p *NotePlugin) deleteNote(userID uint, tenantID uint, noteID string) error {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
-	// 检查笔记是否存在且属于当前用户
 	var note models.Note
 	db := pkg.DB
-	if err := db.Where("id = ? AND user_id = ?", noteID, userID).First(&note).Error; err != nil {
+	if err := db.Where("id = ? AND user_id = ? AND tenant_id = ?", noteID, userID, tenantID).First(&note).Error; err != nil {
 		return errors.New("笔记不存在或无权访问")
 	}
 
-	// 删除笔记
 	if err := db.Delete(&note).Error; err != nil {
 		return err
 	}
-
 	return nil
 }
 
 // searchNotes 搜索当前用户的笔记
-func (p *NotePlugin) searchNotes(userID uint, keyword string, page, pageSize int) (interface{}, error) {
-	// 获取读锁
+func (p *NotePlugin) searchNotes(userID uint, tenantID uint, keyword string, page, pageSize int) (interface{}, error) {
 	p.mutex.RLock()
 	defer p.mutex.RUnlock()
 
 	var notes []models.Note
 	var total int64
 
-	// 设置默认分页参数
 	if page <= 0 {
 		page = 1
 	}
@@ -364,26 +349,21 @@ func (p *NotePlugin) searchNotes(userID uint, keyword string, page, pageSize int
 		pageSize = 10
 	}
 
-	// 计算偏移量
 	offset := (page - 1) * pageSize
 
-	// 构建搜索条件
 	query := "%" + keyword + "%"
-	db := pkg.DB.Where("user_id = ? AND (title LIKE ? OR content LIKE ?)", userID, query, query)
+	db := pkg.DB.Where("user_id = ? AND tenant_id = ? AND (title LIKE ? OR content LIKE ?)", userID, tenantID, query, query)
 
-	// 获取总数
 	if err := db.Model(&models.Note{}).Count(&total).Error; err != nil {
 		log.Printf("Database error when counting search results: %v", err)
 		return nil, fmt.Errorf("搜索笔记失败，请稍后重试")
 	}
 
-	// 获取分页数据，按创建时间倒序
 	if err := db.Offset(offset).Limit(pageSize).Order("created_time DESC").Find(&notes).Error; err != nil {
 		log.Printf("Database error when searching notes: %v", err)
 		return nil, fmt.Errorf("搜索笔记失败，请稍后重试")
 	}
 
-	// 计算总页数
 	totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
 
 	return gin.H{
@@ -417,12 +397,12 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 					"version":     p.Version(),
 					"endpoints": []string{
 						"GET /plugins/note/ - 获取插件信息",
-						"GET /plugins/note/notes - 获取所有笔记（支持分页和用户关联）",
-						"GET /plugins/note/notes/:id - 获取单个笔记（用户关联）",
-						"POST /plugins/note/notes - 创建新笔记（用户关联）",
-						"PUT /plugins/note/notes/:id - 更新笔记（用户关联）",
-						"DELETE /plugins/note/notes/:id - 删除笔记（用户关联）",
-						"GET /plugins/note/notes/search - 搜索笔记（支持分页和用户关联）",
+						"GET /plugins/note/notes - 获取所有笔记（需认证；按租户与用户隔离）",
+						"GET /plugins/note/notes/:id - 获取单个笔记（需认证；按租户与用户隔离）",
+						"POST /plugins/note/notes - 创建新笔记（需认证；按租户与用户隔离）",
+						"PUT /plugins/note/notes/:id - 更新笔记（需认证；按租户与用户隔离）",
+						"DELETE /plugins/note/notes/:id - 删除笔记（需认证；按租户与用户隔离）",
+						"GET /plugins/note/notes/search - 搜索笔记（需认证；按租户与用户隔离）",
 					},
 				})
 			},
@@ -434,15 +414,12 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 			Path:   "/notes",
 			Method: "GET",
 			Handler: func(c *gin.Context) {
-				// 获取用户ID，这里简化处理，实际应从认证中获取
-				userID := c.DefaultQuery("user_id", "1")
-				userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-				// 获取分页参数
+				userID := c.GetUint("userID")
+				tenantID := c.GetUint("tenantID")
 				page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 				pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
-				result, err := p.listNotes(uint(userIDUint), page, pageSize)
+				result, err := p.listNotes(userID, tenantID, page, pageSize)
 				if err != nil {
 					c.JSON(500, gin.H{"error": err.Error()})
 					return
@@ -450,10 +427,9 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 				c.JSON(200, result)
 			},
 			Description:  "获取所有笔记（支持分页和用户关联）",
-			AuthRequired: false,
+			AuthRequired: true,
 			Tags:         []string{"notes", "list"},
 			Params: map[string]string{
-				"user_id":   "用户ID，默认1",
 				"page":      "页码，默认1",
 				"page_size": "每页数量，默认10",
 			},
@@ -462,14 +438,11 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 			Path:   "/notes/:id",
 			Method: "GET",
 			Handler: func(c *gin.Context) {
-				// 获取用户ID，这里简化处理，实际应从认证中获取
-				userID := c.DefaultQuery("user_id", "1")
-				userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-				// 获取笔记ID
+				userID := c.GetUint("userID")
+				tenantID := c.GetUint("tenantID")
 				id := c.Param("id")
 
-				result, err := p.getNote(uint(userIDUint), id)
+				result, err := p.getNote(userID, tenantID, id)
 				if err != nil {
 					c.JSON(404, gin.H{"error": err.Error()})
 					return
@@ -477,33 +450,29 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 				c.JSON(200, result)
 			},
 			Description:  "获取单个笔记（用户关联）",
-			AuthRequired: false,
+			AuthRequired: true,
 			Tags:         []string{"notes", "get"},
 			Params: map[string]string{
-				"user_id": "用户ID，默认1",
-				"id":      "笔记ID",
+				"id": "笔记ID",
 			},
 		},
 		{
 			Path:   "/notes",
 			Method: "POST",
 			Handler: func(c *gin.Context) {
-				// 获取用户ID，这里简化处理，实际应从认证中获取
-				userID := c.DefaultQuery("user_id", "1")
-				userIDUint, _ := strconv.ParseUint(userID, 10, 32)
+				userID := c.GetUint("userID")
+				tenantID := c.GetUint("tenantID")
 
-				// 绑定请求体
 				var request struct {
 					Title   string `json:"title" binding:"required,min=1,max=100"`
 					Content string `json:"content" binding:"required,min=1"`
 				}
-
 				if err := c.ShouldBindJSON(&request); err != nil {
 					c.JSON(400, gin.H{"error": err.Error()})
 					return
 				}
 
-				result, err := p.createNote(uint(userIDUint), request.Title, request.Content)
+				result, err := p.createNote(userID, tenantID, request.Title, request.Content)
 				if err != nil {
 					c.JSON(500, gin.H{"error": err.Error()})
 					return
@@ -511,37 +480,27 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 				c.JSON(201, result)
 			},
 			Description:  "创建新笔记（用户关联）",
-			AuthRequired: false,
+			AuthRequired: true,
 			Tags:         []string{"notes", "create"},
-			Params: map[string]string{
-				"user_id": "用户ID，默认1",
-				"title":   "笔记标题（必填）",
-				"content": "笔记内容（必填）",
-			},
 		},
 		{
 			Path:   "/notes/:id",
 			Method: "PUT",
 			Handler: func(c *gin.Context) {
-				// 获取用户ID，这里简化处理，实际应从认证中获取
-				userID := c.DefaultQuery("user_id", "1")
-				userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-				// 获取笔记ID
+				userID := c.GetUint("userID")
+				tenantID := c.GetUint("tenantID")
 				id := c.Param("id")
 
-				// 绑定请求体
 				var request struct {
 					Title   string `json:"title" binding:"required,min=1,max=100"`
 					Content string `json:"content" binding:"required,min=1"`
 				}
-
 				if err := c.ShouldBindJSON(&request); err != nil {
 					c.JSON(400, gin.H{"error": err.Error()})
 					return
 				}
 
-				result, err := p.updateNote(uint(userIDUint), id, request.Title, request.Content)
+				result, err := p.updateNote(userID, tenantID, id, request.Title, request.Content)
 				if err != nil {
 					c.JSON(404, gin.H{"error": err.Error()})
 					return
@@ -549,27 +508,18 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 				c.JSON(200, result)
 			},
 			Description:  "更新笔记（用户关联）",
-			AuthRequired: false,
+			AuthRequired: true,
 			Tags:         []string{"notes", "update"},
-			Params: map[string]string{
-				"user_id": "用户ID，默认1",
-				"id":      "笔记ID",
-				"title":   "笔记标题（必填）",
-				"content": "笔记内容（必填）",
-			},
 		},
 		{
 			Path:   "/notes/:id",
 			Method: "DELETE",
 			Handler: func(c *gin.Context) {
-				// 获取用户ID，这里简化处理，实际应从认证中获取
-				userID := c.DefaultQuery("user_id", "1")
-				userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-				// 获取笔记ID
+				userID := c.GetUint("userID")
+				tenantID := c.GetUint("tenantID")
 				id := c.Param("id")
 
-				result, err := p.deleteNoteHandler(uint(userIDUint), id)
+				result, err := p.deleteNoteHandler(userID, tenantID, id)
 				if err != nil {
 					c.JSON(404, gin.H{"error": err.Error()})
 					return
@@ -577,29 +527,20 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 				c.JSON(200, result)
 			},
 			Description:  "删除笔记（用户关联）",
-			AuthRequired: false,
+			AuthRequired: true,
 			Tags:         []string{"notes", "delete"},
-			Params: map[string]string{
-				"user_id": "用户ID，默认1",
-				"id":      "笔记ID",
-			},
 		},
 		{
 			Path:   "/notes/search",
 			Method: "GET",
 			Handler: func(c *gin.Context) {
-				// 获取用户ID，这里简化处理，实际应从认证中获取
-				userID := c.DefaultQuery("user_id", "1")
-				userIDUint, _ := strconv.ParseUint(userID, 10, 32)
-
-				// 获取搜索关键字
+				userID := c.GetUint("userID")
+				tenantID := c.GetUint("tenantID")
 				keyword := c.DefaultQuery("keyword", "")
-
-				// 获取分页参数
 				page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 				pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
-				result, err := p.searchNotes(uint(userIDUint), keyword, page, pageSize)
+				result, err := p.searchNotes(userID, tenantID, keyword, page, pageSize)
 				if err != nil {
 					c.JSON(500, gin.H{"error": err.Error()})
 					return
@@ -607,10 +548,9 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 				c.JSON(200, result)
 			},
 			Description:  "搜索笔记（支持分页和用户关联）",
-			AuthRequired: false,
+			AuthRequired: true,
 			Tags:         []string{"notes", "search"},
 			Params: map[string]string{
-				"user_id":   "用户ID，默认1",
 				"keyword":   "搜索关键字",
 				"page":      "页码，默认1",
 				"page_size": "每页数量，默认10",

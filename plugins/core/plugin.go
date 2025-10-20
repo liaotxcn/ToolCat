@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sync"
 
+	"toolcat/middleware"
 	"toolcat/pkg"
 
 	"github.com/gin-gonic/gin"
@@ -366,6 +367,11 @@ func (pm *PluginManager) registerPluginRoutes(name string) error {
 	for _, route := range routes {
 		// 创建路由处理函数链
 		handlers := append(route.Middlewares, route.Handler)
+
+		// 如果需要认证，则在处理链前添加认证中间件
+		if route.AuthRequired {
+			handlers = append([]gin.HandlerFunc{middleware.AuthMiddleware()}, handlers...)
+		}
 
 		// 根据HTTP方法注册路由
 		switch route.Method {
