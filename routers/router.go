@@ -7,6 +7,8 @@ import (
 	"toolcat/pkg/metrics"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // SetupRouter 配置路由
@@ -24,6 +26,34 @@ func SetupRouter() *gin.Engine {
 
 	// 注册Prometheus指标导出路由
 	mm.RegisterMetricsRouter(router)
+
+	// 注册插件特定指标路由
+	router.GET("/metrics/plugins/:name", func(c *gin.Context) {
+		_ = c.Param("name")
+		// 创建一个自定义的registry，只包含特定插件的指标
+		registry := prometheus.NewRegistry()
+
+		// 注册插件执行计数指标
+		registry.MustRegister(metrics.PluginExecutionCount)
+		// 注册插件执行时间指标
+		registry.MustRegister(metrics.PluginExecutionDuration)
+		// 注册插件方法调用指标
+		registry.MustRegister(metrics.PluginMethodCalls)
+		// 注册插件错误指标
+		registry.MustRegister(metrics.PluginErrors)
+		// 注册插件内存使用指标
+		registry.MustRegister(metrics.PluginMemoryUsage)
+		// 注册插件重载指标
+		registry.MustRegister(metrics.PluginReloads)
+
+		// 使用自定义registry创建handler
+		handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{
+			EnableOpenMetrics: true,
+		})
+
+		// 输出指标
+		handler.ServeHTTP(c.Writer, c.Request)
+	})
 
 	// 启动指标更新器，每30秒更新一次系统指标
 	mm.StartMetricsUpdater(30 * time.Second)
@@ -112,6 +142,8 @@ func SetupRouter() *gin.Engine {
 
 	// 健康检查 - 健康检查控制器提供更全面的健康状态信息
 	appGroup.GET("/health", healthCtrl.GetHealth)
+	// 插件健康检查API
+	appGroup.GET("/health/plugins/:name", healthCtrl.PluginHealthCheck)
 
 	return router
 }

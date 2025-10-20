@@ -3,9 +3,11 @@ package core
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"toolcat/middleware"
 	"toolcat/pkg"
+	"toolcat/pkg/metrics"
 
 	"github.com/gin-gonic/gin"
 )
@@ -180,8 +182,13 @@ func (pm *PluginManager) EnablePlugin(name string) error {
 		}
 	}
 
+	startTime := time.Now()
+	success := true
+	
 	// 调用插件的OnEnable方法
 	if err := info.Plugin.OnEnable(); err != nil {
+		success = false
+		metrics.RecordPluginError(name, "enable_failed")
 		return fmt.Errorf("插件 '%s' 启用回调失败: %w", name, err)
 	}
 
@@ -192,9 +199,16 @@ func (pm *PluginManager) EnablePlugin(name string) error {
 	// 如果路由引擎已设置，注册路由
 	if pm.router != nil && !info.IsRegistered {
 		if err := pm.registerPluginRoutes(name); err != nil {
+			success = false
+			metrics.RecordPluginError(name, "route_registration_failed")
 			return fmt.Errorf("插件 '%s' 路由注册失败: %w", name, err)
 		}
 	}
+
+	// 记录插件执行时间和结果
+	duration := time.Since(startTime)
+	metrics.RecordPluginExecution(name, success, duration)
+	metrics.RecordPluginMethodCall(name, "OnEnable", success)
 
 	return nil
 }
@@ -224,8 +238,13 @@ func (pm *PluginManager) DisablePlugin(name string) error {
 		}
 	}
 
+	startTime := time.Now()
+	success := true
+
 	// 调用插件的OnDisable方法
 	if err := info.Plugin.OnDisable(); err != nil {
+		success = false
+		metrics.RecordPluginError(name, "disable_failed")
 		return fmt.Errorf("插件 '%s' 禁用回调失败: %w", name, err)
 	}
 
@@ -236,6 +255,11 @@ func (pm *PluginManager) DisablePlugin(name string) error {
 	// 注意：Gin不支持动态删除路由，这里只能标记为禁用
 	// 在ExecutePlugin等方法中会检查IsEnabled状态
 
+	// 记录插件执行时间和结果
+	duration := time.Since(startTime)
+	metrics.RecordPluginExecution(name, success, duration)
+	metrics.RecordPluginMethodCall(name, "OnDisable", success)
+
 	return nil
 }
 
@@ -245,9 +269,14 @@ func (pm *PluginManager) ReloadPlugin(name string) error {
 	pm.mutex.Lock()
 	defer pm.mutex.Unlock()
 
+	startTime := time.Now()
+	success := true
+
 	// 获取当前插件信息
 	info, exists := pm.plugins[name]
 	if !exists {
+		success = false
+		metrics.RecordPluginReload(name, success)
 		return fmt.Errorf("插件 '%s' 不存在", name)
 	}
 
@@ -262,6 +291,9 @@ func (pm *PluginManager) ReloadPlugin(name string) error {
 
 	// 关闭当前插件
 	if err := plugin.Shutdown(); err != nil {
+		success = false
+		metrics.RecordPluginReload(name, success)
+		metrics.RecordPluginError(name, "shutdown_during_reload_failed")
 		return fmt.Errorf("插件 '%s' 关闭失败: %w", name, err)
 	}
 
@@ -270,6 +302,9 @@ func (pm *PluginManager) ReloadPlugin(name string) error {
 
 	// 重新初始化插件
 	if err := plugin.Init(); err != nil {
+		success = false
+		metrics.RecordPluginReload(name, success)
+		metrics.RecordPluginError(name, "init_during_reload_failed")
 		return fmt.Errorf("插件 '%s' 重新初始化失败: %w", name, err)
 	}
 
@@ -288,9 +323,17 @@ func (pm *PluginManager) ReloadPlugin(name string) error {
 	// 如果路由引擎已设置且插件被启用，重新注册路由
 	if pm.router != nil && isEnabled {
 		if err := pm.registerPluginRoutes(name); err != nil {
+			success = false
+			metrics.RecordPluginReload(name, success)
+			metrics.RecordPluginError(name, "route_registration_during_reload_failed")
 			return fmt.Errorf("插件 '%s' 路由重新注册失败: %w", name, err)
 		}
 	}
+
+	// 记录插件执行时间和结果
+	duration := time.Since(startTime)
+	metrics.RecordPluginExecution(name, success, duration)
+	metrics.RecordPluginReload(name, success)
 
 	return nil
 }
@@ -511,7 +554,22 @@ func (pm *PluginManager) ExecutePlugin(name string, params map[string]interface{
 		return nil, fmt.Errorf("插件 '%s' 已被禁用", name)
 	}
 
-	return info.Plugin.Execute(params)
+	startTime := time.Now()
+	success := true
+
+	// 调用插件的Execute方法
+	result, err := info.Plugin.Execute(params)
+	if err != nil {
+		success = false
+		metrics.RecordPluginError(name, "execute_failed")
+	}
+
+	// 记录插件执行时间和结果
+	duration := time.Since(startTime)
+	metrics.RecordPluginExecution(name, success, duration)
+	metrics.RecordPluginMethodCall(name, "Execute", success)
+
+	return result, err
 }
 
 // RegisterPlugins 批量注册插件，自动处理依赖顺序

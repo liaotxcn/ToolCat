@@ -6,8 +6,8 @@ import (
 
 	"toolcat/pkg"
 	"toolcat/pkg/metrics"
-
 	"toolcat/plugins"
+	"toolcat/plugins/core"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -117,6 +117,59 @@ func checkDatabaseHealth() gin.H {
 	}
 }
 
+// PluginHealthCheck 检查指定插件的健康状态
+func (hc *HealthController) PluginHealthCheck(c *gin.Context) {
+	pluginName := c.Param("name")
+	startTime := time.Now()
+	success := true
+
+	// 查找插件信息
+	allPluginsInfo := plugins.PluginManager.GetAllPluginsInfo()
+	var targetPluginInfo *core.PluginInfo
+	for _, info := range allPluginsInfo {
+		if info.Plugin.Name() == pluginName {
+			targetPluginInfo = &info
+			break
+		}
+	}
+
+	if targetPluginInfo == nil {
+		metrics.RecordPluginError(pluginName, "health_check_not_found")
+		c.JSON(404, gin.H{
+			"status":  "error",
+			"message": "插件不存在",
+		})
+		return
+	}
+
+	// 检查插件状态
+	status, exists := plugins.PluginManager.GetPluginStatus(pluginName)
+	if !exists {
+		status = "not_registered"
+		success = false
+		metrics.RecordPluginError(pluginName, "status_not_found")
+	}
+
+	healthy := targetPluginInfo.IsEnabled && status == "enabled"
+	if !healthy && targetPluginInfo.IsEnabled {
+		success = false
+		metrics.RecordPluginError(pluginName, "health_check_failed")
+	}
+
+	// 记录执行时间和结果
+	duration := time.Since(startTime)
+	metrics.RecordPluginMethodCall(pluginName, "HealthCheck", success)
+	metrics.RecordPluginExecution(pluginName, success, duration)
+
+	c.JSON(200, gin.H{
+		"name":    pluginName,
+		"version": targetPluginInfo.Plugin.Version(),
+		"enabled": targetPluginInfo.IsEnabled,
+		"status":  status,
+		"healthy": healthy,
+	})
+}
+
 // checkPluginHealth 检查插件系统健康状态
 func checkPluginHealth() gin.H {
 	pluginStatuses := []gin.H{}
@@ -124,16 +177,26 @@ func checkPluginHealth() gin.H {
 
 	for _, pluginInfo := range allPluginsInfo {
 		plugin := pluginInfo.Plugin
+		startTime := time.Now()
 		status, exists := plugins.PluginManager.GetPluginStatus(plugin.Name())
 		if !exists {
 			status = "not_registered"
+			metrics.RecordPluginError(plugin.Name(), "status_not_found")
 		}
+		healthy := pluginInfo.IsEnabled && status == "enabled"
+		if !healthy && pluginInfo.IsEnabled {
+			metrics.RecordPluginError(plugin.Name(), "health_check_failed")
+		}
+		// 记录插件健康检查执行时间
+		duration := time.Since(startTime)
+		metrics.RecordPluginExecution(plugin.Name(), healthy, duration)
+		
 		pluginStatuses = append(pluginStatuses, gin.H{
 			"name":    plugin.Name(),
 			"version": plugin.Version(),
 			"enabled": pluginInfo.IsEnabled,
 			"status":  status,
-			"healthy": pluginInfo.IsEnabled && status == "enabled",
+			"healthy": healthy,
 		})
 	}
 
