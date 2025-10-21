@@ -98,7 +98,7 @@ func (uc *UserController) Login(c *gin.Context) {
 	// 绑定JSON请求体
 	if err := c.ShouldBindJSON(&loginRequest); err != nil {
 		// 记录绑定失败的登录尝试
-		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "请求参数验证失败: "+err.Error())
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "请求参数验证失败: "+err.Error(), 0)
 		err := pkg.NewValidationError("Missing required login fields", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
@@ -109,7 +109,7 @@ func (uc *UserController) Login(c *gin.Context) {
 	result := pkg.DB.Where("username = ?", loginRequest.Username).First(&user)
 	if result.Error != nil {
 		// 记录用户不存在的登录尝试
-		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "用户名或密码错误")
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "用户名或密码错误", 0)
 		err := pkg.NewAuthError("Invalid username or password", nil)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
@@ -118,33 +118,48 @@ func (uc *UserController) Login(c *gin.Context) {
 	// 验证密码
 	if !utils.CheckPasswordHash(loginRequest.Password, user.Password) {
 		// 记录密码错误的登录尝试
-		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "用户名或密码错误")
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "用户名或密码错误", user.TenantID)
 		err := pkg.NewAuthError("Invalid username or password", nil)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
 
-	// 生成访问令牌和刷新令牌
-	accessToken, err := utils.GenerateToken(user.ID)
+	// 生成访问令牌和刷新令牌（包含tenant_id）
+	accessToken, err := utils.GenerateToken(user.ID, user.TenantID)
 	if err != nil {
 		// 记录生成token失败的情况
-		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "生成访问令牌失败: "+err.Error())
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "生成访问令牌失败: "+err.Error(), user.TenantID)
 		err := pkg.NewInternalError("Failed to generate access token", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
 
-	refreshToken, err := utils.GenerateRefreshToken(user.ID)
+	refreshToken, err := utils.GenerateRefreshToken(user.ID, user.TenantID)
 	if err != nil {
 		// 记录生成刷新令牌失败的情况
-		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "生成刷新令牌失败: "+err.Error())
+		recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), false, "生成刷新令牌失败: "+err.Error(), user.TenantID)
 		err := pkg.NewInternalError("Failed to generate refresh token", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
 
 	// 记录登录成功
-	recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), true, "登录成功")
+	recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), true, "登录成功", user.TenantID)
+
+	// 记录登录操作的审计日志
+	loginUser := user
+	loginUser.Password = "[REDACTED]"
+	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
+		Action:       "login",
+		ResourceType: "user",
+		ResourceID:   fmt.Sprintf("%d", user.ID),
+		OldValue:     nil,
+		NewValue:     map[string]interface{}{
+			"username":  user.Username,
+			"ip_address": c.ClientIP(),
+			"success":   true,
+		},
+	})
 
 	// 不返回密码信息
 	user.Password = ""
@@ -165,8 +180,8 @@ func (uc *UserController) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// 验证刷新令牌
-	userID, err := utils.VerifyRefreshToken(refreshRequest.RefreshToken)
+	// 验证刷新令牌（获取userID与tenantID）
+	userID, tenantID, err := utils.VerifyRefreshToken(refreshRequest.RefreshToken)
 	if err != nil {
 		err := pkg.NewAuthError("Invalid refresh token", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
@@ -182,16 +197,16 @@ func (uc *UserController) RefreshToken(c *gin.Context) {
 		return
 	}
 
-	// 生成新的访问令牌
-	accessToken, err := utils.GenerateToken(userID)
+	// 生成新的访问令牌（保持相同tenant_id）
+	accessToken, err := utils.GenerateToken(userID, tenantID)
 	if err != nil {
 		err := pkg.NewInternalError("Failed to generate access token", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
 
-	// 生成新的刷新令牌（可选：也可以继续使用原有的刷新令牌）
-	refreshToken, err := utils.GenerateRefreshToken(userID)
+	// 生成新的刷新令牌（保持相同tenant_id）
+	refreshToken, err := utils.GenerateRefreshToken(userID, tenantID)
 	if err != nil {
 		err := pkg.NewInternalError("Failed to generate refresh token", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
@@ -204,13 +219,14 @@ func (uc *UserController) RefreshToken(c *gin.Context) {
 }
 
 // recordLoginHistory 记录登录历史
-func recordLoginHistory(username, ipAddress, userAgent string, success bool, message string) {
+func recordLoginHistory(username, ipAddress, userAgent string, success bool, message string, tenantID uint) {
 	loginHistory := models.LoginHistory{
 		Username:  username,
 		IPAddress: ipAddress,
 		Success:   success,
 		Message:   message,
 		UserAgent: userAgent,
+		TenantID:  tenantID,
 		LoginTime: time.Now(),
 	}
 
@@ -226,7 +242,8 @@ func recordLoginHistory(username, ipAddress, userAgent string, success bool, mes
 // GetUsers 获取所有用户
 func (uc *UserController) GetUsers(c *gin.Context) {
 	var users []models.User
-	result := pkg.DB.Find(&users)
+	tenantID := c.GetUint("tenantID")
+	result := pkg.DB.Where("tenant_id = ?", tenantID).Find(&users)
 	if result.Error != nil {
 		err := pkg.NewDatabaseError("Failed to fetch users", result.Error)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
@@ -239,9 +256,10 @@ func (uc *UserController) GetUsers(c *gin.Context) {
 // GetUser 获取单个用户
 func (uc *UserController) GetUser(c *gin.Context) {
 	id := c.Param("id")
+	tenantID := c.GetUint("tenantID")
 
 	var user models.User
-	result := pkg.DB.First(&user, id)
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&user)
 	if result.Error != nil {
 		err := pkg.NewNotFoundError("User not found", result.Error)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
@@ -260,6 +278,13 @@ func (uc *UserController) CreateUser(c *gin.Context) {
 		return
 	}
 
+	// 绑定租户ID，防止跨租户创建
+	user.TenantID = c.GetUint("tenantID")
+
+	// 创建用户前先记录审计日志（不包含密码）
+	logUser := user
+	logUser.Password = "[REDACTED]"
+
 	result := pkg.DB.Create(&user)
 	if result.Error != nil {
 		err := pkg.NewDatabaseError("Failed to create user", result.Error)
@@ -267,53 +292,112 @@ func (uc *UserController) CreateUser(c *gin.Context) {
 		return
 	}
 
+	// 记录创建用户的审计日志
+	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
+		Action:       "create",
+		ResourceType: "user",
+		ResourceID:   fmt.Sprintf("%d", user.ID),
+		OldValue:     nil,
+		NewValue:     logUser,
+	})
+
+	// 返回用户信息（不包含密码）
+	user.Password = ""
 	c.JSON(http.StatusCreated, user)
 }
 
 // UpdateUser 更新用户
 func (uc *UserController) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
+	tenantID := c.GetUint("tenantID")
 
-	var user models.User
-	result := pkg.DB.First(&user, id)
+	// 获取原始用户信息
+	var oldUser models.User
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&oldUser)
 	if result.Error != nil {
 		err := pkg.NewNotFoundError("User not found", result.Error)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
 
-	if err := c.ShouldBindJSON(&user); err != nil {
+	// 记录原始值（不包含密码）
+	auditOldUser := oldUser
+	auditOldUser.Password = "[REDACTED]"
+
+	// 绑定新的用户信息
+	var newUser models.User
+	if err := c.ShouldBindJSON(&newUser); err != nil {
 		err := pkg.NewValidationError("Invalid user data", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
 
-	result = pkg.DB.Save(&user)
+	// 防止跨租户变更
+	newUser.TenantID = tenantID
+	newUser.ID = oldUser.ID // 确保ID不变
+
+	// 如果没有更新密码，则保留原密码
+	if newUser.Password == "" {
+		newUser.Password = oldUser.Password
+	}
+
+	result = pkg.DB.Save(&newUser)
 	if result.Error != nil {
 		err := pkg.NewDatabaseError("Failed to update user", result.Error)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
 
-	c.JSON(http.StatusOK, user)
+	// 记录更新用户的审计日志
+	auditNewUser := newUser
+	auditNewUser.Password = "[REDACTED]"
+	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
+		Action:       "update",
+		ResourceType: "user",
+		ResourceID:   id,
+		OldValue:     auditOldUser,
+		NewValue:     auditNewUser,
+	})
+
+	// 返回更新后的用户信息（不包含密码）
+	newUser.Password = ""
+	c.JSON(http.StatusOK, newUser)
 }
 
 // DeleteUser 删除用户
 func (uc *UserController) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
+	tenantID := c.GetUint("tenantID")
 
-	result := pkg.DB.Delete(&models.User{}, id)
+	// 先获取要删除的用户信息，用于审计日志
+	var user models.User
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&user)
+	if result.Error != nil {
+		err := pkg.NewNotFoundError("User not found", result.Error)
+		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		return
+	}
+
+	// 记录要删除的用户信息（不包含密码）
+	auditUser := user
+	auditUser.Password = "[REDACTED]"
+
+	// 执行删除操作
+	result = pkg.DB.Delete(&user)
 	if result.Error != nil {
 		err := pkg.NewDatabaseError("Failed to delete user", result.Error)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
 
-	if result.RowsAffected == 0 {
-		err := pkg.NewNotFoundError("User not found", nil)
-		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
-		return
-	}
+	// 记录删除用户的审计日志
+	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
+		Action:       "delete",
+		ResourceType: "user",
+		ResourceID:   id,
+		OldValue:     auditUser,
+		NewValue:     nil,
+	})
 
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }

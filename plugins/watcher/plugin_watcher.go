@@ -11,6 +11,7 @@ import (
 
 	"toolcat/config"
 	"toolcat/pkg"
+	"toolcat/pkg/metrics"
 	"toolcat/plugins/loader"
 
 	"github.com/fsnotify/fsnotify"
@@ -284,8 +285,10 @@ func (pw *PluginWatcher) handlePluginChange(path string) {
 				pw.logger.Error("重新加载插件失败",
 					zap.String("pluginName", pluginName),
 					zap.Error(err))
+				metrics.RecordPluginError(pluginName, "hot_reload_failed")
 			} else {
 				pw.logger.Info("插件已成功重新加载", zap.String("pluginName", pluginName))
+				metrics.RecordPluginReload(pluginName, true)
 			}
 		} else {
 			pw.logger.Info("热重载功能已禁用", zap.String("pluginName", pluginName))
@@ -358,6 +361,7 @@ func (pw *PluginWatcher) tryLoadNewPlugin(pluginName string) {
 		pw.logger.Warn("插件编译文件不存在，跳过加载", 
 			zap.String("pluginName", pluginName), 
 			zap.String("expectedPath", soPath))
+		metrics.RecordPluginError(pluginName, "plugin_file_not_found")
 		return
 	}
 
@@ -367,6 +371,7 @@ func (pw *PluginWatcher) tryLoadNewPlugin(pluginName string) {
 		pw.logger.Error("动态加载插件失败", 
 			zap.String("pluginName", pluginName), 
 			zap.Error(err))
+		metrics.RecordPluginError(pluginName, "dynamic_load_failed")
 		return
 	}
 
@@ -375,6 +380,7 @@ func (pw *PluginWatcher) tryLoadNewPlugin(pluginName string) {
 		pw.logger.Error("注册插件失败", 
 			zap.String("pluginName", pluginName), 
 			zap.Error(err))
+		metrics.RecordPluginError(pluginName, "hot_register_failed")
 		// 加载失败，卸载插件
 		pw.loader.UnloadPlugin(pluginName)
 		return

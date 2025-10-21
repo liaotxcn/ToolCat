@@ -503,22 +503,301 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-### 7.3 插件管理接口
+### 7.3 审计日志接口
 
-#### 7.3.1 获取所有插件
+#### 7.3.1 获取审计日志列表
+
+**请求URL**: `/api/v1/audit/logs`
+**请求方法**: GET
+**请求头**: Authorization: Bearer {token}
+**查询参数**:
+- page: 页码(可选，默认1)
+- page_size: 每页数量(可选，默认10)
+- start_time: 开始时间(可选，格式：2025-10-01T10:00:00Z)
+- end_time: 结束时间(可选，格式：2025-10-02T10:00:00Z)
+- user_id: 用户ID(可选)
+- action: 操作类型(可选)
+
+**成功响应**:
+```json
+{
+  "logs": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "username": "testuser",
+      "action": "login",
+      "resource_type": "auth",
+      "resource_id": "1",
+      "details": "用户登录成功",
+      "ip": "127.0.0.1",
+      "user_agent": "Mozilla/5.0...",
+      "created_at": "2025-10-01T10:00:00Z"
+    }
+  ],
+  "total": 100,
+  "page": 1,
+  "page_size": 10
+}
+```
+
+**失败响应**:
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 7.3.2 获取单个审计日志详情
+
+**请求URL**: `/api/v1/audit/logs/:id`
+**请求方法**: GET
+**请求头**: Authorization: Bearer {token}
+**URL参数**:
+- id: 审计日志ID
+
+**成功响应**:
+```json
+{
+  "id": 1,
+  "user_id": 1,
+  "username": "testuser",
+  "action": "login",
+  "resource_type": "auth",
+  "resource_id": "1",
+  "details": "用户登录成功",
+  "ip": "127.0.0.1",
+  "user_agent": "Mozilla/5.0...",
+  "created_at": "2025-10-01T10:00:00Z"
+}
+```
+
+**失败响应**:
+- 404 Not Found: 审计日志不存在
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 7.3.3 获取审计日志统计信息
+
+**请求URL**: `/api/v1/audit/stats`
+**请求方法**: GET
+**请求头**: Authorization: Bearer {token}
+**查询参数**:
+- start_time: 开始时间(可选，格式：2025-10-01T10:00:00Z)
+- end_time: 结束时间(可选，格式：2025-10-02T10:00:00Z)
+
+**成功响应**:
+```json
+{
+  "total_logs": 1000,
+  "logs_per_day": [
+    { "date": "2025-10-01", "count": 120 },
+    { "date": "2025-10-02", "count": 150 }
+  ],
+  "actions_count": {
+    "login": 300,
+    "create": 200,
+    "update": 150,
+    "delete": 50
+  }
+}
+```
+
+**失败响应**:
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+### 7.4 插件管理接口
+
+#### 7.4.1 获取所有插件
 
 **请求URL**: `/api/v1/plugins`
 **请求方法**: GET
 **请求头**: Authorization: Bearer {token}
 
-**成功响应**: 
+**成功响应**:
 ```json
 {
-  "message": "Get all plugins"
+  "plugins": [
+    {
+      "name": "demo_plugin",
+      "version": "1.0.0",
+      "description": "示例插件",
+      "enabled": true,
+      "routes": [
+        {
+          "path": "/api/v1/demo",
+          "method": "GET",
+          "handler": "DemoHandler"
+        }
+      ],
+      "dependencies": ["core_plugin"],
+      "conflicts": ["conflicting_plugin"]
+    }
+  ]
 }
 ```
 
-#### 7.3.2 加载插件
+**失败响应**:
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 7.4.2 获取插件状态
+
+**请求URL**: `/api/v1/plugins/:name/status`
+**请求方法**: GET
+**请求头**: Authorization: Bearer {token}
+**URL参数**:
+- name: 插件名称
+
+**成功响应**:
+```json
+{
+  "name": "demo_plugin",
+  "enabled": true,
+  "status": "running",
+  "version": "1.0.0",
+  "load_time": "2025-10-01T10:00:00Z"
+}
+```
+
+**失败响应**:
+- 404 Not Found: 插件不存在
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 7.4.3 启用插件
+
+**请求URL**: `/api/v1/plugins/:name/enable`
+**请求方法**: POST
+**请求头**: Authorization: Bearer {token}
+**URL参数**:
+- name: 插件名称
+
+**成功响应**:
+```json
+{
+  "message": "插件启用成功",
+  "plugin": {
+    "name": "demo_plugin",
+    "enabled": true
+  }
+}
+```
+
+**失败响应**:
+- 404 Not Found: 插件不存在
+- 409 Conflict: 插件依赖冲突
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 7.4.4 禁用插件
+
+**请求URL**: `/api/v1/plugins/:name/disable`
+**请求方法**: POST
+**请求头**: Authorization: Bearer {token}
+**URL参数**:
+- name: 插件名称
+
+**成功响应**:
+```json
+{
+  "message": "插件禁用成功",
+  "plugin": {
+    "name": "demo_plugin",
+    "enabled": false
+  }
+}
+```
+
+**失败响应**:
+- 404 Not Found: 插件不存在
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 7.4.5 重载插件
+
+**请求URL**: `/api/v1/plugins/:name/reload`
+**请求方法**: POST
+**请求头**: Authorization: Bearer {token}
+**URL参数**:
+- name: 插件名称
+
+**成功响应**:
+```json
+{
+  "message": "插件重载成功",
+  "plugin": {
+    "name": "demo_plugin",
+    "enabled": true,
+    "version": "1.0.0",
+    "reload_time": "2025-10-01T10:00:00Z"
+  }
+}
+```
+
+**失败响应**:
+- 404 Not Found: 插件不存在
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 7.4.6 获取插件依赖图
+
+**请求URL**: `/api/v1/plugins/dependency-graph`
+**请求方法**: GET
+**请求头**: Authorization: Bearer {token}
+
+**成功响应**:
+```json
+{
+  "nodes": [
+    { "id": "core_plugin", "name": "核心插件", "enabled": true },
+    { "id": "demo_plugin", "name": "示例插件", "enabled": true }
+  ],
+  "edges": [
+    { "source": "demo_plugin", "target": "core_plugin", "type": "dependency" }
+  ]
+}
+```
+
+**失败响应**:
+- 500 Internal Server Error: 服务器错误
+```json
+{
+  "error": "错误信息"
+}
+```
+
+#### 7.4.7 加载插件
 
 **请求URL**: `/api/v1/plugins/load`
 **请求方法**: POST
@@ -537,7 +816,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 }
 ```
 
-#### 7.3.3 卸载插件
+#### 7.4.8 卸载插件
 
 **请求URL**: `/api/v1/plugins/unload/:name`
 **请求方法**: POST
@@ -640,6 +919,7 @@ type LoginHistory struct {
 type Note struct {
   ID          string    `gorm:"primaryKey;size:100" json:"id"`
   UserID      uint      `gorm:"not null;index" json:"user_id"`
+  TenantID    uint      `gorm:"index" json:"tenant_id"`
   Title       string    `gorm:"size:255;not null;index" json:"title"`
   Content     string    `gorm:"type:text;not null" json:"content"`
   CreatedTime time.Time `gorm:"index" json:"created_time"`
@@ -665,12 +945,12 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
   "version": "1.0.0",
   "endpoints": [
     "GET /plugins/note/ - 获取插件信息",
-    "GET /plugins/note/notes - 获取所有笔记（支持分页和用户关联）",
-    "GET /plugins/note/notes/:id - 获取单个笔记（用户关联）",
-    "POST /plugins/note/notes - 创建新笔记（用户关联）",
-    "PUT /plugins/note/notes/:id - 更新笔记（用户关联）",
-    "DELETE /plugins/note/notes/:id - 删除笔记（用户关联）",
-    "GET /plugins/note/notes/search - 搜索笔记（支持分页和用户关联）"
+    "GET /plugins/note/notes - 获取所有笔记（需认证；按租户与用户隔离）",
+    "GET /plugins/note/notes/:id - 获取单个笔记（需认证；按租户与用户隔离）",
+    "POST /plugins/note/notes - 创建新笔记（需认证；按租户与用户隔离）",
+    "PUT /plugins/note/notes/:id - 更新笔记（需认证；按租户与用户隔离）",
+    "DELETE /plugins/note/notes/:id - 删除笔记（需认证；按租户与用户隔离）",
+    "GET /plugins/note/notes/search - 搜索笔记（需认证；按租户与用户隔离）"
   ]
 }
 ```
@@ -679,8 +959,8 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 
 **请求URL**: `/plugins/note/notes`
 **请求方法**: GET
+**认证**: 需要携带 `Authorization: Bearer <token>`
 **查询参数**: 
-- user_id: 用户ID (必填)
 - page: 页码 (可选，默认1)
 - page_size: 每页数量 (可选，默认10)
 
@@ -691,15 +971,14 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
   "page": 1,
   "pageSize": 10,
   "totalPages": 10,
-  "data": [
+  "notes": [
     {
       "id": "note-12345678-1234-1234-1234-1234567890ab",
       "title": "测试笔记标题",
       "content": "测试笔记内容",
       "created_time": "2025-10-01T10:00:00Z",
       "updated_time": "2025-10-01T10:00:00Z"
-    },
-    // 更多笔记...
+    }
   ]
 }
 ```
@@ -716,10 +995,9 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 
 **请求URL**: `/plugins/note/notes/:id`
 **请求方法**: GET
+**认证**: 需要携带 `Authorization: Bearer <token>`
 **URL参数**: 
 - id: 笔记ID
-**查询参数**: 
-- user_id: 用户ID (必填)
 
 **成功响应**: 
 ```json
@@ -745,8 +1023,7 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 
 **请求URL**: `/plugins/note/notes`
 **请求方法**: POST
-**查询参数**: 
-- user_id: 用户ID (必填)
+**认证**: 需要携带 `Authorization: Bearer <token>`
 **请求体**: 
 ```json
 {
@@ -779,10 +1056,9 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 
 **请求URL**: `/plugins/note/notes/:id`
 **请求方法**: PUT
+**认证**: 需要携带 `Authorization: Bearer <token>`
 **URL参数**: 
 - id: 笔记ID
-**查询参数**: 
-- user_id: 用户ID (必填)
 **请求体**: 
 ```json
 {
@@ -816,10 +1092,9 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 
 **请求URL**: `/plugins/note/notes/:id`
 **请求方法**: DELETE
+**认证**: 需要携带 `Authorization: Bearer <token>`
 **URL参数**: 
 - id: 笔记ID
-**查询参数**: 
-- user_id: 用户ID (必填)
 
 **成功响应**: 
 ```json
@@ -841,8 +1116,8 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
 
 **请求URL**: `/plugins/note/notes/search`
 **请求方法**: GET
+**认证**: 需要携带 `Authorization: Bearer <token>`
 **查询参数**: 
-- user_id: 用户ID (必填)
 - keyword: 搜索关键词 (必填)
 - page: 页码 (可选，默认1)
 - page_size: 每页数量 (可选，默认10)
@@ -854,15 +1129,14 @@ Note插件是一个记事本插件，可以实现事件记录的增删查改功�
   "page": 1,
   "pageSize": 10,
   "totalPages": 1,
-  "data": [
+  "notes": [
     {
       "id": "note-12345678-1234-1234-1234-1234567890ab",
       "title": "包含关键词的笔记标题",
       "content": "包含关键词的笔记内容",
       "created_time": "2025-10-01T10:00:00Z",
       "updated_time": "2025-10-01T10:00:00Z"
-    },
-    // 更多匹配的笔记...
+    }
   ]
 }
 ```

@@ -9,16 +9,32 @@ ToolCat 插件系统允许开发者扩展应用功能，而无需修改核心代
 插件必须实现 `Plugin` 接口。ToolCat 提供了两种路由注册方式：传统的 `RegisterRoutes` 方法和优化后的 `GetRoutes` 方法。推荐使用新的 `GetRoutes` 方法进行路由注册。
 
 ```go
+// Route 定义路由结构
+type Route struct {
+    Path         string            // 路由路径（不包含插件前缀）
+    Method       string            // HTTP方法
+    Handler      gin.HandlerFunc   // 处理函数
+    Middlewares  []gin.HandlerFunc // 路由特定中间件
+    Description  string            // 路由描述
+    AuthRequired bool              // 是否需要认证
+    Tags         []string          // 路由标签
+    Params       map[string]string // 参数说明
+}
+
 // Plugin 插件接口定义
 type Plugin interface {
     // 基础信息接口
-    Name() string        // 返回插件名称
-    Description() string // 返回插件描述
-    Version() string     // 返回插件版本
+    Name() string              // 返回插件名称
+    Description() string       // 返回插件描述
+    Version() string           // 返回插件版本
+    GetDependencies() []string // 返回插件依赖的其他插件名称
+    GetConflicts() []string    // 返回与当前插件冲突的插件名称
 
     // 生命周期接口
-    Init() error     // 初始化插件
-    Shutdown() error // 关闭插件
+    Init() error      // 初始化插件
+    Shutdown() error  // 关闭插件
+    OnEnable() error  // 插件启用时调用（热重载相关）
+    OnDisable() error // 插件禁用时调用（热重载相关）
 
     // 路由注册接口
     // 新版接口：提供路由定义，由PluginManager统一注册
@@ -29,22 +45,9 @@ type Plugin interface {
     // 执行功能接口
     Execute(params map[string]interface{}) (interface{}, error) // 执行插件功能
 
-    // 插件配置接口（可选）
+    // 插件配置接口
     GetDefaultMiddlewares() []gin.HandlerFunc // 获取插件默认中间件
-}
-
-// Route 结构体定义了路由的元数据和处理函数
-// 这是新的路由定义方式核心
-
-type Route struct {
-    Path         string            // 路由路径（不包含插件前缀）
-    Method       string            // HTTP方法
-    Handler      gin.HandlerFunc   // 处理函数
-    Middlewares  []gin.HandlerFunc // 路由特定中间件
-    Description  string            // 路由描述
-    AuthRequired bool              // 是否需要认证
-    Tags         []string          // 路由标签，用于文档生成
-    Params       map[string]string // 参数说明，用于文档生成
+    SetPluginManager(manager *PluginManager)  // 设置插件管理器引用
 }
 ```
 
@@ -65,10 +68,12 @@ type Route struct {
 | 特性 | GetRoutes 方法（推荐） | RegisterRoutes 方法（兼容性保留） |
 |------|-----------------------|-----------------------------------|
 | 路由定义 | 使用 Route 结构体数组 | 直接操作 gin.Engine 对象 |
-| 元数据支持 | ✅ 完整支持 | ❌ 不支持 |
-| 自动路由组 | ✅ 自动创建 | ❌ 需要手动创建 |
-| 中间件管理 | ✅ 支持全局和路由级别 | ❌ 需要手动添加 |
-| 文档生成 | ✅ 支持自动生成 API 文档 | ❌ 不支持 |
+| 元数据支持 | ✅ 完整支持（描述、参数、标签等） | ❌ 不支持 |
+| 自动路由组 | ✅ 自动创建 `/plugins/{plugin_name}/` 路径前缀 | ❌ 需要手动创建 |
+| 中间件管理 | ✅ 支持全局和路由级别中间件配置 | ❌ 需要手动添加中间件 |
+| 依赖管理 | ✅ 与插件依赖系统集成 | ❌ 不支持依赖检查 |
+| 热重载支持 | ✅ 完全支持热重载 | ⚠️ 有限支持热重载 |
+| 认证控制 | ✅ 通过 AuthRequired 字段控制 | ❌ 需要手动添加认证中间件 |
 
 ## 4. 开发插件的步骤
 
@@ -91,6 +96,45 @@ go run tools/plugin_scaffold.go --name YourPlugin --desc "插件描述" --type a
 脚手架工具会自动生成以下文件：
 - `plugins/{plugin_name}_plugin.go` - 插件代码文件，包含完整的Plugin接口实现
 - `plugins/{plugin_name}_plugin.md` - 插件文档文件
+
+## 5. 插件依赖管理
+
+ToolCat提供了完善的插件依赖管理系统，允许插件声明其依赖关系和冲突关系，确保插件能够按照正确的顺序加载和初始化。
+
+### 5.1 依赖声明
+
+在插件中实现`GetDependencies()`方法声明当前插件依赖的其他插件：
+
+```go
+// GetDependencies 返回插件依赖的其他插件名称列表
+func (p *YourPlugin) GetDependencies() []string {
+    return []string{
+        "RequiredPlugin1",
+        "RequiredPlugin2",
+    }
+}
+```
+
+### 5.2 冲突声明
+
+在插件中实现`GetConflicts()`方法声明与当前插件冲突的插件：
+
+```go
+// GetConflicts 返回与当前插件冲突的插件名称列表
+func (p *YourPlugin) GetConflicts() []string {
+    return []string{
+        "ConflictingPlugin1",
+    }
+}
+```
+
+### 5.3 依赖解析与加载顺序
+
+PluginManager会自动：
+1. 解析所有插件的依赖关系
+2. 按照依赖关系排序插件加载顺序
+3. 确保在加载插件前所有依赖都已加载完成
+4. 检查冲突，如果发现冲突插件，会拒绝加载冲突的插件
 
 ### 4.2 手动创建插件结构体
 

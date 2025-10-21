@@ -16,12 +16,13 @@ type ToolController struct{}
 // GetTools 获取所有工具
 func (tc *ToolController) GetTools(c *gin.Context) {
 	var tools []models.Tool
-	result := pkg.DB.Where("is_enabled = ?", true).Find(&tools)
+	tenantID := c.GetUint("tenantID")
+	result := pkg.DB.Where("tenant_id = ? AND is_enabled = ?", tenantID, true).Find(&tools)
 	if result.Error != nil {
 		// 使用统一错误码系统返回数据库错误
 		dbErr := pkg.NewDatabaseError("Failed to fetch tools", result.Error)
 		dbErr.WithDetails(map[string]interface{}{
-			"filter": "is_enabled = true",
+			"filter": "tenant_id and is_enabled = true",
 		})
 		c.Error(dbErr)
 		return
@@ -33,9 +34,10 @@ func (tc *ToolController) GetTools(c *gin.Context) {
 // GetTool 获取单个工具
 func (tc *ToolController) GetTool(c *gin.Context) {
 	id := c.Param("id")
+	tenantID := c.GetUint("tenantID")
 
 	var tool models.Tool
-	result := pkg.DB.First(&tool, id)
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&tool)
 	if result.Error != nil {
 		// 使用统一错误码系统返回未找到错误
 		c.Error(pkg.NewNotFoundError("Tool not found", nil))
@@ -54,12 +56,16 @@ func (tc *ToolController) CreateTool(c *gin.Context) {
 		return
 	}
 
+	// 绑定租户ID
+	tool.TenantID = c.GetUint("tenantID")
+
 	result := pkg.DB.Create(&tool)
 	if result.Error != nil {
 		// 使用统一错误码系统返回数据库错误
 		dbErr := pkg.NewDatabaseError("Failed to create tool", result.Error)
 		dbErr.WithDetails(map[string]interface{}{
 			"tool_name": tool.Name,
+			"tenant_id": tool.TenantID,
 		})
 		c.Error(dbErr)
 		return
@@ -71,9 +77,10 @@ func (tc *ToolController) CreateTool(c *gin.Context) {
 // UpdateTool 更新工具
 func (tc *ToolController) UpdateTool(c *gin.Context) {
 	id := c.Param("id")
+	tenantID := c.GetUint("tenantID")
 
 	var tool models.Tool
-	result := pkg.DB.First(&tool, id)
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&tool)
 	if result.Error != nil {
 		// 使用统一错误码系统返回未找到错误
 		c.Error(pkg.NewNotFoundError("Tool not found", nil))
@@ -86,12 +93,16 @@ func (tc *ToolController) UpdateTool(c *gin.Context) {
 		return
 	}
 
+	// 防止跨租户变更
+	tool.TenantID = tenantID
+
 	result = pkg.DB.Save(&tool)
 	if result.Error != nil {
 		// 使用统一错误码系统返回数据库错误
 		dbErr := pkg.NewDatabaseError("Failed to update tool", result.Error)
 		dbErr.WithDetails(map[string]interface{}{
 			"tool_id": id,
+			"tenant_id": tenantID,
 		})
 		c.Error(dbErr)
 		return
@@ -103,15 +114,12 @@ func (tc *ToolController) UpdateTool(c *gin.Context) {
 // DeleteTool 删除工具
 func (tc *ToolController) DeleteTool(c *gin.Context) {
 	id := c.Param("id")
+	tenantID := c.GetUint("tenantID")
 
-	result := pkg.DB.Delete(&models.Tool{}, id)
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).Delete(&models.Tool{})
 	if result.Error != nil {
 		// 使用统一错误码系统返回数据库错误
-		dbErr := pkg.NewDatabaseError("Failed to delete tool", result.Error)
-		dbErr.WithDetails(map[string]interface{}{
-			"tool_id": id,
-		})
-		c.Error(dbErr)
+		c.Error(pkg.NewDatabaseError("Failed to delete tool", result.Error))
 		return
 	}
 
@@ -127,9 +135,10 @@ func (tc *ToolController) DeleteTool(c *gin.Context) {
 // ExecuteTool 执行工具
 func (tc *ToolController) ExecuteTool(c *gin.Context) {
 	id := c.Param("id")
+	tenantID := c.GetUint("tenantID")
 
 	var tool models.Tool
-	result := pkg.DB.First(&tool, id)
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&tool)
 	if result.Error != nil {
 		// 使用统一错误码系统返回未找到错误
 		c.Error(pkg.NewNotFoundError("Tool not found", nil))
@@ -144,8 +153,10 @@ func (tc *ToolController) ExecuteTool(c *gin.Context) {
 
 	// 记录工具使用历史
 	history := models.ToolHistory{
-		ToolID: tool.ID,
-		UsedAt: time.Now(),
+		ToolID:   tool.ID,
+		UserID:   c.GetUint("userID"),
+		TenantID: tenantID,
+		UsedAt:   time.Now(),
 		// 从请求中获取参数和用户信息
 	}
 
@@ -154,7 +165,8 @@ func (tc *ToolController) ExecuteTool(c *gin.Context) {
 		// 记录失败不应影响工具执行，但记录错误日志
 		dbErr := pkg.NewDatabaseError("Failed to record tool usage history", result.Error)
 		dbErr.WithDetails(map[string]interface{}{
-			"tool_id": tool.ID,
+			"tool_id":   tool.ID,
+			"tenant_id": tenantID,
 		})
 		// 记录但不中断执行
 		c.Error(dbErr)
