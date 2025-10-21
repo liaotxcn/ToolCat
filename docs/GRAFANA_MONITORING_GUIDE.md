@@ -68,24 +68,30 @@ docker-compose up -d
 仪表盘包含以下主要面板：
 
 1. **HTTP请求监控**
-   - HTTP请求速率：按方法和端点显示请求频率
-   - HTTP请求延迟（95th percentile）：显示各端点的请求延迟
-   - HTTP错误率（5xx）：显示服务器错误率
+   - HTTP请求计数 (`http_requests_total`)：按方法、端点和状态码统计请求总数
+   - HTTP请求延迟 (`http_request_duration_seconds`)：按方法、端点和状态码统计请求耗时分布
 
 2. **数据库监控**
-   - 数据库连接数：显示当前活跃连接数
-   - 数据库查询延迟（95th percentile）：按操作类型显示查询延迟
-   - 数据库查询速率：按操作类型和表名显示查询频率
+   - 数据库连接数 (`db_connections`)：显示当前活跃连接数
+   - 数据库查询计数 (`db_queries_total`)：按操作类型和表名统计查询总数
+   - 数据库查询延迟 (`db_query_duration_seconds`)：按操作类型和表名统计查询耗时分布
 
 3. **插件监控**
-   - 插件状态：显示总插件数和已启用插件数
+   - 插件总数 (`plugins_total`)：显示所有已注册的插件数量
+   - 已启用插件数 (`plugins_enabled`)：显示当前已启用的插件数量
+   - 插件执行计数 (`plugin_execution_count`)：按插件名称和方法名统计执行次数
+   - 插件执行延迟 (`plugin_execution_duration`)：按插件名称和方法名统计执行耗时
+   - 插件方法调用 (`plugin_method_calls`)：按插件名称和方法名统计方法调用次数
+   - 插件错误计数 (`plugin_errors`)：按插件名称和错误类型统计错误发生次数
+   - 插件内存使用 (`plugin_memory_usage`)：按插件名称统计内存占用情况
+   - 插件重载次数 (`plugin_reloads`)：按插件名称统计重载次数
 
-4. **错误监控**
-   - 错误率：按错误类型和组件显示错误发生频率
+4. **系统监控**
+   - 内存使用 (`memory_usage_bytes`)：显示应用内存使用情况
+   - 系统运行时间 (`system_uptime_seconds`)：显示应用已运行时长
 
-5. **系统监控**
-   - 内存使用：显示应用内存使用情况
-   - 系统运行时间：显示应用已运行时长
+5. **错误监控**
+   - 错误计数 (`error_count`)：按错误类型和组件统计错误发生频率
 
 ### 仪表盘使用技巧
 

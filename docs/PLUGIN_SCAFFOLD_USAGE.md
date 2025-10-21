@@ -93,10 +93,12 @@ plugin_scaffold -name CalendarPlugin -dir /path/to/plugins -non-interactive
 工具会生成以下文件：
 
 1. **插件代码文件**：`plugins/{plugin_name}_plugin.go`
-   - 包含完整的Plugin接口实现
-   - 预设了基本的路由和处理函数示例
+   - 包含完整的Plugin接口实现，包括最新添加的`GetDependencies()`、`GetConflicts()`、`OnEnable()`、`OnDisable()`和`SetPluginManager()`方法
+   - 预设了基本的路由和处理函数示例，使用推荐的`GetRoutes()`方法
    - 包含辅助方法的示例实现
    - 根据插件类型生成特定的功能代码
+   - 内置插件依赖管理的基础结构
+   - 支持热重载的生命周期管理
 
 2. **插件文档文件**：`plugins/{plugin_name}_plugin.md`
    - 包含插件基本信息
