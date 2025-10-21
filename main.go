@@ -47,6 +47,12 @@ func main() {
 	// 输出清理后的配置信息（隐藏敏感数据）
 	pkg.Info("Configuration loaded successfully", zap.Any("config", config.SanitizeConfig()))
 
+	// 验证配置完整性（确保所有配置项都经过验证）
+	if err := config.ValidateConfig(); err != nil {
+		pkg.Fatal("Configuration validation failed", zap.Error(err))
+	}
+	pkg.Info("Configuration validation passed successfully")
+
 	// 监控指标将在路由设置中初始化
 
 	// 初始化数据库

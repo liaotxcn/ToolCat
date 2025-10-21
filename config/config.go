@@ -142,9 +142,9 @@ func init() {
 	Config.Prometheus.EnableHTTPMetrics = true
 }
 
-// ValidateConfig 验证配置的有效性，特别是敏感信息
+// ValidateConfig 验证配置的有效性
 func ValidateConfig() error {
-	// 检查必要的敏感配置项
+	// 1. 检查必要的敏感配置项
 	if Config.Database.Username == "" {
 		return fmt.Errorf("数据库用户名未配置，请设置DB_USERNAME环境变量或在配置文件中指定")
 	}
@@ -155,6 +155,72 @@ func ValidateConfig() error {
 
 	if Config.JWT.Secret == "" {
 		return fmt.Errorf("JWT密钥未配置，请设置JWT_SECRET环境变量或在配置文件中指定")
+	}
+
+	// 2. 验证服务器配置
+	if Config.Server.Port <= 0 || Config.Server.Port > 65535 {
+		return fmt.Errorf("无效的服务器端口: %d，端口必须在1-65535之间", Config.Server.Port)
+	}
+
+	// 3. 验证数据库配置
+	supportedDrivers := map[string]bool{"mysql": true, "postgres": true, "postgresql": true}
+	if !supportedDrivers[Config.Database.Driver] {
+		return fmt.Errorf("不支持的数据库驱动: %s，支持的驱动有: mysql, postgres, postgresql", Config.Database.Driver)
+	}
+
+	if Config.Database.Port <= 0 || Config.Database.Port > 65535 {
+		return fmt.Errorf("无效的数据库端口: %d，端口必须在1-65535之间", Config.Database.Port)
+	}
+
+	if Config.Database.DBName == "" {
+		return fmt.Errorf("数据库名称未配置")
+	}
+
+	// 4. 验证日志配置
+	validLogLevels := map[string]bool{"debug": true, "info": true, "warn": true, "error": true, "fatal": true}
+	if !validLogLevels[Config.Logger.Level] {
+		return fmt.Errorf("无效的日志级别: %s，有效级别为: debug, info, warn, error, fatal", Config.Logger.Level)
+	}
+
+	// 5. 验证JWT配置
+	if Config.JWT.AccessTokenExpiry <= 0 {
+		return fmt.Errorf("无效的访问令牌过期时间: %d，必须大于0分钟", Config.JWT.AccessTokenExpiry)
+	}
+
+	if Config.JWT.RefreshTokenExpiry <= 0 {
+		return fmt.Errorf("无效的刷新令牌过期时间: %d，必须大于0小时", Config.JWT.RefreshTokenExpiry)
+	}
+
+	// 6. 验证CSRF配置
+	if Config.CSRF.TokenLength < 16 {
+		return fmt.Errorf("CSRF令牌长度过小: %d，建议至少16个字符", Config.CSRF.TokenLength)
+	}
+
+	validSameSiteValues := map[string]bool{"Strict": true, "Lax": true, "None": true}
+	if !validSameSiteValues[Config.CSRF.CookieSameSite] {
+		return fmt.Errorf("无效的Cookie SameSite值: %s，有效值为: Strict, Lax, None", Config.CSRF.CookieSameSite)
+	}
+
+	// 7. 验证插件配置
+	if Config.Plugins.Dir == "" {
+		return fmt.Errorf("插件目录未配置")
+	}
+
+	// 检查插件目录是否存在
+	if _, err := os.Stat(Config.Plugins.Dir); os.IsNotExist(err) {
+		// 创建插件目录
+		if err := os.MkdirAll(Config.Plugins.Dir, 0755); err != nil {
+			return fmt.Errorf("创建插件目录失败: %w", err)
+		}
+	}
+
+	if Config.Plugins.ScanInterval <= 0 {
+		return fmt.Errorf("无效的插件扫描间隔: %d，必须大于0秒", Config.Plugins.ScanInterval)
+	}
+
+	// 8. 验证Prometheus配置
+	if Config.Prometheus.MetricsPath != "" && Config.Prometheus.MetricsPath[0] != '/' {
+		return fmt.Errorf("Prometheus指标路径必须以斜杠开头: %s", Config.Prometheus.MetricsPath)
 	}
 
 	return nil
