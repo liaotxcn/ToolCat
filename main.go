@@ -78,7 +78,7 @@ func main() {
 	} else {
 		// 仅当启用自动迁移时才使用GORM自动迁移
 		log.Println("Starting GORM auto-migration...")
-		if err := models.MigrateTables(); err != nil {
+		if err := models.MigrateTables(pkg.DB); err != nil {
 			pkg.Warn("Failed to migrate database tables", zap.Error(err))
 		} else {
 			log.Println("GORM auto-migration completed successfully")

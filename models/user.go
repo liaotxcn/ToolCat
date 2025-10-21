@@ -2,7 +2,8 @@ package models
 
 import (
 	"time"
-	"toolcat/pkg"
+
+	"gorm.io/gorm"
 )
 
 // User 用户模型
@@ -41,9 +42,9 @@ type ToolHistory struct {
 }
 
 // MigrateTables 执行数据库迁移
-func MigrateTables() error {
+func MigrateTables(db *gorm.DB) error {
 	// 自动迁移表结构
-	if err := pkg.DB.AutoMigrate(&User{}, &Tool{}, &ToolHistory{}, &Note{}, &LoginHistory{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Tool{}, &ToolHistory{}, &Note{}, &LoginHistory{}, &AuditLog{}); err != nil {
 		return err
 	}
 

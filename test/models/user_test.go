@@ -37,7 +37,9 @@ func setupTestDB(t *testing.T) {
 	}
 
 	// 迁移表结构
-	models.MigrateTables()
+	if err := models.MigrateTables(pkg.DB); err != nil {
+		t.Fatalf("Failed to migrate tables: %v", err)
+	}
 }
 
 // 清理测试数据
@@ -251,7 +253,9 @@ func TestMigrateTables(t *testing.T) {
 	defer cleanupTestDB(t)
 
 	// 调用迁移函数
-	models.MigrateTables()
+	if err := models.MigrateTables(pkg.DB); err != nil {
+		t.Fatalf("Failed to migrate tables: %v", err)
+	}
 
 	// 验证表是否存在
 	tableNames := []string{"users", "tools", "tool_histories", "notes", "login_histories"}

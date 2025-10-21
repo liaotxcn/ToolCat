@@ -4,6 +4,7 @@ import (
 	"time"
 	"toolcat/controllers"
 	"toolcat/middleware"
+	"toolcat/pkg"
 	"toolcat/pkg/metrics"
 
 	"github.com/gin-gonic/gin"
@@ -65,6 +66,7 @@ func SetupRouter() *gin.Engine {
 		appGroup.Use(middleware.RequestBufferMiddleware())
 		appGroup.Use(middleware.CSRFMiddleware())
 		appGroup.Use(mm.HTTPMonitoringMiddleware()) // 添加HTTP请求监控中间件
+		appGroup.Use(pkg.AuditLogMiddleware())      // 添加安全审计日志中间件
 
 		// 认证相关路由
 		auth := appGroup.Group("/auth")
@@ -86,15 +88,24 @@ func SetupRouter() *gin.Engine {
 			api.Use(middleware.RateLimiter(20, 50))
 
 			// 用户相关路由
-			users := api.Group("/users")
-			{
-				userCtrl := &controllers.UserController{}
-				users.GET("/", userCtrl.GetUsers)
-				users.GET("/:id", userCtrl.GetUser)
-				users.POST("/", userCtrl.CreateUser)
-				users.PUT("/:id", userCtrl.UpdateUser)
-				users.DELETE("/:id", userCtrl.DeleteUser)
-			}
+		users := api.Group("/users")
+		{
+			userCtrl := &controllers.UserController{}
+			users.GET("/", userCtrl.GetUsers)
+			users.GET("/:id", userCtrl.GetUser)
+			users.POST("/", userCtrl.CreateUser)
+			users.PUT("/:id", userCtrl.UpdateUser)
+			users.DELETE("/:id", userCtrl.DeleteUser)
+		}
+
+		// 审计日志相关路由
+		audit := api.Group("/audit")
+		{
+			auditCtrl := &controllers.AuditController{}
+			audit.GET("/logs", auditCtrl.GetAuditLogs)         // 获取审计日志列表
+			audit.GET("/logs/:id", auditCtrl.GetAuditLog)      // 获取单个审计日志详情
+			audit.GET("/stats", auditCtrl.GetAuditStats)       // 获取审计日志统计信息
+		}
 
 			// 工具相关路由
 			tools := api.Group("/tools")

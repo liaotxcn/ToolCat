@@ -146,6 +146,21 @@ func (uc *UserController) Login(c *gin.Context) {
 	// 记录登录成功
 	recordLoginHistory(loginRequest.Username, c.ClientIP(), c.Request.UserAgent(), true, "登录成功", user.TenantID)
 
+	// 记录登录操作的审计日志
+	loginUser := user
+	loginUser.Password = "[REDACTED]"
+	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
+		Action:       "login",
+		ResourceType: "user",
+		ResourceID:   fmt.Sprintf("%d", user.ID),
+		OldValue:     nil,
+		NewValue:     map[string]interface{}{
+			"username":  user.Username,
+			"ip_address": c.ClientIP(),
+			"success":   true,
+		},
+	})
+
 	// 不返回密码信息
 	user.Password = ""
 	c.JSON(http.StatusOK, gin.H{"message": "登录成功", "access_token": accessToken, "refresh_token": refreshToken, "user": user})
@@ -266,6 +281,10 @@ func (uc *UserController) CreateUser(c *gin.Context) {
 	// 绑定租户ID，防止跨租户创建
 	user.TenantID = c.GetUint("tenantID")
 
+	// 创建用户前先记录审计日志（不包含密码）
+	logUser := user
+	logUser.Password = "[REDACTED]"
+
 	result := pkg.DB.Create(&user)
 	if result.Error != nil {
 		err := pkg.NewDatabaseError("Failed to create user", result.Error)
@@ -273,6 +292,17 @@ func (uc *UserController) CreateUser(c *gin.Context) {
 		return
 	}
 
+	// 记录创建用户的审计日志
+	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
+		Action:       "create",
+		ResourceType: "user",
+		ResourceID:   fmt.Sprintf("%d", user.ID),
+		OldValue:     nil,
+		NewValue:     logUser,
+	})
+
+	// 返回用户信息（不包含密码）
+	user.Password = ""
 	c.JSON(http.StatusCreated, user)
 }
 
@@ -281,6 +311,65 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	tenantID := c.GetUint("tenantID")
 
+	// 获取原始用户信息
+	var oldUser models.User
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&oldUser)
+	if result.Error != nil {
+		err := pkg.NewNotFoundError("User not found", result.Error)
+		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		return
+	}
+
+	// 记录原始值（不包含密码）
+	auditOldUser := oldUser
+	auditOldUser.Password = "[REDACTED]"
+
+	// 绑定新的用户信息
+	var newUser models.User
+	if err := c.ShouldBindJSON(&newUser); err != nil {
+		err := pkg.NewValidationError("Invalid user data", err)
+		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		return
+	}
+
+	// 防止跨租户变更
+	newUser.TenantID = tenantID
+	newUser.ID = oldUser.ID // 确保ID不变
+
+	// 如果没有更新密码，则保留原密码
+	if newUser.Password == "" {
+		newUser.Password = oldUser.Password
+	}
+
+	result = pkg.DB.Save(&newUser)
+	if result.Error != nil {
+		err := pkg.NewDatabaseError("Failed to update user", result.Error)
+		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		return
+	}
+
+	// 记录更新用户的审计日志
+	auditNewUser := newUser
+	auditNewUser.Password = "[REDACTED]"
+	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
+		Action:       "update",
+		ResourceType: "user",
+		ResourceID:   id,
+		OldValue:     auditOldUser,
+		NewValue:     auditNewUser,
+	})
+
+	// 返回更新后的用户信息（不包含密码）
+	newUser.Password = ""
+	c.JSON(http.StatusOK, newUser)
+}
+
+// DeleteUser 删除用户
+func (uc *UserController) DeleteUser(c *gin.Context) {
+	id := c.Param("id")
+	tenantID := c.GetUint("tenantID")
+
+	// 先获取要删除的用户信息，用于审计日志
 	var user models.User
 	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&user)
 	if result.Error != nil {
@@ -289,42 +378,26 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 		return
 	}
 
-	if err := c.ShouldBindJSON(&user); err != nil {
-		err := pkg.NewValidationError("Invalid user data", err)
-		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
-		return
-	}
+	// 记录要删除的用户信息（不包含密码）
+	auditUser := user
+	auditUser.Password = "[REDACTED]"
 
-	// 防止跨租户变更
-	user.TenantID = tenantID
-
-	result = pkg.DB.Save(&user)
-	if result.Error != nil {
-		err := pkg.NewDatabaseError("Failed to update user", result.Error)
-		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
-		return
-	}
-
-	c.JSON(http.StatusOK, user)
-}
-
-// DeleteUser 删除用户
-func (uc *UserController) DeleteUser(c *gin.Context) {
-	id := c.Param("id")
-	tenantID := c.GetUint("tenantID")
-
-	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).Delete(&models.User{})
+	// 执行删除操作
+	result = pkg.DB.Delete(&user)
 	if result.Error != nil {
 		err := pkg.NewDatabaseError("Failed to delete user", result.Error)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
 
-	if result.RowsAffected == 0 {
-		err := pkg.NewNotFoundError("User not found", nil)
-		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
-		return
-	}
+	// 记录删除用户的审计日志
+	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
+		Action:       "delete",
+		ResourceType: "user",
+		ResourceID:   id,
+		OldValue:     auditUser,
+		NewValue:     nil,
+	})
 
 	c.JSON(http.StatusOK, gin.H{"message": "User deleted successfully"})
 }
