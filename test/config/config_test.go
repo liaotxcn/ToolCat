@@ -38,12 +38,13 @@ func TestDefaultConfig(t *testing.T) {
 		t.Errorf("Expected default DB port 3306, got %d", config.Config.Database.Port)
 	}
 
-	if config.Config.Database.Username != "root" {
-		t.Errorf("Expected default DB username 'root', got %s", config.Config.Database.Username)
+	// 敏感字段默认值应为空，由环境变量或配置文件提供
+	if config.Config.Database.Username != "" {
+		t.Errorf("Expected default DB username '', got %s", config.Config.Database.Username)
 	}
 
-	if config.Config.JWT.Secret != "your-secret-key" {
-		t.Errorf("Expected default JWT secret 'your-secret-key', got %s", config.Config.JWT.Secret)
+	if config.Config.JWT.Secret != "" {
+		t.Errorf("Expected default JWT secret '', got %s", config.Config.JWT.Secret)
 	}
 
 	if config.Config.CSRF.Enabled != true {
@@ -180,7 +181,7 @@ func TestCSRFConfigLoading(t *testing.T) {
 	}, {
 		name:        "empty string",
 		envValue:    "",
-		expected:    "",
+		expected:    "Lax",
 	}, {
 		name:        "invalid string",
 		envValue:    "invalid",
