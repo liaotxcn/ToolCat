@@ -159,6 +159,10 @@ func AuditLogMiddleware() gin.HandlerFunc {
 func extractResourceType(path string) string {
 	parts := strings.Split(strings.Trim(path, "/"), "/")
 	if len(parts) >= 2 && parts[0] == "api" {
+		// Skip version segment like v1, v2 and return actual resource
+		if len(parts) >= 3 && strings.HasPrefix(parts[1], "v") {
+			return parts[2]
+		}
 		return parts[1]
 	}
 	if len(parts) >= 3 && parts[0] == "plugins" {

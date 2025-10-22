@@ -602,19 +602,32 @@ func (pm *PluginManager) RegisterPlugins(plugins []Plugin) error {
 
 // topologicalSort 执行拓扑排序
 func topologicalSort(graph map[string][]string) ([]string, error) {
-	// 计算每个节点的入度
+	// 我们的输入是：plugin -> [dependencies]
+	// 为了确保“先依赖后使用者”，需要将边方向反转为：dependency -> plugin
+
 	inDegree := make(map[string]int)
+	adj := make(map[string][]string)
+	pluginNodes := make(map[string]struct{})
+
+	// 初始化节点集合与入度
 	for node := range graph {
+		pluginNodes[node] = struct{}{}
 		inDegree[node] = 0
 	}
 
-	for _, dependencies := range graph {
-		for _, dep := range dependencies {
-			inDegree[dep]++
+	// 构建反向邻接表，并计算入度（插件的入度是它的依赖数量）
+	for plugin, deps := range graph {
+		for _, dep := range deps {
+			// 依赖节点也需要出现在入度表中，以便正确释放其邻居
+			if _, ok := inDegree[dep]; !ok {
+				inDegree[dep] = 0
+			}
+			adj[dep] = append(adj[dep], plugin)
+			inDegree[plugin]++
 		}
 	}
 
-	// 将入度为0的节点加入队列
+	// 将入度为0的所有节点（包括未在graph中的纯依赖节点）加入队列
 	queue := []string{}
 	for node, degree := range inDegree {
 		if degree == 0 {
@@ -622,15 +635,17 @@ func topologicalSort(graph map[string][]string) ([]string, error) {
 		}
 	}
 
-	// 执行拓扑排序
 	sorted := []string{}
 	for len(queue) > 0 {
 		current := queue[0]
 		queue = queue[1:]
-		sorted = append(sorted, current)
 
-		// 减少相邻节点的入度
-		for _, neighbor := range graph[current] {
+		// 仅将真实插件节点（graph的键）加入排序结果；纯依赖节点只用于释放其邻居
+		if _, isPlugin := pluginNodes[current]; isPlugin {
+			sorted = append(sorted, current)
+		}
+
+		for _, neighbor := range adj[current] {
 			inDegree[neighbor]--
 			if inDegree[neighbor] == 0 {
 				queue = append(queue, neighbor)
@@ -638,8 +653,8 @@ func topologicalSort(graph map[string][]string) ([]string, error) {
 		}
 	}
 
-	// 检查是否存在环
-	if len(sorted) != len(inDegree) {
+	// 如果无法将所有插件节点加入结果，说明存在循环依赖
+	if len(sorted) != len(pluginNodes) {
 		return nil, fmt.Errorf("插件依赖关系存在循环依赖")
 	}
 

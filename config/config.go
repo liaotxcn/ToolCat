@@ -84,8 +84,8 @@ var Config struct {
 	}
 }
 
-// 初始化默认值
-func init() {
+// 重置默认配置到初始值
+func resetDefaults() {
 	// 配置文件设置
 	Config.ConfigFiles.Path = "./config/config.yaml"
 	Config.ConfigFiles.Type = "yaml"
@@ -96,7 +96,7 @@ func init() {
 	// 数据库配置（非敏感字段默认值）
 	Config.Database.Driver = "mysql"
 	Config.Database.Host = "localhost"
-	Config.Database.Port = 3306 // MySQL默认端口，PostgreSQL默认端口为5432
+	Config.Database.Port = 3306
 	Config.Database.DBName = "toolcat"
 	Config.Database.Charset = "utf8mb4"
 	// 敏感字段（数据库用户名和密码）将通过环境变量或配置文件设置
@@ -140,6 +140,10 @@ func init() {
 	Config.Prometheus.MetricsPath = "/metrics"
 	Config.Prometheus.EnableGoMetrics = true
 	Config.Prometheus.EnableHTTPMetrics = true
+}
+
+func init() {
+	resetDefaults()
 }
 
 // ValidateConfig 验证配置的有效性
@@ -524,7 +528,8 @@ func GetAbsConfigFilePath() (string, error) {
 
 // LoadConfig 从配置文件和环境变量加载配置
 func LoadConfig() error {
-	// 首先从配置文件加载配置
+	// 在每次加载前重置默认值，避免跨测试用例状态污染
+	resetDefaults()
 	if err := LoadConfigFile(); err != nil {
 		return fmt.Errorf("加载配置文件失败: %w", err)
 	}

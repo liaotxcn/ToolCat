@@ -39,7 +39,7 @@ func (ac *AuditController) GetAuditLogs(c *gin.Context) {
 	query := pkg.DB.Model(&models.AuditLog{})
 
 	// 添加租户过滤（多租户隔离）
-	tenantID := c.GetUint("tenantID")
+	tenantID := c.GetUint("tenant_id")
 	query = query.Where("tenant_id = ?", tenantID)
 
 	// 添加过滤条件
@@ -98,7 +98,7 @@ func (ac *AuditController) GetAuditLogs(c *gin.Context) {
 // GetAuditLog 获取单个审计日志详情
 func (ac *AuditController) GetAuditLog(c *gin.Context) {
 	id := c.Param("id")
-	tenantID := c.GetUint("tenantID")
+	tenantID := c.GetUint("tenant_id")
 
 	var auditLog models.AuditLog
 	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&auditLog)
@@ -113,7 +113,7 @@ func (ac *AuditController) GetAuditLog(c *gin.Context) {
 
 // GetAuditStats 获取审计日志统计信息
 func (ac *AuditController) GetAuditStats(c *gin.Context) {
-	tenantID := c.GetUint("tenantID")
+	tenantID := c.GetUint("tenant_id")
 
 	// 按操作类型统计
 	type ActionStat struct {
@@ -156,7 +156,6 @@ func (ac *AuditController) GetAuditStats(c *gin.Context) {
 	}
 
 	var dailyStats []DailyStat
-	// 这里使用简单的方式，实际项目中可能需要更复杂的SQL查询或使用ORM的高级功能
 	for i := 6; i >= 0; i-- {
 		date := time.Now().AddDate(0, 0, -i).Format("2006-01-02")
 		startTime, _ := time.Parse("2006-01-02", date)

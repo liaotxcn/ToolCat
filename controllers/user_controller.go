@@ -241,22 +241,22 @@ func recordLoginHistory(username, ipAddress, userAgent string, success bool, mes
 
 // GetUsers 获取所有用户
 func (uc *UserController) GetUsers(c *gin.Context) {
-	var users []models.User
-	tenantID := c.GetUint("tenantID")
-	result := pkg.DB.Where("tenant_id = ?", tenantID).Find(&users)
-	if result.Error != nil {
-		err := pkg.NewDatabaseError("Failed to fetch users", result.Error)
-		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
-		return
-	}
+    var users []models.User
+    tenantID := c.GetUint("tenant_id")
+    result := pkg.DB.Where("tenant_id = ?", tenantID).Find(&users)
+    if result.Error != nil {
+        err := pkg.NewDatabaseError("Failed to fetch users", result.Error)
+        c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+        return
+    }
 
-	c.JSON(http.StatusOK, users)
+    c.JSON(http.StatusOK, users)
 }
 
 // GetUser 获取单个用户
 func (uc *UserController) GetUser(c *gin.Context) {
 	id := c.Param("id")
-	tenantID := c.GetUint("tenantID")
+	tenantID := c.GetUint("tenant_id")
 
 	var user models.User
 	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&user)
@@ -279,7 +279,7 @@ func (uc *UserController) CreateUser(c *gin.Context) {
 	}
 
 	// 绑定租户ID，防止跨租户创建
-	user.TenantID = c.GetUint("tenantID")
+	user.TenantID = c.GetUint("tenant_id")
 
 	// 创建用户前先记录审计日志（不包含密码）
 	logUser := user
@@ -309,7 +309,7 @@ func (uc *UserController) CreateUser(c *gin.Context) {
 // UpdateUser 更新用户
 func (uc *UserController) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
-	tenantID := c.GetUint("tenantID")
+	tenantID := c.GetUint("tenant_id")
 
 	// 获取原始用户信息
 	var oldUser models.User
@@ -367,7 +367,7 @@ func (uc *UserController) UpdateUser(c *gin.Context) {
 // DeleteUser 删除用户
 func (uc *UserController) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
-	tenantID := c.GetUint("tenantID")
+	tenantID := c.GetUint("tenant_id")
 
 	// 先获取要删除的用户信息，用于审计日志
 	var user models.User
