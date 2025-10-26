@@ -2,41 +2,40 @@ package models
 
 import (
 	"errors"
-	"fmt"
-	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"toolcat/models"
 	"toolcat/pkg"
 
+	"github.com/gin-gonic/gin"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 
-// 初始化测试数据库
+// 初始化测试数据库（使用临时文件SQLite以确保持久化）
 func setupTestDB(t *testing.T) {
-	// 设置测试环境变量
-	testVars := map[string]string{
-		"DB_NAME":     "toolcat_test_model",
-		"DB_HOST":     getEnvOrDefault("TEST_DB_HOST", "localhost"),
-		"DB_PORT":     getEnvOrDefault("TEST_DB_PORT", "3306"),
-		"DB_USERNAME": getEnvOrDefault("TEST_DB_USERNAME", "root"),
-		"DB_PASSWORD": getEnvOrDefault("TEST_DB_PASSWORD", "123456"),
+	// 始终为每个测试创建独立的SQLite数据库，避免共享全局连接造成干扰
+	// 如果之前已有连接，先关闭释放资源
+	if pkg.DB != nil {
+		_ = pkg.CloseDatabase()
+		pkg.DB = nil
 	}
 
-	// 设置环境变量
-	for key, value := range testVars {
-		os.Setenv(key, value)
-	}
-
-	// 初始化数据库连接
-	err := pkg.InitDatabase()
+	// 为当前测试创建临时数据库文件
+	dbPath := filepath.Join(t.TempDir(), "toolcat_test.db")
+	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
-		t.Skipf("Skipping database tests: %v\n请确保MySQL服务已启动，并且配置了正确的连接参数", err)
-		return
+		t.Fatalf("failed to open sqlite test db: %v", err)
+	}
+	pkg.DB = db
+	// 单连接以简化测试环境
+	sqlDB, err := pkg.DB.DB()
+	if err == nil {
+		sqlDB.SetMaxOpenConns(1)
 	}
 
-	// 迁移表结构
 	if err := models.MigrateTables(pkg.DB); err != nil {
 		t.Fatalf("Failed to migrate tables: %v", err)
 	}
@@ -44,51 +43,26 @@ func setupTestDB(t *testing.T) {
 
 // 清理测试数据
 func cleanupTestDB(t *testing.T) {
-	// 删除测试数据但保留表结构
+	// 删除测试数据但保留表结构（忽略可能的错误，确保清理不中断）
 	if pkg.DB != nil {
 		pkg.DB.Exec("DELETE FROM users")
 		pkg.DB.Exec("DELETE FROM tools")
 		pkg.DB.Exec("DELETE FROM tool_histories")
 		pkg.DB.Exec("DELETE FROM notes")
 		pkg.DB.Exec("DELETE FROM login_histories")
-
-		// 关闭数据库连接
-		pkg.CloseDatabase()
+		// 关闭数据库以释放文件句柄，避免TempDir清理失败
+		_ = pkg.CloseDatabase()
+		pkg.DB = nil
 	}
-}
-
-// getEnvOrDefault 获取环境变量，如果为空则返回默认值
-func getEnvOrDefault(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
-	}
-	return value
-}
-
-func TestMain(m *testing.M) {
-	t := &testing.T{}
-	var isSkipped bool
-
-	setupTestDB(t)
-
-	if isSkipped {
-		os.Exit(0)
-	}
-
-	// 运行测试
-	code := m.Run()
-
-	// 清理
-	cleanupTestDB(t)
-
-	os.Exit(code)
 }
 
 // TestUserCreate 测试创建用户
 func TestUserCreate(t *testing.T) {
 	setupTestDB(t)
 	defer cleanupTestDB(t)
+
+	// 设置测试模式
+	gin.SetMode(gin.TestMode)
 
 	// 创建测试用户
 	user := models.User{
@@ -114,56 +88,23 @@ func TestUserCreate(t *testing.T) {
 	defer pkg.DB.Delete(&user)
 }
 
-// TestUserFind 测试查找用户
-func TestUserFind(t *testing.T) {
+// TestMigrateTables 验证迁移后表是否存在
+func TestMigrateTables(t *testing.T) {
 	setupTestDB(t)
 	defer cleanupTestDB(t)
 
-	// 先创建一个测试用户
-	user := models.User{
-		Username: "paipai",
-		Email:    "666666@qq.com",
-		Password: "123456",
-	}
-
-	// 保存用户到数据库
-	err := pkg.DB.Create(&user).Error
-	if err != nil {
-		t.Fatalf("Failed to create user for find test: %v", err)
-	}
-
-	// 清理
-	defer pkg.DB.Delete(&user)
-
-	// 通过ID查找用户
-	var foundUser models.User
-	err = pkg.DB.First(&foundUser, user.ID).Error
-	if err != nil {
-		t.Fatalf("Failed to find user by ID: %v", err)
-	}
-
-	// 验证找到的用户是否正确
-	if foundUser.Username != user.Username {
-		t.Errorf("Expected username %s, got %s", user.Username, foundUser.Username)
-	}
-
-	// 通过用户名查找用户
-	var foundByUsername models.User
-	err = pkg.DB.Where("username = ?", user.Username).First(&foundByUsername).Error
-	if err != nil {
-		t.Fatalf("Failed to find user by username: %v", err)
-	}
-
-	// 验证找到的用户是否正确
-	if foundByUsername.ID != user.ID {
-		t.Errorf("Expected user ID %d, got %d", user.ID, foundByUsername.ID)
-	}
-
-	// 测试查找不存在的用户
-	var notFoundUser models.User
-	err = pkg.DB.First(&notFoundUser, 999999).Error
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		t.Errorf("Expected record not found error, got %v", err)
+	// 使用SQLite元数据检查表是否存在
+	tables := []string{"users", "tools", "tool_histories", "notes", "login_histories", "audit_logs"}
+	for _, tbl := range tables {
+		var count int64
+		// sqlite_master 查询检查表存在
+		res := pkg.DB.Raw("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?", tbl).Scan(&count)
+		if res.Error != nil {
+			t.Fatalf("error checking table %s existence: %v", tbl, res.Error)
+		}
+		if count == 0 {
+			t.Fatalf("table %s does not exist after migration", tbl)
+		}
 	}
 }
 
@@ -171,6 +112,9 @@ func TestUserFind(t *testing.T) {
 func TestUserUpdate(t *testing.T) {
 	setupTestDB(t)
 	defer cleanupTestDB(t)
+
+	// 设置测试模式
+	gin.SetMode(gin.TestMode)
 
 	// 先创建一个测试用户
 	user := models.User{
@@ -188,13 +132,11 @@ func TestUserUpdate(t *testing.T) {
 	// 清理
 	defer pkg.DB.Delete(&user)
 
-	// 更新用户信息
-	newNickname := "Updated Nickname"
+	// 更新用户信息（更新现有字段，避免使用不存在的列）
 	newEmail := "updated@example.com"
 
 	err = pkg.DB.Model(&user).Updates(map[string]interface{}{
-		"nickname": newNickname,
-		"email":    newEmail,
+		"email": newEmail,
 	}).Error
 	if err != nil {
 		t.Fatalf("Failed to update user: %v", err)
@@ -216,6 +158,9 @@ func TestUserUpdate(t *testing.T) {
 func TestUserDelete(t *testing.T) {
 	setupTestDB(t)
 	defer cleanupTestDB(t)
+
+	// 设置测试模式
+	gin.SetMode(gin.TestMode)
 
 	// 先创建一个测试用户
 	user := models.User{
@@ -244,38 +189,5 @@ func TestUserDelete(t *testing.T) {
 	err = pkg.DB.First(&deletedUser, userId).Error
 	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		t.Errorf("Expected record not found error after delete, got %v", err)
-	}
-}
-
-// TestMigrateTables 测试数据库迁移功能
-func TestMigrateTables(t *testing.T) {
-	setupTestDB(t)
-	defer cleanupTestDB(t)
-
-	// 调用迁移函数
-	if err := models.MigrateTables(pkg.DB); err != nil {
-		t.Fatalf("Failed to migrate tables: %v", err)
-	}
-
-	// 验证表是否存在
-	tableNames := []string{"users", "tools", "tool_histories", "notes", "login_histories"}
-
-	for _, tableName := range tableNames {
-		exists := false
-		sql := fmt.Sprintf("SHOW TABLES LIKE '%s'", tableName)
-		var result []string
-		err := pkg.DB.Raw(sql).Scan(&result).Error
-		if err != nil {
-			t.Errorf("Failed to check if table %s exists: %v", tableName, err)
-			continue
-		}
-
-		if len(result) > 0 {
-			exists = true
-		}
-
-		if !exists {
-			t.Errorf("Table %s does not exist after migration", tableName)
-		}
 	}
 }

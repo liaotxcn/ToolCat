@@ -36,7 +36,10 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// 将用户ID与租户ID存储在上下文
+		// 统一上下文键名（蛇形），并保留兼容的驼峰命名
+		c.Set("user_id", userID)
+		c.Set("tenant_id", tenantID)
+		// 兼容旧代码
 		c.Set("userID", userID)
 		c.Set("tenantID", tenantID)
 

@@ -12,10 +12,30 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/glebarez/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
+
+// ensureTestDB 初始化内存数据库并迁移（仅测试使用）
+func ensureTestDB(t *testing.T) {
+	if pkg.DB == nil {
+		db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
+			NamingStrategy: schema.NamingStrategy{SingularTable: true},
+		})
+		if err != nil {
+			t.Fatalf("failed to open sqlite in-memory db: %v", err)
+		}
+		pkg.DB = db
+		if err := models.MigrateTables(pkg.DB); err != nil {
+			t.Fatalf("failed to migrate tables: %v", err)
+		}
+	}
+}
 
 // TestAuditLogModel 测试审计日志模型
 func TestAuditLogModel(t *testing.T) {
+	ensureTestDB(t)
 	// 设置测试模式
 	gin.SetMode(gin.TestMode)
 
@@ -90,6 +110,7 @@ func TestAuditLogModel(t *testing.T) {
 
 // TestAuditLogFromContext 测试从Gin上下文记录审计日志
 func TestAuditLogFromContext(t *testing.T) {
+	ensureTestDB(t)
 	// 设置测试模式
 	gin.SetMode(gin.TestMode)
 
@@ -154,6 +175,7 @@ func TestAuditLogFromContext(t *testing.T) {
 
 // TestAuditLogMiddleware 测试审计日志中间件
 func TestAuditLogMiddleware(t *testing.T) {
+	ensureTestDB(t)
 	// 设置测试模式
 	gin.SetMode(gin.TestMode)
 

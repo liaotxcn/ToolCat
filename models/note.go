@@ -13,6 +13,8 @@ type Note struct {
 	Content     string    `gorm:"type:text;not null" json:"content"`
 	CreatedTime time.Time `gorm:"index" json:"created_time"` // 添加索引
 	UpdatedTime time.Time `json:"updated_time"`
+	// 添加关联关系
+	User        User      `gorm:"foreignKey:UserID" json:"user,omitempty"`
 }
 
 // AddNoteToMigration 将Note模型添加到迁移函数

@@ -39,7 +39,7 @@ func (ac *AuditController) GetAuditLogs(c *gin.Context) {
 	query := pkg.DB.Model(&models.AuditLog{})
 
 	// 添加租户过滤（多租户隔离）
-	tenantID := c.GetUint("tenantID")
+	tenantID := c.GetUint("tenant_id")
 	query = query.Where("tenant_id = ?", tenantID)
 
 	// 添加过滤条件
@@ -71,9 +71,9 @@ func (ac *AuditController) GetAuditLogs(c *gin.Context) {
 		return
 	}
 
-	// 获取分页数据
+	// 获取分页数据，并预加载用户信息以避免N+1查询问题
 	var auditLogs []models.AuditLog
-	if err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&auditLogs).Error; err != nil {
+	if err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Preload("User").Find(&auditLogs).Error; err != nil {
 		err := pkg.NewDatabaseError("Failed to fetch audit logs", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
@@ -98,10 +98,11 @@ func (ac *AuditController) GetAuditLogs(c *gin.Context) {
 // GetAuditLog 获取单个审计日志详情
 func (ac *AuditController) GetAuditLog(c *gin.Context) {
 	id := c.Param("id")
-	tenantID := c.GetUint("tenantID")
+	tenantID := c.GetUint("tenant_id")
 
 	var auditLog models.AuditLog
-	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&auditLog)
+	// 预加载用户信息以避免N+1查询问题
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).Preload("User").First(&auditLog)
 	if result.Error != nil {
 		err := pkg.NewNotFoundError("Audit log not found", result.Error)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
@@ -113,7 +114,7 @@ func (ac *AuditController) GetAuditLog(c *gin.Context) {
 
 // GetAuditStats 获取审计日志统计信息
 func (ac *AuditController) GetAuditStats(c *gin.Context) {
-	tenantID := c.GetUint("tenantID")
+	tenantID := c.GetUint("tenant_id")
 
 	// 按操作类型统计
 	type ActionStat struct {
@@ -155,21 +156,46 @@ func (ac *AuditController) GetAuditStats(c *gin.Context) {
 		Count int64  `json:"count"`
 	}
 
+	// 计算日期范围
+	sevenDaysAgo := time.Now().AddDate(0, 0, -6).Truncate(24 * time.Hour)
+	today := time.Now().Truncate(24 * time.Hour)
+
+	// 创建日期映射表，初始设置所有日期的计数为0
 	var dailyStats []DailyStat
-	// 这里使用简单的方式，实际项目中可能需要更复杂的SQL查询或使用ORM的高级功能
-	for i := 6; i >= 0; i-- {
-		date := time.Now().AddDate(0, 0, -i).Format("2006-01-02")
-		startTime, _ := time.Parse("2006-01-02", date)
-		endTime := startTime.Add(24 * time.Hour)
+	countMap := make(map[string]int64)
+	for i := 0; i < 7; i++ {
+		date := sevenDaysAgo.AddDate(0, 0, i).Format("2006-01-02")
+		countMap[date] = 0
+	}
 
-		var count int64
-		pkg.DB.Model(&models.AuditLog{}).
-			Where("tenant_id = ? AND created_at >= ? AND created_at < ?", tenantID, startTime, endTime).
-			Count(&count)
+	// 使用单个SQL查询获取所有日期的统计数据
+	// 使用日期函数将created_at转换为日期字符串进行分组
+	var results []struct {
+		Date  string `json:"date"`
+		Count int64  `json:"count"`
+	}
 
+	if err := pkg.DB.Model(&models.AuditLog{}).
+		Select("DATE(created_at) as date, COUNT(*) as count").
+		Where("tenant_id = ? AND created_at >= ? AND created_at < ?", tenantID, sevenDaysAgo, today.Add(24*time.Hour)).
+		Group("DATE(created_at)").
+		Find(&results).Error; err != nil {
+		err := pkg.NewDatabaseError("Failed to get daily stats", err)
+		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		return
+	}
+
+	// 将结果填充到映射表中
+	for _, result := range results {
+		countMap[result.Date] = result.Count
+	}
+
+	// 将映射表转换为响应数据结构
+	for i := 0; i < 7; i++ {
+		date := sevenDaysAgo.AddDate(0, 0, i).Format("2006-01-02")
 		dailyStats = append(dailyStats, DailyStat{
 			Date:  date,
-			Count: count,
+			Count: countMap[date],
 		})
 	}
 

@@ -414,8 +414,8 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 			Path:   "/notes",
 			Method: "GET",
 			Handler: func(c *gin.Context) {
-				userID := c.GetUint("userID")
-				tenantID := c.GetUint("tenantID")
+				userID := c.GetUint("user_id")
+				tenantID := c.GetUint("tenant_id")
 				page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 				pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
@@ -438,8 +438,8 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 			Path:   "/notes/:id",
 			Method: "GET",
 			Handler: func(c *gin.Context) {
-				userID := c.GetUint("userID")
-				tenantID := c.GetUint("tenantID")
+				userID := c.GetUint("user_id")
+				tenantID := c.GetUint("tenant_id")
 				id := c.Param("id")
 
 				result, err := p.getNote(userID, tenantID, id)
@@ -460,8 +460,8 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 			Path:   "/notes",
 			Method: "POST",
 			Handler: func(c *gin.Context) {
-				userID := c.GetUint("userID")
-				tenantID := c.GetUint("tenantID")
+				userID := c.GetUint("user_id")
+				tenantID := c.GetUint("tenant_id")
 
 				var request struct {
 					Title   string `json:"title" binding:"required,min=1,max=100"`
@@ -487,8 +487,8 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 			Path:   "/notes/:id",
 			Method: "PUT",
 			Handler: func(c *gin.Context) {
-				userID := c.GetUint("userID")
-				tenantID := c.GetUint("tenantID")
+				userID := c.GetUint("user_id")
+				tenantID := c.GetUint("tenant_id")
 				id := c.Param("id")
 
 				var request struct {
@@ -515,8 +515,8 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 			Path:   "/notes/:id",
 			Method: "DELETE",
 			Handler: func(c *gin.Context) {
-				userID := c.GetUint("userID")
-				tenantID := c.GetUint("tenantID")
+				userID := c.GetUint("user_id")
+				tenantID := c.GetUint("tenant_id")
 				id := c.Param("id")
 
 				result, err := p.deleteNoteHandler(userID, tenantID, id)
@@ -534,8 +534,8 @@ func (p *NotePlugin) GetRoutes() []core.Route {
 			Path:   "/notes/search",
 			Method: "GET",
 			Handler: func(c *gin.Context) {
-				userID := c.GetUint("userID")
-				tenantID := c.GetUint("tenantID")
+				userID := c.GetUint("user_id")
+				tenantID := c.GetUint("tenant_id")
 				keyword := c.DefaultQuery("keyword", "")
 				page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 				pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
