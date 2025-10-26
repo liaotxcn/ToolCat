@@ -18,6 +18,8 @@ type LoginHistory struct {
 	UserAgent string    `gorm:"type:text" json:"user_agent"`      // 用户代理信息
 	TenantID  uint      `gorm:"index" json:"tenant_id"`
 	LoginTime time.Time `json:"login_time"`                       // 登录时间
+	// 添加关联关系
+	User      User      `gorm:"foreignKey:Username;references:Username" json:"user,omitempty"`
 }
 
 // AddLoginHistoryToMigration 将LoginHistory模型添加到迁移函数

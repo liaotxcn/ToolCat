@@ -8,13 +8,17 @@ import (
 
 // User 用户模型
 type User struct {
-	ID        uint      `gorm:"primaryKey" json:"id"`
-	Username  string    `gorm:"size:50;not null;unique" json:"username"`
-	Password  string    `gorm:"size:100;not null" json:"password,omitempty"`
-	Email     string    `gorm:"size:100;unique" json:"email"`
-	TenantID  uint      `gorm:"index" json:"tenant_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID             uint      `gorm:"primaryKey" json:"id"`
+	Username       string    `gorm:"size:50;not null;unique" json:"username"`
+	Password       string    `gorm:"size:100;not null" json:"password,omitempty"`
+	Email          string    `gorm:"size:100;unique" json:"email"`
+	TenantID       uint      `gorm:"index" json:"tenant_id"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	// 添加关联关系
+	Notes           []Note         `gorm:"foreignKey:UserID" json:"notes,omitempty"`
+	LoginHistories  []LoginHistory `gorm:"foreignKey:Username;references:Username" json:"login_histories,omitempty"`
+	AuditLogs       []AuditLog     `gorm:"foreignKey:UserID" json:"audit_logs,omitempty"`
 }
 
 // Tool 工具模型
