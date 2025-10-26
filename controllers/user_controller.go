@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"gorm.io/gorm"
+
 	"toolcat/models"
 	"toolcat/pkg"
 	"toolcat/utils"
@@ -154,10 +156,10 @@ func (uc *UserController) Login(c *gin.Context) {
 		ResourceType: "user",
 		ResourceID:   fmt.Sprintf("%d", user.ID),
 		OldValue:     nil,
-		NewValue:     map[string]interface{}{
-			"username":  user.Username,
+		NewValue: map[string]interface{}{
+			"username":   user.Username,
 			"ip_address": c.ClientIP(),
-			"success":   true,
+			"success":    true,
 		},
 	})
 
@@ -241,16 +243,17 @@ func recordLoginHistory(username, ipAddress, userAgent string, success bool, mes
 
 // GetUsers 获取所有用户
 func (uc *UserController) GetUsers(c *gin.Context) {
-    var users []models.User
-    tenantID := c.GetUint("tenant_id")
-    result := pkg.DB.Where("tenant_id = ?", tenantID).Find(&users)
-    if result.Error != nil {
-        err := pkg.NewDatabaseError("Failed to fetch users", result.Error)
-        c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
-        return
-    }
+	var users []models.User
+	tenantID := c.GetUint("tenant_id")
+	// 根据需要预加载关联数据，避免N+1查询问题
+	result := pkg.DB.Where("tenant_id = ?", tenantID).Find(&users)
+	if result.Error != nil {
+		err := pkg.NewDatabaseError("Failed to fetch users", result.Error)
+		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		return
+	}
 
-    c.JSON(http.StatusOK, users)
+	c.JSON(http.StatusOK, users)
 }
 
 // GetUser 获取单个用户
@@ -259,7 +262,12 @@ func (uc *UserController) GetUser(c *gin.Context) {
 	tenantID := c.GetUint("tenant_id")
 
 	var user models.User
-	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&user)
+	// 根据API需求预加载关联数据，这里根据常见使用场景选择预加载审计日志
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).
+		Preload("AuditLogs", func(db *gorm.DB) *gorm.DB {
+			// 只预加载最近30天的审计日志
+			return db.Where("created_at > ?", time.Now().AddDate(0, 0, -30)).Order("created_at DESC").Limit(100)
+		}).First(&user)
 	if result.Error != nil {
 		err := pkg.NewNotFoundError("User not found", result.Error)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})

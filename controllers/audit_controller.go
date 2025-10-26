@@ -71,9 +71,9 @@ func (ac *AuditController) GetAuditLogs(c *gin.Context) {
 		return
 	}
 
-	// 获取分页数据
+	// 获取分页数据，并预加载用户信息以避免N+1查询问题
 	var auditLogs []models.AuditLog
-	if err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Find(&auditLogs).Error; err != nil {
+	if err := query.Order("created_at DESC").Offset(offset).Limit(pageSize).Preload("User").Find(&auditLogs).Error; err != nil {
 		err := pkg.NewDatabaseError("Failed to fetch audit logs", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
@@ -101,7 +101,8 @@ func (ac *AuditController) GetAuditLog(c *gin.Context) {
 	tenantID := c.GetUint("tenant_id")
 
 	var auditLog models.AuditLog
-	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).First(&auditLog)
+	// 预加载用户信息以避免N+1查询问题
+	result := pkg.DB.Where("id = ? AND tenant_id = ?", id, tenantID).Preload("User").First(&auditLog)
 	if result.Error != nil {
 		err := pkg.NewNotFoundError("Audit log not found", result.Error)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
