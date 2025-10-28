@@ -1,4 +1,4 @@
-package features
+package formatconverter
 
 import (
 	"encoding/json"
