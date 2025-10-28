@@ -17,7 +17,8 @@ import (
 	"toolcat/pkg/migrate/migration"
 	"toolcat/plugins"
 	"toolcat/plugins/examples"
-	"toolcat/plugins/features"
+	fc "toolcat/plugins/features/FormatConverter"
+	note "toolcat/plugins/features/Note"
 	"toolcat/routers"
 
 	"github.com/gin-gonic/gin"
@@ -158,18 +159,24 @@ func registerPlugins(router *gin.Engine) {
 	}
 
 	// 注册Note插件
-	notePlugin := &features.NotePlugin{}
+	notePlugin := &note.NotePlugin{}
 	if err := plugins.PluginManager.Register(notePlugin); err != nil {
 		pkg.Error("Failed to register plugin", zap.String("plugin", notePlugin.Name()), zap.Error(err))
 	} else {
 		pkg.Info("Successfully registered plugin", zap.String("plugin", notePlugin.Name()))
 	}
 
-	// 统一注册所有插件路由
-	// 注意：由于我们使用了新的注册机制，插件在注册时已经自动注册了路由
-	// 这里可以省略，或者保留作为额外的确认步骤
+	// 注册FormatConverter插件
+	formatConverter := &fc.FormatConverterPlugin{}
+	if err := plugins.PluginManager.Register(formatConverter); err != nil {
+		pkg.Error("Failed to register plugin", zap.String("plugin", formatConverter.Name()), zap.Error(err))
+	} else {
+		pkg.Info("Successfully registered plugin", zap.String("plugin", formatConverter.Name()))
+	}
+
+	// 统一注册所有插件路由（可选）
 	// if err := plugins.PluginManager.RegisterAllRoutes(); err != nil {
-	//	log.Printf("Failed to register all plugin routes: %v", err)
+	// 	pkg.Error("Failed to register all plugin routes", zap.Error(err))
 	// }
 
 	// 注册优化插件
