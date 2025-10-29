@@ -358,6 +358,11 @@ func LoadConfigFile() error {
 		mapToCSRFConfig(csrfMap)
 	}
 
+	// 处理AutoMigrate配置
+	if autoMigrate, ok := configMap["autoMigrate"]; ok {
+		Config.AutoMigrate = convertToBool(autoMigrate)
+	}
+
 	if pluginsMap, ok := configMap["plugins"].(map[string]interface{}); ok {
 		mapToPluginsConfig(pluginsMap)
 	}
@@ -641,6 +646,13 @@ func LoadConfig() error {
 	if devMode := os.Getenv("DEV_MODE"); devMode != "" {
 		if dev, err := strconv.ParseBool(devMode); err == nil {
 			Config.Logger.Development = dev
+		}
+	}
+
+	// 数据库迁移配置 - 从环境变量加载
+	if autoMigrate := os.Getenv("AUTO_MIGRATE"); autoMigrate != "" {
+		if enabled, err := strconv.ParseBool(autoMigrate); err == nil {
+			Config.AutoMigrate = enabled
 		}
 	}
 

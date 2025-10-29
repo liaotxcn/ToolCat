@@ -88,24 +88,40 @@ func SetupRouter() *gin.Engine {
 			api.Use(middleware.RateLimiter(20, 50))
 
 			// 用户相关路由
-		users := api.Group("/users")
+			users := api.Group("/users")
+			{
+				userCtrl := &controllers.UserController{}
+				users.GET("/", userCtrl.GetUsers)
+				users.GET("/:id", userCtrl.GetUser)
+				users.POST("/", userCtrl.CreateUser)
+				users.PUT("/:id", userCtrl.UpdateUser)
+				users.DELETE("/:id", userCtrl.DeleteUser)
+			}
+
+			// 团队相关路由
+		teams := api.Group("/teams")
 		{
-			userCtrl := &controllers.UserController{}
-			users.GET("/", userCtrl.GetUsers)
-			users.GET("/:id", userCtrl.GetUser)
-			users.POST("/", userCtrl.CreateUser)
-			users.PUT("/:id", userCtrl.UpdateUser)
-			users.DELETE("/:id", userCtrl.DeleteUser)
+			teamCtrl := &controllers.TeamController{}
+			teams.GET("/", teamCtrl.GetTeams)        // 获取用户所属的团队列表
+			teams.POST("/", teamCtrl.CreateTeam)
+			teams.PUT("/:id", teamCtrl.UpdateTeam)   // 更新团队信息
+			teams.POST("/:id/transfer-owner", teamCtrl.TransferTeamOwner) // 转让团队所有权
+			
+			// 团队成员管理路由
+			teams.GET("/:id/members", teamCtrl.GetTeamMembers)           // 获取团队成员列表
+			teams.POST("/:id/members", teamCtrl.AddTeamMember)           // 添加团队成员
+			teams.DELETE("/:id/members/:memberId", teamCtrl.RemoveTeamMember) // 移除团队成员
+			teams.PUT("/:id/members/:memberId/role", teamCtrl.UpdateMemberRole) // 更新成员角色
 		}
 
-		// 审计日志相关路由
-		audit := api.Group("/audit")
-		{
-			auditCtrl := &controllers.AuditController{}
-			audit.GET("/logs", auditCtrl.GetAuditLogs)         // 获取审计日志列表
-			audit.GET("/logs/:id", auditCtrl.GetAuditLog)      // 获取单个审计日志详情
-			audit.GET("/stats", auditCtrl.GetAuditStats)       // 获取审计日志统计信息
-		}
+			// 审计日志相关路由
+			audit := api.Group("/audit")
+			{
+				auditCtrl := &controllers.AuditController{}
+				audit.GET("/logs", auditCtrl.GetAuditLogs)    // 获取审计日志列表
+				audit.GET("/logs/:id", auditCtrl.GetAuditLog) // 获取单个审计日志详情
+				audit.GET("/stats", auditCtrl.GetAuditStats)  // 获取审计日志统计信息
+			}
 
 			// 工具相关路由
 			tools := api.Group("/tools")

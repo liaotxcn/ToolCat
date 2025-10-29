@@ -48,7 +48,7 @@ type ToolHistory struct {
 // MigrateTables 执行数据库迁移
 func MigrateTables(db *gorm.DB) error {
 	// 自动迁移表结构
-	if err := db.AutoMigrate(&User{}, &Tool{}, &ToolHistory{}, &Note{}, &LoginHistory{}, &AuditLog{}); err != nil {
+	if err := db.AutoMigrate(&User{}, &Tool{}, &ToolHistory{}, &Note{}, &LoginHistory{}, &AuditLog{}, &Team{}, &TeamMember{}); err != nil {
 		return err
 	}
 
