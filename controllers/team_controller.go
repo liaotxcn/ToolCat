@@ -14,6 +14,42 @@ import (
 // TeamController 团队控制器
 type TeamController struct{}
 
+// updateTeamMembers 更新团队成员列表字段
+func (tc *TeamController) updateTeamMembers(teamID uint) error {
+	// 定义用于存储成员用户名的切片
+	var usernames []string
+
+	// 联表查询获取团队成员的用户名
+	if err := pkg.DB.Table("team_member tm").
+		Select("u.username").
+		Joins("JOIN user u ON tm.user_id = u.id").
+		Where("tm.team_id = ?", teamID).
+		Pluck("u.username", &usernames).Error; err != nil {
+		return err
+	}
+
+	// 将用户名列表转换为逗号分隔的字符串
+	membersStr := ""
+	for i, username := range usernames {
+		if i > 0 {
+			membersStr += ","
+		}
+		membersStr += username
+	}
+
+	// 更新团队的members字段
+	if membersStr == "" {
+		// 如果没有成员，设置为nil
+		return pkg.DB.Model(&models.Team{}).
+			Where("id = ?", teamID).
+			Update("members", nil).Error
+	} else {
+		return pkg.DB.Model(&models.Team{}).
+			Where("id = ?", teamID).
+			Update("members", membersStr).Error
+	}
+}
+
 // UpdateTeam 更新团队信息
 func (tc *TeamController) UpdateTeam(c *gin.Context) {
 	// 解析请求参数
@@ -133,6 +169,12 @@ func (tc *TeamController) CreateTeam(c *gin.Context) {
 
 	// 将创建者加入团队成员，角色为owner
 	_ = pkg.DB.Create(&models.TeamMember{TeamID: team.ID, UserID: ownerID, Role: "owner", TenantID: tenantID}).Error
+
+	// 更新团队成员列表字段
+	if err := tc.updateTeamMembers(team.ID); err != nil {
+		// 记录错误但不影响主要功能
+		pkg.Error("Failed to update team members field after team creation")
+	}
 
 	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
 		Action:       "create",
@@ -261,6 +303,12 @@ func (tc *TeamController) AddTeamMember(c *gin.Context) {
 		return
 	}
 
+	// 更新团队成员列表字段
+	if err := tc.updateTeamMembers(uint(teamID)); err != nil {
+		// 记录错误但不影响主要功能
+		pkg.Error("Failed to update team members field")
+	}
+
 	// 记录审计日志
 	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
 		Action:       "add_member",
@@ -277,14 +325,14 @@ func (tc *TeamController) RemoveTeamMember(c *gin.Context) {
 	// 获取团队ID和成员ID
 	teamIDStr := c.Param("id")
 	memberIDStr := c.Param("memberId")
-	
+
 	teamID, err := strconv.ParseUint(teamIDStr, 10, 32)
 	if err != nil {
 		err := pkg.NewValidationError("Invalid team ID", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	memberID, err := strconv.ParseUint(memberIDStr, 10, 32)
 	if err != nil {
 		err := pkg.NewValidationError("Invalid member ID", err)
@@ -328,7 +376,7 @@ func (tc *TeamController) RemoveTeamMember(c *gin.Context) {
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	var currentMember models.TeamMember
 	if err := pkg.DB.Where("team_id = ? AND user_id = ? AND role IN ('owner', 'admin')", teamID, userID).First(&currentMember).Error; err != nil {
 		err := pkg.NewForbiddenError("Only team owners or admins can remove members", nil)
@@ -341,6 +389,12 @@ func (tc *TeamController) RemoveTeamMember(c *gin.Context) {
 		err := pkg.NewDatabaseError("Failed to remove team member", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
+	}
+
+	// 更新团队成员列表字段
+	if err := tc.updateTeamMembers(uint(teamID)); err != nil {
+		// 记录错误但不影响主要功能
+		pkg.Error("Failed to update team members field")
 	}
 
 	// 记录审计日志
@@ -359,14 +413,14 @@ func (tc *TeamController) UpdateMemberRole(c *gin.Context) {
 	// 获取团队ID和成员ID
 	teamIDStr := c.Param("id")
 	memberIDStr := c.Param("memberId")
-	
+
 	teamID, err := strconv.ParseUint(teamIDStr, 10, 32)
 	if err != nil {
 		err := pkg.NewValidationError("Invalid team ID", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	memberID, err := strconv.ParseUint(memberIDStr, 10, 32)
 	if err != nil {
 		err := pkg.NewValidationError("Invalid member ID", err)
@@ -425,13 +479,19 @@ func (tc *TeamController) UpdateMemberRole(c *gin.Context) {
 
 	// 保存旧角色用于审计日志
 	oldRole := teamMember.Role
-	
+
 	// 更新角色
 	teamMember.Role = req.Role
 	if err := pkg.DB.Save(&teamMember).Error; err != nil {
 		err := pkg.NewDatabaseError("Failed to update member role", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
+	}
+
+	// 更新团队成员列表字段
+	if err := tc.updateTeamMembers(uint(teamID)); err != nil {
+		// 记录错误但不影响主要功能
+		pkg.Error("Failed to update team members field")
 	}
 
 	// 记录审计日志

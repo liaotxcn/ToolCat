@@ -10,6 +10,7 @@ type Team struct {
 	Description string    `gorm:"type:text" json:"description"`
 	OwnerID     uint      `gorm:"index" json:"owner_id"`
 	TenantID    uint      `gorm:"index:idx_tenant_team_name,unique" json:"tenant_id"`
+	Members     string    `gorm:"type:text;default:null;comment:团队成员列表（用户名形式）" json:"members"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
 }
