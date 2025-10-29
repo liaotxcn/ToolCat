@@ -99,12 +99,18 @@ func SetupRouter() *gin.Engine {
 			}
 
 			// 团队相关路由
-			teams := api.Group("/teams")
-			{
-				teamCtrl := &controllers.TeamController{}
-				teams.POST("/", teamCtrl.CreateTeam)
-				teams.PUT("/:id", teamCtrl.UpdateTeam) // 更新团队信息
-			}
+		teams := api.Group("/teams")
+		{
+			teamCtrl := &controllers.TeamController{}
+			teams.POST("/", teamCtrl.CreateTeam)
+			teams.PUT("/:id", teamCtrl.UpdateTeam) // 更新团队信息
+			
+			// 团队成员管理路由
+			teams.GET("/:id/members", teamCtrl.GetTeamMembers)           // 获取团队成员列表
+			teams.POST("/:id/members", teamCtrl.AddTeamMember)           // 添加团队成员
+			teams.DELETE("/:id/members/:memberId", teamCtrl.RemoveTeamMember) // 移除团队成员
+			teams.PUT("/:id/members/:memberId/role", teamCtrl.UpdateMemberRole) // 更新成员角色
+		}
 
 			// 审计日志相关路由
 			audit := api.Group("/audit")
