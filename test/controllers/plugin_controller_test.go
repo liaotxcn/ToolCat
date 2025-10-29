@@ -23,19 +23,19 @@ func clearPlugins(t *testing.T) {
 
 type pcTestPlugin struct{ pm *core.PluginManager }
 
-func (p *pcTestPlugin) Name() string                             { return "pc_demo" }
-func (p *pcTestPlugin) Description() string                      { return "plugin controller test plugin" }
-func (p *pcTestPlugin) Version() string                          { return "1.0.0" }
-func (p *pcTestPlugin) GetDependencies() []string                { return nil }
-func (p *pcTestPlugin) GetConflicts() []string                   { return nil }
-func (p *pcTestPlugin) Init() error                              { return nil }
-func (p *pcTestPlugin) Shutdown() error                          { return nil }
-func (p *pcTestPlugin) OnEnable() error                          { return nil }
-func (p *pcTestPlugin) OnDisable() error                         { return nil }
-func (p *pcTestPlugin) GetRoutes() []core.Route                  { return nil }
-func (p *pcTestPlugin) GetDefaultMiddlewares() []gin.HandlerFunc { return nil }
-func (p *pcTestPlugin) SetPluginManager(manager *core.PluginManager) { p.pm = manager }
-func (p *pcTestPlugin) RegisterRoutes(router *gin.Engine)        {}
+func (p *pcTestPlugin) Name() string                                               { return "pc_demo" }
+func (p *pcTestPlugin) Description() string                                        { return "plugin controller test plugin" }
+func (p *pcTestPlugin) Version() string                                            { return "1.0.0" }
+func (p *pcTestPlugin) GetDependencies() []string                                  { return nil }
+func (p *pcTestPlugin) GetConflicts() []string                                     { return nil }
+func (p *pcTestPlugin) Init() error                                                { return nil }
+func (p *pcTestPlugin) Shutdown() error                                            { return nil }
+func (p *pcTestPlugin) OnEnable() error                                            { return nil }
+func (p *pcTestPlugin) OnDisable() error                                           { return nil }
+func (p *pcTestPlugin) GetRoutes() []core.Route                                    { return nil }
+func (p *pcTestPlugin) GetDefaultMiddlewares() []gin.HandlerFunc                   { return nil }
+func (p *pcTestPlugin) SetPluginManager(manager *core.PluginManager)               { p.pm = manager }
+func (p *pcTestPlugin) RegisterRoutes(router *gin.Engine)                          {}
 func (p *pcTestPlugin) Execute(params map[string]interface{}) (interface{}, error) { return nil, nil }
 
 func TestGetAllPlugins_Empty(t *testing.T) {

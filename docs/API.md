@@ -697,7 +697,9 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
   "message": "插件启用成功",
   "plugin": {
     "name": "demo_plugin",
-    "enabled": true
+    "enabled": true,
+    "version": "1.0.0",
+    "status": "running"
   }
 }
 ```
@@ -726,7 +728,9 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
   "message": "插件禁用成功",
   "plugin": {
     "name": "demo_plugin",
-    "enabled": false
+    "enabled": false,
+    "version": "1.0.0",
+    "status": "disabled"
   }
 }
 ```
@@ -812,7 +816,14 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 **成功响应**: 
 ```json
 {
-  "message": "Load plugin"
+  "message": "插件加载成功",
+  "plugin": {
+    "name": "demo_plugin",
+    "version": "1.0.0",
+    "status": "loaded",
+    "enabled": false
+  },
+  "load_time": "2023-10-01T10:00:00Z"
 }
 ```
 
@@ -827,7 +838,12 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 **成功响应**: 
 ```json
 {
-  "message": "Unload plugin"
+  "message": "插件卸载成功",
+  "plugin": {
+    "name": "demo_plugin",
+    "status": "unloaded"
+  },
+  "unload_time": "2023-10-01T10:00:00Z"
 }
 ```
 
@@ -845,7 +861,8 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
   "version": "1.0.0",
   "api_base": "/api/v1",
   "health_check": "/health",
-  "available_endpoints": ["/api/v1/users", "/api/v1/tools", "/api/v1/plugins", "/health"]
+  "available_endpoints": ["/api/v1/users", "/api/v1/tools", "/api/v1/plugins", "/health", "/api/v1/audit/logs"],
+  "timestamp": "2023-10-01T10:00:00Z"
 }
 ```
 
@@ -857,7 +874,9 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 **响应**: 
 ```json
 {
-  "status": "ok"
+  "status": "ok",
+  "timestamp": "2023-10-01T10:00:00Z",
+  "version": "1.0.0"
 }
 ```
 

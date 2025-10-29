@@ -23,8 +23,8 @@ func setupMemoryDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("gorm open error: %v", err)
 	}
-	if err := db.AutoMigrate(&models.User{}); err != nil {
-		t.Fatalf("auto migrate user error: %v", err)
+	if err := db.AutoMigrate(&models.User{}, &models.LoginHistory{}, &models.AuditLog{}); err != nil {
+		t.Fatalf("auto migrate user/audit tables error: %v", err)
 	}
 	pkg.DB = db
 	return db
