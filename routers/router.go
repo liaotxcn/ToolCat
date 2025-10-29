@@ -98,6 +98,13 @@ func SetupRouter() *gin.Engine {
 			users.DELETE("/:id", userCtrl.DeleteUser)
 		}
 
+		// 团队相关路由
+		teams := api.Group("/teams")
+		{
+			teamCtrl := &controllers.TeamController{}
+			teams.POST("/", teamCtrl.CreateTeam)
+		}
+
 		// 审计日志相关路由
 		audit := api.Group("/audit")
 		{
