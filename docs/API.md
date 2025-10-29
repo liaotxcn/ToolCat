@@ -48,6 +48,255 @@ CSRF令牌会通过两种方式提供：
 
 对于需要验证CSRF的请求（非GET/HEAD/OPTIONS/TRACE），需要同时满足以下条件：
 
+## 6. 团队管理接口
+
+### 6.1 获取用户所属的团队列表
+
+**URL**: `/api/v1/teams`
+**方法**: `GET`
+**认证**: 需要JWT令牌
+**描述**: 获取当前用户所属的所有团队信息
+
+**请求参数**:
+- 无
+
+**成功响应 (200 OK)**:
+```json
+[
+  {
+    "id": 1,
+    "name": "研发团队",
+    "description": "负责系统开发的团队",
+    "owner_id": 1,
+    "tenant_id": 1,
+    "members": "admin,user1,user2",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  }
+]
+```
+
+### 6.2 创建团队
+
+**URL**: `/api/v1/teams`
+**方法**: `POST`
+**认证**: 需要JWT令牌
+**描述**: 创建一个新的团队，创建者自动成为团队所有者
+
+**请求体**:
+```json
+{
+  "name": "测试团队",
+  "description": "负责测试的团队"
+}
+```
+
+**成功响应 (201 Created)**:
+```json
+{
+  "id": 2,
+  "name": "测试团队",
+  "description": "负责测试的团队",
+  "owner_id": 1,
+  "tenant_id": 1,
+  "members": "admin",
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### 6.3 更新团队信息
+
+**URL**: `/api/v1/teams/:id`
+**方法**: `PUT`
+**认证**: 需要JWT令牌
+**描述**: 更新团队的基本信息，只有团队所有者或管理员可以操作
+
+**路径参数**:
+- `id`: 团队ID
+
+**请求体**:
+```json
+{
+  "name": "前端团队",
+  "description": "负责前端开发的团队"
+}
+```
+
+**成功响应 (200 OK)**:
+```json
+{
+  "id": 2,
+  "name": "前端团队",
+  "description": "负责前端开发的团队",
+  "owner_id": 1,
+  "tenant_id": 1,
+  "members": "admin,user1",
+  "created_at": "2024-01-01T00:00:00Z",
+  "updated_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### 6.4 转让团队所有权
+
+**URL**: `/api/v1/teams/:id/transfer-owner`
+**方法**: `POST`
+**认证**: 需要JWT令牌
+**描述**: 将团队所有权转让给其他团队成员，只有当前团队所有者可以操作
+
+**路径参数**:
+- `id`: 团队ID
+
+**请求体**:
+```json
+{
+  "new_owner_id": 2
+}
+```
+
+**成功响应 (200 OK)**:
+```json
+{
+  "message": "Team ownership transferred successfully",
+  "team": {
+    "id": 1,
+    "name": "研发团队",
+    "description": "负责系统开发的团队",
+    "owner_id": 2,
+    "tenant_id": 1,
+    "members": "admin,user1",
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2024-01-01T00:00:00Z"
+  },
+  "new_owner": {
+    "id": 2,
+    "team_id": 1,
+    "user_id": 2,
+    "role": "owner",
+    "tenant_id": 1,
+    "created_at": "2024-01-01T00:00:00Z"
+  },
+  "old_owner": {
+    "id": 1,
+    "team_id": 1,
+    "user_id": 1,
+    "role": "admin",
+    "tenant_id": 1,
+    "created_at": "2024-01-01T00:00:00Z"
+  }
+}
+```
+
+### 6.5 获取团队成员列表
+
+**URL**: `/api/v1/teams/:id/members`
+**方法**: `GET`
+**认证**: 需要JWT令牌
+**描述**: 获取指定团队的成员列表，只有团队成员可以访问
+
+**路径参数**:
+- `id`: 团队ID
+
+**成功响应 (200 OK)**:
+```json
+[
+  {
+    "id": 1,
+    "team_id": 1,
+    "user_id": 1,
+    "role": "owner",
+    "tenant_id": 1,
+    "created_at": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": 2,
+    "team_id": 1,
+    "user_id": 2,
+    "role": "admin",
+    "tenant_id": 1,
+    "created_at": "2024-01-01T00:00:00Z"
+  }
+]
+```
+
+### 6.6 添加团队成员
+
+**URL**: `/api/v1/teams/:id/members`
+**方法**: `POST`
+**认证**: 需要JWT令牌
+**描述**: 添加新成员到团队，只有团队所有者或管理员可以操作
+
+**路径参数**:
+- `id`: 团队ID
+
+**请求体**:
+```json
+{
+  "user_id": 3,
+  "role": "member"
+}
+```
+
+**成功响应 (201 Created)**:
+```json
+{
+  "id": 3,
+  "team_id": 1,
+  "user_id": 3,
+  "role": "member",
+  "tenant_id": 1,
+  "created_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### 6.7 移除团队成员
+
+**URL**: `/api/v1/teams/:id/members/:memberId`
+**方法**: `DELETE`
+**认证**: 需要JWT令牌
+**描述**: 从团队中移除成员，只有团队所有者或管理员可以操作，且不能移除团队所有者
+
+**路径参数**:
+- `id`: 团队ID
+- `memberId`: 成员用户ID
+
+**成功响应 (200 OK)**:
+```json
+{
+  "message": "Team member removed successfully"
+}
+```
+
+### 6.8 更新团队成员角色
+
+**URL**: `/api/v1/teams/:id/members/:memberId/role`
+**方法**: `PUT`
+**认证**: 需要JWT令牌
+**描述**: 更新团队成员的角色，只有团队所有者可以操作
+
+**路径参数**:
+- `id`: 团队ID
+- `memberId`: 成员用户ID
+
+**请求体**:
+```json
+{
+  "role": "admin"
+}
+```
+
+**成功响应 (200 OK)**:
+```json
+{
+  "id": 3,
+  "team_id": 1,
+  "user_id": 3,
+  "role": "admin",
+  "tenant_id": 1,
+  "created_at": "2024-01-01T00:00:00Z"
+}
+```
+
 1. 请求头中包含`X-CSRF-Token`字段，值为获取到的CSRF令牌
 2. 请求中携带包含相同令牌值的`XSRF-TOKEN`Cookie
 
