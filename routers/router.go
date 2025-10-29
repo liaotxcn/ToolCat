@@ -102,8 +102,10 @@ func SetupRouter() *gin.Engine {
 		teams := api.Group("/teams")
 		{
 			teamCtrl := &controllers.TeamController{}
+			teams.GET("/", teamCtrl.GetTeams)        // 获取用户所属的团队列表
 			teams.POST("/", teamCtrl.CreateTeam)
-			teams.PUT("/:id", teamCtrl.UpdateTeam) // 更新团队信息
+			teams.PUT("/:id", teamCtrl.UpdateTeam)   // 更新团队信息
+			teams.POST("/:id/transfer-owner", teamCtrl.TransferTeamOwner) // 转让团队所有权
 			
 			// 团队成员管理路由
 			teams.GET("/:id/members", teamCtrl.GetTeamMembers)           // 获取团队成员列表
