@@ -88,31 +88,32 @@ func SetupRouter() *gin.Engine {
 			api.Use(middleware.RateLimiter(20, 50))
 
 			// 用户相关路由
-		users := api.Group("/users")
-		{
-			userCtrl := &controllers.UserController{}
-			users.GET("/", userCtrl.GetUsers)
-			users.GET("/:id", userCtrl.GetUser)
-			users.POST("/", userCtrl.CreateUser)
-			users.PUT("/:id", userCtrl.UpdateUser)
-			users.DELETE("/:id", userCtrl.DeleteUser)
-		}
+			users := api.Group("/users")
+			{
+				userCtrl := &controllers.UserController{}
+				users.GET("/", userCtrl.GetUsers)
+				users.GET("/:id", userCtrl.GetUser)
+				users.POST("/", userCtrl.CreateUser)
+				users.PUT("/:id", userCtrl.UpdateUser)
+				users.DELETE("/:id", userCtrl.DeleteUser)
+			}
 
-		// 团队相关路由
-		teams := api.Group("/teams")
-		{
-			teamCtrl := &controllers.TeamController{}
-			teams.POST("/", teamCtrl.CreateTeam)
-		}
+			// 团队相关路由
+			teams := api.Group("/teams")
+			{
+				teamCtrl := &controllers.TeamController{}
+				teams.POST("/", teamCtrl.CreateTeam)
+				teams.PUT("/:id", teamCtrl.UpdateTeam) // 更新团队信息
+			}
 
-		// 审计日志相关路由
-		audit := api.Group("/audit")
-		{
-			auditCtrl := &controllers.AuditController{}
-			audit.GET("/logs", auditCtrl.GetAuditLogs)         // 获取审计日志列表
-			audit.GET("/logs/:id", auditCtrl.GetAuditLog)      // 获取单个审计日志详情
-			audit.GET("/stats", auditCtrl.GetAuditStats)       // 获取审计日志统计信息
-		}
+			// 审计日志相关路由
+			audit := api.Group("/audit")
+			{
+				auditCtrl := &controllers.AuditController{}
+				audit.GET("/logs", auditCtrl.GetAuditLogs)    // 获取审计日志列表
+				audit.GET("/logs/:id", auditCtrl.GetAuditLog) // 获取单个审计日志详情
+				audit.GET("/stats", auditCtrl.GetAuditStats)  // 获取审计日志统计信息
+			}
 
 			// 工具相关路由
 			tools := api.Group("/tools")
