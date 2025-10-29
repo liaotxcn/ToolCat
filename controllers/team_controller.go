@@ -413,7 +413,7 @@ func (tc *TeamController) GetTeams(c *gin.Context) {
 	// 获取当前租户信息
 	tenantID := c.GetUint("tenant_id")
 	userID := c.GetUint("user_id")
-	
+
 	// 查询用户所属的所有团队
 	var teamMembers []models.TeamMember
 	if err := pkg.DB.Where("user_id = ? AND tenant_id = ?", userID, tenantID).Find(&teamMembers).Error; err != nil {
@@ -421,13 +421,13 @@ func (tc *TeamController) GetTeams(c *gin.Context) {
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	// 提取团队ID列表
 	var teamIDs []uint
 	for _, member := range teamMembers {
 		teamIDs = append(teamIDs, member.TeamID)
 	}
-	
+
 	// 查询团队信息
 	var teams []models.Team
 	if len(teamIDs) > 0 {
@@ -437,7 +437,7 @@ func (tc *TeamController) GetTeams(c *gin.Context) {
 			return
 		}
 	}
-	
+
 	c.JSON(http.StatusOK, teams)
 }
 
@@ -451,22 +451,22 @@ func (tc *TeamController) TransferTeamOwner(c *gin.Context) {
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	// 解析请求参数
 	var req struct {
 		NewOwnerID uint `json:"new_owner_id" binding:"required"`
 	}
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		err := pkg.NewValidationError("Invalid owner data", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	// 获取当前用户信息
 	userID := c.GetUint("user_id")
 	tenantID := c.GetUint("tenant_id")
-	
+
 	// 查找团队
 	var team models.Team
 	if err := pkg.DB.Where("id = ? AND tenant_id = ?", teamID, tenantID).First(&team).Error; err != nil {
@@ -479,7 +479,7 @@ func (tc *TeamController) TransferTeamOwner(c *gin.Context) {
 		}
 		return
 	}
-	
+
 	// 检查权限：只有团队所有者可以转让所有权
 	var currentMember models.TeamMember
 	if err := pkg.DB.Where("team_id = ? AND user_id = ? AND role = 'owner'", teamID, userID).First(&currentMember).Error; err != nil {
@@ -487,7 +487,7 @@ func (tc *TeamController) TransferTeamOwner(c *gin.Context) {
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	// 检查新所有者是否为团队成员
 	var newOwnerMember models.TeamMember
 	if err := pkg.DB.Where("team_id = ? AND user_id = ? AND tenant_id = ?", teamID, req.NewOwnerID, tenantID).First(&newOwnerMember).Error; err != nil {
@@ -495,7 +495,7 @@ func (tc *TeamController) TransferTeamOwner(c *gin.Context) {
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	// 开始事务
 	tx := pkg.DB.Begin()
 	defer func() {
@@ -503,7 +503,7 @@ func (tc *TeamController) TransferTeamOwner(c *gin.Context) {
 			tx.Rollback()
 		}
 	}()
-	
+
 	// 将原所有者角色改为admin
 	currentMember.Role = "admin"
 	if err := tx.Save(&currentMember).Error; err != nil {
@@ -512,7 +512,7 @@ func (tc *TeamController) TransferTeamOwner(c *gin.Context) {
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	// 将新所有者角色改为owner
 	newOwnerMember.Role = "owner"
 	if err := tx.Save(&newOwnerMember).Error; err != nil {
@@ -521,7 +521,7 @@ func (tc *TeamController) TransferTeamOwner(c *gin.Context) {
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	// 更新团队的OwnerID字段
 	team.OwnerID = req.NewOwnerID
 	if err := tx.Save(&team).Error; err != nil {
@@ -530,20 +530,20 @@ func (tc *TeamController) TransferTeamOwner(c *gin.Context) {
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	// 提交事务
 	if err := tx.Commit().Error; err != nil {
 		err := pkg.NewDatabaseError("Failed to commit transaction", err)
 		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
 		return
 	}
-	
+
 	// 更新团队成员列表字段
 	if err := tc.updateTeamMembers(uint(teamID)); err != nil {
 		// 记录错误但不影响主要功能
 		pkg.Error("Failed to update team members field")
 	}
-	
+
 	// 记录审计日志
 	_ = pkg.AuditLogFromContext(c, pkg.AuditLogOptions{
 		Action:       "transfer_ownership",
@@ -552,13 +552,89 @@ func (tc *TeamController) TransferTeamOwner(c *gin.Context) {
 		OldValue:     map[string]interface{}{"owner_id": userID},
 		NewValue:     map[string]interface{}{"owner_id": req.NewOwnerID},
 	})
-	
+
 	c.JSON(http.StatusOK, gin.H{
-		"message":    "Team ownership transferred successfully",
-		"team":       team,
-		"new_owner":  newOwnerMember,
-		"old_owner":  currentMember,
+		"message":   "Team ownership transferred successfully",
+		"team":      team,
+		"new_owner": newOwnerMember,
+		"old_owner": currentMember,
 	})
+}
+
+// SearchTeamMembers 搜索团队成员
+func (tc *TeamController) SearchTeamMembers(c *gin.Context) {
+	// 获取团队ID
+	teamIDStr := c.Param("id")
+	teamID, err := strconv.ParseUint(teamIDStr, 10, 32)
+	if err != nil {
+		err := pkg.NewValidationError("Invalid team ID", err)
+		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		return
+	}
+
+	// 获取当前用户信息
+	userID := c.GetUint("user_id")
+	tenantID := c.GetUint("tenant_id")
+
+	// 查找团队
+	var team models.Team
+	if err := pkg.DB.Where("id = ? AND tenant_id = ?", teamID, tenantID).First(&team).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			err := pkg.NewNotFoundError("Team not found", nil)
+			c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		} else {
+			err := pkg.NewDatabaseError("Failed to query team", err)
+			c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		}
+		return
+	}
+
+	// 检查用户是否为团队成员
+	var teamMember models.TeamMember
+	if err := pkg.DB.Where("team_id = ? AND user_id = ?", teamID, userID).First(&teamMember).Error; err != nil {
+		err := pkg.NewForbiddenError("You are not a member of this team", nil)
+		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		return
+	}
+
+	// 获取搜索参数
+	keyword := c.Query("keyword")
+	if keyword == "" {
+		err := pkg.NewValidationError("Search keyword is required", nil)
+		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		return
+	}
+
+	// 构建查询
+	query := pkg.DB.Table("team_member tm").
+		Select("tm.*, u.username, u.email").
+		Joins("JOIN user u ON tm.user_id = u.id").
+		Where("tm.team_id = ? AND tm.tenant_id = ?", teamID, tenantID)
+
+	// 尝试将关键词解析为ID
+	if searchID, parseErr := strconv.ParseUint(keyword, 10, 32); parseErr == nil {
+		// 如果是数字，则按ID搜索
+		query = query.Where("tm.user_id = ?", searchID)
+	} else {
+		// 否则按用户名搜索（模糊匹配）
+		query = query.Where("u.username LIKE ?", "%"+keyword+"%")
+	}
+
+	// 执行查询
+	type MemberWithInfo struct {
+		models.TeamMember
+		Username string `json:"username"`
+		Email    string `json:"email"`
+	}
+
+	var members []MemberWithInfo
+	if err := query.Find(&members).Error; err != nil {
+		err := pkg.NewDatabaseError("Failed to search team members", err)
+		c.JSON(pkg.GetHTTPStatus(err), gin.H{"code": string(err.Code), "message": err.Message})
+		return
+	}
+
+	c.JSON(http.StatusOK, members)
 }
 
 // UpdateMemberRole 更新团队成员角色
