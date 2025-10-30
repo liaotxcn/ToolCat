@@ -1,226 +1,120 @@
 <template>
-  <div class="auth-container">
-    <div class="auth-form-wrapper">
-      <h2>用户登录</h2>
-      <form @submit.prevent="handleLogin">
-        <div class="form-group">
-          <label for="username">用户名</label>
-          <input
-            id="username"
-            type="text"
-            v-model="formData.username"
-            placeholder="请输入用户名"
-            required
-            autofocus
-          />
-        </div>
-        
-        <div class="form-group">
-          <label for="password">密码</label>
-          <input
-            id="password"
-            type="password"
-            v-model="formData.password"
-            placeholder="请输入密码"
-            required
-          />
-        </div>
-        
-        <div class="form-actions">
-          <button type="submit" :disabled="isLoading" class="btn btn-primary">
-            {{ isLoading ? '登录中...' : '登录' }}
+  <div class="login-container">
+    <h2 class="form-title">登录</h2>
+    <form class="auth-form" @submit.prevent="handleLogin">
+      <div class="form-group">
+        <label for="username">用户名</label>
+        <input v-model="username" type="text" id="username" required placeholder="请输入用户名" autofocus @input="clearError" />
+      </div>
+      <div class="form-group">
+        <label for="password">密码</label>
+        <div class="password-wrap">
+          <input :type="showPassword ? 'text' : 'password'" v-model="password" id="password" required placeholder="请输入密码" @input="clearError" />
+          <button type="button" class="toggle-psw" @click="showPassword = !showPassword" :aria-pressed="showPassword" :title="showPassword ? '隐藏密码' : '显示密码'" aria-label="切换密码可见性">
+            <svg class="eye-icon" viewBox="0 0 20 20" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2 10c2.5-4.5 6-6.5 8-6.5s5.5 2 8 6.5c-2.5 4.5-6 6.5-8 6.5S4.5 14.5 2 10z" fill="none" stroke="currentColor" stroke-width="1.5" />
+              <circle cx="10" cy="10" r="3" fill="currentColor" />
+              <path v-if="!showPassword" d="M4 4L16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
           </button>
-          <p class="register-link">
-            还没有账号？<button type="button" @click="$emit('switch-to-register')">立即注册</button>
-          </p>
         </div>
-      </form>
-      
-      <!-- 错误提示 -->
-      <div v-if="error" class="error-message">
-        {{ error }}
       </div>
-      
-      <!-- 成功提示 -->
-      <div v-if="successMessage" class="success-message">
-        {{ successMessage }}
+      <div class="assist">
+        <label class="remember"><input type="checkbox" v-model="rememberMe" /> 记住我</label>
+        <button class="link-btn" type="button" title="暂未实现接口">忘记密码？</button>
       </div>
-    </div>
+      <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
+      <button class="primary-btn" type="submit" :disabled="loading || !canLogin">{{ loading ? '登录中...' : '登录' }}</button>
+    </form>
+    <p class="switch-tip">
+      还没有账号？
+      <button class="link-btn" type="button" @click="switchToRegister">立即注册</button>
+    </p>
   </div>
 </template>
 
-<script setup>
-import { ref } from 'vue'
-import { authService } from '../services/auth.js'
+<script>
+import { authService } from '../services/auth'
 
-// 定义props和emits
-const emit = defineEmits(['switch-to-register', 'login-success'])
-
-// 表单数据
-const formData = ref({
-  username: '',
-  password: ''
-})
-
-// 状态管理
-const isLoading = ref(false)
-const error = ref('')
-const successMessage = ref('')
-
-// 处理登录
-const handleLogin = async () => {
-  // 重置错误和成功消息
-  error.value = ''
-  successMessage.value = ''
-  
-  // 表单验证
-  if (!formData.value.username || !formData.value.password) {
-    error.value = '请填写所有必填字段'
-    return
-  }
-  
-  // 设置加载状态
-  isLoading.value = true
-  
-  try {
-    // 调用登录API
-    const response = await authService.login({
-      username: formData.value.username,
-      password: formData.value.password
-    })
-    
-    // 显示成功消息
-    successMessage.value = response.message || '登录成功'
-    
-    // 通知父组件登录成功
-    emit('login-success')
-    
-  } catch (err) {
-    // 处理登录错误
-    if (err.response && err.response.data) {
-      error.value = err.response.data.error || '登录失败，请检查用户名和密码'
-    } else {
-      error.value = '网络错误，请稍后重试'
+export default {
+  name: 'Login',
+  emits: ['login-success', 'switch-to-register'],
+  data() {
+    return {
+      username: '',
+      password: '',
+      rememberMe: true,
+      showPassword: false,
+      loading: false,
+      errorMessage: ''
     }
-  } finally {
-    // 重置加载状态
-    isLoading.value = false
+  },
+  computed: {
+    usernameInvalid() {
+      return !(this.username && this.username.trim().length > 0)
+    },
+    passwordInvalid() {
+      return !(this.password && this.password.length > 0)
+    },
+    canLogin() {
+      return !this.usernameInvalid && !this.passwordInvalid
+    }
+  },
+  methods: {
+    clearError() {
+      this.errorMessage = ''
+    },
+    async handleLogin() {
+      if (!this.canLogin) return
+      this.errorMessage = ''
+      try {
+        this.loading = true
+        const payload = {
+          username: this.username.trim(),
+          password: this.password,
+          remember_me: this.rememberMe
+        }
+
+        const response = await authService.login(payload)
+
+        if (response && response.user) {
+          this.$emit('login-success', response.user)
+        } else {
+          this.errorMessage = response?.message || '登录失败，请稍后重试'
+        }
+      } catch (error) {
+        const data = error?.response?.data || {}
+        this.errorMessage = data?.message || '登录失败，请检查账号或网络'
+      } finally {
+        this.loading = false
+      }
+    },
+    switchToRegister() {
+      this.$emit('switch-to-register')
+    }
   }
 }
 </script>
 
 <style scoped>
-.auth-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: #f5f5f5;
-  padding: 1rem;
-}
-
-.auth-form-wrapper {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
-}
-
-.auth-form-wrapper h2 {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  color: #333;
-}
-
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #555;
-  font-weight: 500;
-}
-
-.form-group input {
-  width: 100%;
-  padding: 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  transition: border-color 0.3s ease;
-}
-
-.form-group input:focus {
-  outline: none;
-  border-color: #667eea;
-}
-
-.form-actions {
-  margin-top: 1.5rem;
-}
-
-.btn {
-  padding: 0.8rem 1.5rem;
-  border: none;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-}
-
-.btn-primary {
-  background-color: #667eea;
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background-color: #5a67d8;
-}
-
-.btn-primary:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-.register-link {
-  text-align: center;
-  margin-top: 1rem;
-  color: #666;
-}
-
-.register-link button {
-  background: none;
-  border: none;
-  color: #667eea;
-  cursor: pointer;
-  font-size: 1rem;
-  text-decoration: underline;
-}
-
-.register-link button:hover {
-  color: #5a67d8;
-}
-
-.error-message {
-  margin-top: 1rem;
-  padding: 0.8rem;
-  background-color: #fed7d7;
-  color: #c53030;
-  border-radius: 4px;
-  text-align: center;
-}
-
-.success-message {
-  margin-top: 1rem;
-  padding: 0.8rem;
-  background-color: #c6f6d5;
-  color: #276749;
-  border-radius: 4px;
-  text-align: center;
-}
+.login-container { display: flex; flex-direction: column; gap: 12px; }
+.form-title { margin: 0; }
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.form-group label { font-weight: 500; color: #333; margin-bottom: 6px; }
+.form-group input { width: 100%; padding: 10px 12px; border: 1px solid #d9d9e3; border-radius: 8px; font-size: 14px; transition: border-color .2s ease, box-shadow .2s ease; }
+.form-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,.2); }
+.password-wrap { position: relative; }
+.toggle-psw { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); border: 1px solid #e6e6f2; background: #fff; color: #555; padding: 4px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.toggle-psw:hover { background: #f8f9fa; }
+.eye-icon { display: block; }
+.assist { display: flex; align-items: center; justify-content: space-between; }
+.remember { color: #555; font-size: 14px; }
+.primary-btn { padding: 10px 14px; border: none; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%); color: #fff; cursor: pointer; font-size: 15px; transition: transform .05s ease, box-shadow .2s ease; }
+.primary-btn:hover { box-shadow: 0 8px 20px rgba(102,126,234,.35); }
+.primary-btn:active { transform: translateY(1px); }
+.primary-btn:disabled { opacity: .7; cursor: not-allowed; }
+.error-message { background: #fdecea; color: #d93025; border: 1px solid #f2a19a; padding: 8px 10px; border-radius: 8px; }
+.switch-tip { text-align: center; margin-top: 8px; color: #666; }
+.link-btn { background: none; border: none; color: #667eea; cursor: pointer; text-decoration: underline; padding: 0 4px; }
+.link-btn:hover { color: #5a67d8; }
 </style>
