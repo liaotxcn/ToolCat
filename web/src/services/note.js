@@ -1,4 +1,4 @@
-import { api } from './auth.js'
+import api from './auth.js'
 
 // 笔记相关API方法
 export const noteService = {

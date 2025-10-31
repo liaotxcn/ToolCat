@@ -99,20 +99,21 @@ func SetupRouter() *gin.Engine {
 			}
 
 			// 团队相关路由
-		teams := api.Group("/teams")
-		{
-			teamCtrl := &controllers.TeamController{}
-			teams.GET("/", teamCtrl.GetTeams)        // 获取用户所属的团队列表
-			teams.POST("/", teamCtrl.CreateTeam)
-			teams.PUT("/:id", teamCtrl.UpdateTeam)   // 更新团队信息
-			teams.POST("/:id/transfer-owner", teamCtrl.TransferTeamOwner) // 转让团队所有权
-			
-			// 团队成员管理路由
-			teams.GET("/:id/members", teamCtrl.GetTeamMembers)           // 获取团队成员列表
-			teams.POST("/:id/members", teamCtrl.AddTeamMember)           // 添加团队成员
-			teams.DELETE("/:id/members/:memberId", teamCtrl.RemoveTeamMember) // 移除团队成员
-			teams.PUT("/:id/members/:memberId/role", teamCtrl.UpdateMemberRole) // 更新成员角色
-		}
+			teams := api.Group("/teams")
+			{
+				teamCtrl := &controllers.TeamController{}
+				teams.GET("/", teamCtrl.GetTeams) // 获取用户所属的团队列表
+				teams.POST("/", teamCtrl.CreateTeam)
+				teams.PUT("/:id", teamCtrl.UpdateTeam)                        // 更新团队信息
+				teams.POST("/:id/transfer-owner", teamCtrl.TransferTeamOwner) // 转让团队所有权
+
+				// 团队成员管理路由
+				teams.GET("/:id/members", teamCtrl.GetTeamMembers)                  // 获取团队成员列表
+				teams.GET("/:id/members/search", teamCtrl.SearchTeamMembers)        // 搜索团队成员
+				teams.POST("/:id/members", teamCtrl.AddTeamMember)                  // 添加团队成员
+				teams.DELETE("/:id/members/:memberId", teamCtrl.RemoveTeamMember)   // 移除团队成员
+				teams.PUT("/:id/members/:memberId/role", teamCtrl.UpdateMemberRole) // 更新成员角色
+			}
 
 			// 审计日志相关路由
 			audit := api.Group("/audit")
