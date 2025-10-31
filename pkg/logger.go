@@ -14,6 +14,41 @@ type Logger struct {
 	*zap.Logger
 }
 
+// Debug 记录调试信息
+func (l *Logger) Debug(msg string, fields ...zap.Field) {
+	l.Logger.Debug(msg, fields...)
+}
+
+// Info 记录信息
+func (l *Logger) Info(msg string, fields ...zap.Field) {
+	l.Logger.Info(msg, fields...)
+}
+
+// Warn 记录警告信息
+func (l *Logger) Warn(msg string, fields ...zap.Field) {
+	l.Logger.Warn(msg, fields...)
+}
+
+// Error 记录错误信息
+func (l *Logger) Error(msg string, fields ...zap.Field) {
+	l.Logger.Error(msg, fields...)
+}
+
+// Fatal 记录致命错误并退出
+func (l *Logger) Fatal(msg string, fields ...zap.Field) {
+	l.Logger.Fatal(msg, fields...)
+}
+
+// With 添加字段到日志
+func (l *Logger) With(fields ...zap.Field) *zap.Logger {
+	return l.Logger.With(fields...)
+}
+
+// Sync 刷新日志缓冲区
+func (l *Logger) Sync() error {
+	return l.Logger.Sync()
+}
+
 // 全局变量
 var (
 	globalLogger *Logger
