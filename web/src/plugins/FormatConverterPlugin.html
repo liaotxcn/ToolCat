@@ -1,0 +1,595 @@
+<div class="format-converter-plugin">
+  <!-- 插件标题和描述 -->
+  <div class="plugin-header">
+    <h2 class="plugin-title">格式转换器</h2>
+    <p class="plugin-desc">支持JSON、YAML和Protobuf格式之间的相互转换</p>
+  </div>
+
+  <!-- 转换控制区域 -->
+  <div class="conversion-controls">
+    <div class="conversion-selector">
+      <label for="conversion-type">转换类型:</label>
+      <select id="conversion-type" class="conversion-dropdown">
+        <option value="json-to-yaml">JSON → YAML</option>
+        <option value="yaml-to-json">YAML → JSON</option>
+        <option value="json-to-protobuf">JSON → Protobuf (Base64)</option>
+        <option value="protobuf-to-json">Protobuf (Base64) → JSON</option>
+      </select>
+      <button id="example-data-btn" class="btn-secondary">示例数据</button>
+    </div>
+    
+    <button id="convert-btn" class="btn-primary">执行转换</button>
+  </div>
+
+  <!-- 编辑器和结果区域 -->
+  <div class="editor-container">
+    <div class="editor-section">
+      <div class="editor-header">
+        <h3>输入</h3>
+        <button id="clear-input-btn" class="btn-icon" title="清空输入">🗑️</button>
+      </div>
+      <div class="validation-result" id="input-validation"></div>
+      <textarea id="input-textarea" placeholder="请输入要转换的数据..." rows="15"></textarea>
+    </div>
+    
+    <div class="swap-arrow">⇄</div>
+    
+    <div class="editor-section">
+      <div class="editor-header">
+        <h3>输出</h3>
+        <button id="copy-output-btn" class="btn-icon" title="复制结果">📋</button>
+      </div>
+      <div class="output-status" id="output-status"></div>
+      <textarea id="output-textarea" placeholder="转换结果将显示在这里..." rows="15" readonly></textarea>
+    </div>
+  </div>
+
+  <!-- 历史记录区域 -->
+  <div class="history-section">
+    <div class="history-header">
+      <h3>转换历史</h3>
+      <button id="clear-history-btn" class="btn-icon" title="清空历史">🗑️</button>
+    </div>
+    <div id="history-list" class="history-list">
+      <div class="no-history">暂无转换历史</div>
+    </div>
+  </div>
+
+  <!-- 帮助提示 -->
+  <div class="help-section">
+    <h4>使用说明</h4>
+    <ul>
+      <li>选择要执行的转换类型</li>
+      <li>在输入框中输入相应格式的数据</li>
+      <li>点击「执行转换」按钮开始转换</li>
+      <li>点击「示例数据」按钮可以加载示例内容</li>
+      <li>Protobuf数据将以Base64编码的形式显示和输入</li>
+    </ul>
+  </div>
+
+  <style>
+    .format-converter-plugin {
+      padding: var(--space-4);
+      font-family: var(--font-family, system-ui);
+    }
+
+    .plugin-header {
+      text-align: center;
+      margin-bottom: var(--space-6);
+      padding-bottom: var(--space-3);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .plugin-title {
+      color: var(--primary-700);
+      font-size: var(--font-size-2xl);
+      margin: 0;
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .plugin-desc {
+      color: var(--text-secondary);
+      margin-top: var(--space-2);
+    }
+
+    .conversion-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-4);
+      gap: var(--space-3);
+    }
+
+    .conversion-selector {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      flex: 1;
+    }
+
+    .conversion-selector label {
+      font-weight: var(--font-weight-medium);
+      color: var(--text-primary);
+    }
+
+    .conversion-dropdown {
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      background: var(--bg-primary);
+      font-size: var(--font-size-base);
+      min-width: 200px;
+      cursor: pointer;
+      transition: var(--transition-all);
+    }
+
+    .conversion-dropdown:hover {
+      border-color: var(--primary-400);
+    }
+
+    .conversion-dropdown:focus {
+      outline: none;
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    .btn-primary, .btn-secondary {
+      padding: var(--space-2) var(--space-4);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      cursor: pointer;
+      transition: var(--transition-all);
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--primary-600);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-700);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      border: 1px solid var(--border-light);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-tertiary);
+      border-color: var(--border-medium);
+    }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      font-size: var(--font-size-lg);
+      cursor: pointer;
+      padding: var(--space-1);
+      border-radius: var(--radius-md);
+      transition: background-color var(--transition-fast);
+    }
+
+    .btn-icon:hover {
+      background: var(--bg-secondary);
+    }
+
+    .editor-container {
+      display: flex;
+      gap: var(--space-4);
+      margin-bottom: var(--space-6);
+      align-items: flex-start;
+    }
+
+    .editor-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .editor-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-2);
+    }
+
+    .editor-header h3 {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      color: var(--text-primary);
+    }
+
+    #input-textarea, #output-textarea {
+      width: 100%;
+      padding: var(--space-3);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+      font-size: var(--font-size-sm);
+      line-height: 1.5;
+      resize: vertical;
+      background: var(--bg-primary);
+      transition: var(--transition-all);
+    }
+
+    #input-textarea:focus {
+      outline: none;
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    #output-textarea {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .swap-arrow {
+      align-self: center;
+      font-size: var(--font-size-2xl);
+      color: var(--text-muted);
+    }
+
+    .validation-result, .output-status {
+      margin-bottom: var(--space-2);
+      font-size: var(--font-size-sm);
+      min-height: 20px;
+    }
+
+    .validation-success {
+      color: var(--success-600);
+    }
+
+    .validation-error {
+      color: var(--error-600);
+    }
+
+    .history-section {
+      margin-bottom: var(--space-6);
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-3);
+    }
+
+    .history-header h3 {
+      margin: 0;
+      font-size: var(--font-size-lg);
+      color: var(--text-primary);
+    }
+
+    .history-list {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+    }
+
+    .history-item {
+      padding: var(--space-3);
+      border-bottom: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .history-item:hover {
+      background: var(--bg-primary);
+    }
+
+    .history-item-type {
+      font-weight: var(--font-weight-medium);
+      color: var(--primary-700);
+    }
+
+    .history-item-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-muted);
+      margin-left: var(--space-2);
+    }
+
+    .no-history {
+      padding: var(--space-4);
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .help-section {
+      background: var(--bg-tertiary);
+      padding: var(--space-4);
+      border-radius: var(--radius-md);
+      border-left: 4px solid var(--primary-500);
+    }
+
+    .help-section h4 {
+      margin-top: 0;
+      margin-bottom: var(--space-2);
+      color: var(--text-primary);
+    }
+
+    .help-section ul {
+      margin: 0;
+      padding-left: var(--space-6);
+      color: var(--text-secondary);
+    }
+
+    .help-section li {
+      margin-bottom: var(--space-1);
+    }
+
+    /* 响应式设计 */
+    @media (max-width: 768px) {
+      .editor-container {
+        flex-direction: column;
+      }
+      
+      .swap-arrow {
+        transform: rotate(90deg);
+        margin: var(--space-2) 0;
+      }
+      
+      .conversion-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .conversion-selector {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      
+      .conversion-dropdown {
+        min-width: auto;
+      }
+    }
+  </style>
+
+  <script>
+    // 获取DOM元素
+    const conversionType = document.getElementById('conversion-type');
+    const inputTextarea = document.getElementById('input-textarea');
+    const outputTextarea = document.getElementById('output-textarea');
+    const convertBtn = document.getElementById('convert-btn');
+    const clearInputBtn = document.getElementById('clear-input-btn');
+    const copyOutputBtn = document.getElementById('copy-output-btn');
+    const exampleDataBtn = document.getElementById('example-data-btn');
+    const historyList = document.getElementById('history-list');
+    const clearHistoryBtn = document.getElementById('clear-history-btn');
+    const inputValidation = document.getElementById('input-validation');
+    const outputStatus = document.getElementById('output-status');
+
+    // 格式化时间
+    function formatTime(date) {
+      const now = new Date();
+      const diff = now - date;
+      
+      if (diff < 60000) { // 1分钟内
+        return '刚刚';
+      } else if (diff < 3600000) { // 1小时内
+        return `${Math.floor(diff / 60000)}分钟前`;
+      } else if (diff < 86400000) { // 24小时内
+        return `${Math.floor(diff / 3600000)}小时前`;
+      } else {
+        return date.toLocaleString();
+      }
+    }
+
+    // 渲染历史记录
+    function renderHistory() {
+      const history = plugin.getConversionHistory();
+      
+      if (history.length === 0) {
+        historyList.innerHTML = '<div class="no-history">暂无转换历史</div>';
+        return;
+      }
+
+      historyList.innerHTML = '';
+      
+      history.forEach((item, index) => {
+        const historyItem = document.createElement('div');
+        historyItem.className = 'history-item';
+        historyItem.innerHTML = `
+          <div>
+            <span class="history-item-type">${plugin.getConversionTypeName(item.type)}</span>
+            <span class="history-item-time">${formatTime(item.timestamp)}</span>
+          </div>
+        `;
+        
+        historyItem.addEventListener('click', () => {
+          // 点击历史记录项时，填充输入和输出
+          inputTextarea.value = item.input;
+          outputTextarea.value = item.output;
+          // 设置对应的转换类型
+          conversionType.value = item.type;
+          // 验证输入
+          validateInput();
+        });
+        
+        historyList.appendChild(historyItem);
+      });
+    }
+
+    // 验证输入
+    function validateInput() {
+      const input = inputTextarea.value.trim();
+      const type = conversionType.value;
+      
+      if (!input) {
+        inputValidation.textContent = '';
+        return;
+      }
+
+      try {
+        if (type === 'json-to-yaml' || type === 'json-to-protobuf') {
+          // 验证JSON
+          JSON.parse(input);
+          inputValidation.className = 'validation-result validation-success';
+          inputValidation.textContent = '✓ JSON格式正确';
+        } else if (type === 'yaml-to-json') {
+          // 前端简单验证YAML（完整验证在后端）
+          if (input.includes(':') && !input.includes('{')) {
+            inputValidation.className = 'validation-result validation-success';
+            inputValidation.textContent = '✓ YAML格式初步检查通过';
+          }
+        } else if (type === 'protobuf-to-json') {
+          // 验证Base64
+          if (/^[A-Za-z0-9+/]+=*$/.test(input)) {
+            inputValidation.className = 'validation-result validation-success';
+            inputValidation.textContent = '✓ Base64格式正确';
+          } else {
+            inputValidation.className = 'validation-result validation-error';
+            inputValidation.textContent = '✗ Base64格式错误';
+          }
+        }
+      } catch (error) {
+        inputValidation.className = 'validation-result validation-error';
+        inputValidation.textContent = `✗ 格式错误: ${error.message}`;
+      }
+    }
+
+    // 显示输出状态
+    function showOutputStatus(message, isError = false) {
+      outputStatus.className = isError ? 'output-status validation-error' : 'output-status validation-success';
+      outputStatus.textContent = message;
+      
+      // 3秒后清除状态
+      setTimeout(() => {
+        outputStatus.textContent = '';
+      }, 3000);
+    }
+
+    // 复制到剪贴板
+    async function copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        showOutputStatus('✓ 已复制到剪贴板');
+      } catch (error) {
+        console.error('复制失败:', error);
+        showOutputStatus('✗ 复制失败', true);
+      }
+    }
+
+    // 执行转换
+    async function performConversion() {
+      const input = inputTextarea.value.trim();
+      const type = conversionType.value;
+      
+      if (!input) {
+        showOutputStatus('✗ 请输入数据', true);
+        return;
+      }
+
+      // 禁用按钮防止重复提交
+      convertBtn.disabled = true;
+      convertBtn.textContent = '转换中...';
+      outputStatus.textContent = '';
+
+      try {
+        let result;
+        
+        switch (type) {
+          case 'json-to-yaml':
+            result = await plugin.convertJsonToYaml(input);
+            break;
+          case 'yaml-to-json':
+            result = await plugin.convertYamlToJson(input);
+            break;
+          case 'json-to-protobuf':
+            result = await plugin.convertJsonToProtobuf(input);
+            break;
+          case 'protobuf-to-json':
+            result = await plugin.convertProtobufToJson(input);
+            break;
+          default:
+            throw new Error('不支持的转换类型');
+        }
+
+        outputTextarea.value = result;
+        showOutputStatus('✓ 转换成功');
+        renderHistory(); // 更新历史记录
+      } catch (error) {
+        console.error('转换错误:', error);
+        showOutputStatus(`✗ ${error.message}`, true);
+      } finally {
+        // 恢复按钮状态
+        convertBtn.disabled = false;
+        convertBtn.textContent = '执行转换';
+      }
+    }
+
+    // 加载示例数据
+    function loadExampleData() {
+      const type = conversionType.value;
+      let exampleData = '';
+      
+      if (type === 'json-to-yaml' || type === 'json-to-protobuf') {
+        exampleData = plugin.getExampleData('json');
+      } else if (type === 'yaml-to-json') {
+        exampleData = plugin.getExampleData('yaml');
+      } else if (type === 'protobuf-to-json') {
+        // 为Protobuf示例加载一个Base64编码的简单数据
+        exampleData = 'Cg4KICAgICJuYW1lIjogIuS4jeW5uS4iLAogICAgInZlcnNpb24iOiAiMS4wLjAiLAogICAgImRlc2NyaXB0aW9uIjogIuWwveS7pe2UuaW4iLAogICAgImF1dGgiOiB7CiAgICAgICAgIm5hbWUiOiAi5YyF5aW9IiwKICAgICAgICAiZW1haWwiOiAiemhhbmdzYW5AZXhhbXBsZS5jb20iCiAgICB9LAogICAgInRhZ3MiOiBbIjXmnKzZgiIsICJ5YW1sIl0sCiAgICAibWV0YWRhdGEiOiB7CiAgICAgICAgImNyZWF0ZWRBdCI6ICIyMDI0LTAxLTAxVDAwOjAwOjAwWiIsCiAgICAgICAgInVwZGF0ZWRBdCI6ICIyMDI0LTAxLTAxVDAwOjAwOjAwWiIKICAgIH0sCiAgICAiYWN0aXZlIjogdHJ1ZSwKICAgICJjb3VudCI6IDQyLAogICAgInNldHRpbmdzIjogewogICAgICAgICJ0aGVtZSI6ICJsaWdodCIsCiAgICAgICAgIm5vdGlmaWNhdGlvbnMiOiBmYWxzZQogICAgfQp9';
+      }
+      
+      inputTextarea.value = exampleData;
+      outputTextarea.value = '';
+      validateInput();
+    }
+
+    // 事件监听器
+    conversionType.addEventListener('change', () => {
+      // 清除输出和状态
+      outputTextarea.value = '';
+      outputStatus.textContent = '';
+      inputValidation.textContent = '';
+      // 验证当前输入
+      validateInput();
+    });
+
+    inputTextarea.addEventListener('input', validateInput);
+    convertBtn.addEventListener('click', performConversion);
+    clearInputBtn.addEventListener('click', () => {
+      inputTextarea.value = '';
+      inputValidation.textContent = '';
+    });
+    
+    copyOutputBtn.addEventListener('click', () => {
+      const output = outputTextarea.value;
+      if (output) {
+        copyToClipboard(output);
+      }
+    });
+    
+    exampleDataBtn.addEventListener('click', loadExampleData);
+    
+    clearHistoryBtn.addEventListener('click', () => {
+      plugin.clearHistory();
+      renderHistory();
+    });
+
+    // 初始化
+    renderHistory();
+    validateInput();
+
+    // 添加键盘快捷键
+    document.addEventListener('keydown', (e) => {
+      // Ctrl/Cmd + Enter 执行转换
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        performConversion();
+      }
+    });
+  </script>
+</div>
