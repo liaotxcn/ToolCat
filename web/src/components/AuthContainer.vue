@@ -1,15 +1,49 @@
 <template>
   <div class="auth-container">
+    <!-- 背景装饰元素 -->
+    <div class="auth-bg-pattern"></div>
+    
     <div class="auth-card">
+      <!-- 品牌展示区域 -->
       <div class="brand">
-        <h1>ToolCat</h1>
-        <p>欢迎使用，请先登录或注册</p>
+        <div class="logo-container">
+          <div class="logo">
+            <svg viewBox="0 0 40 40" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="5" y="5" width="30" height="30" rx="6" stroke="currentColor" stroke-width="2"/>
+              <path d="M12 20H16L18 16L20 20H24L28 12V28H12V20Z" fill="currentColor" opacity="0.8"/>
+            </svg>
+          </div>
+          <h1>ToolCat</h1>
+        </div>
+        <p class="brand-subtitle">欢迎使用，请先登录或注册</p>
       </div>
+      
+      <!-- 标签切换区域 -->
       <div class="tabs">
-        <button :class="['tab', showLogin ? 'active' : '']" @click="switchToLogin">登录</button>
-        <button :class="['tab', !showLogin ? 'active' : '']" @click="switchToRegister">注册</button>
+        <button :class="['tab', showLogin ? 'active' : '']" @click="switchToLogin">
+          <span class="tab-icon">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16 12a6 6 0 11-12 0 6 6 0 0112 0z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          登录
+        </button>
+        <button :class="['tab', !showLogin ? 'active' : '']" @click="switchToRegister">
+          <span class="tab-icon">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 5v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 10h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+          注册
+        </button>
         <div class="tab-indicator" :style="{ transform: showLogin ? 'translateX(0%)' : 'translateX(100%)' }"></div>
       </div>
+      
+      <!-- 表单区域 -->
       <div class="form-area">
         <transition name="form-switch" mode="out-in" appear>
           <Login
@@ -23,6 +57,11 @@
             @register-success="handleRegisterSuccess"
           />
         </transition>
+      </div>
+      
+      <!-- 页脚信息 -->
+      <div class="auth-footer">
+        <p>© {{ new Date().getFullYear() }} ToolCat - 插件开发/服务聚合平台</p>
       </div>
     </div>
   </div>
@@ -76,118 +115,394 @@ const handleRegisterSuccess = () => {
 </script>
 
 <style scoped>
+/* 背景容器 */
 .auth-container {
   width: 100%;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
   padding: 24px;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 460px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  position: relative;
   overflow: hidden;
 }
 
-.brand {
-  background: linear-gradient(135deg, #6b8cff 0%, #7a57ff 100%);
-  color: #fff;
-  padding: 20px 24px;
+/* 背景装饰图案 */
+.auth-bg-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.1) 0%, transparent 25%),
+    radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 30%);
+  z-index: 1;
 }
-.brand h1 { font-size: 24px; margin-bottom: 4px; }
-.brand p { opacity: 0.9; font-size: 14px; }
 
+/* 主卡片 */
+.auth-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.auth-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* 品牌区域 */
+.brand {
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  color: var(--bg-primary);
+  padding: 32px 32px 24px;
+  text-align: center;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.logo {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  color: var(--bg-primary);
+}
+
+.brand h1 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--primary-100) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.brand-subtitle {
+  font-size: var(--font-size-sm);
+  opacity: 0.95;
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+/* 标签切换区域 */
 .tabs {
   position: relative;
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-secondary);
 }
+
 .tab {
   flex: 1;
-  padding: 10px 0;
-  background: #f7f7fb;
-  border: 1px solid #e6e6f2;
-  border-radius: 8px;
+  padding: 12px 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
   cursor: pointer;
-  color: #555;
-  transition: background-color .2s ease, color .2s ease, box-shadow .2s ease;
+  color: var(--text-secondary);
+  font-weight: var(--font-weight-medium);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all var(--transition-normal);
 }
-.tab.active {
-  background: #667eea;
-  border-color: #667eea;
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(102,126,234,.35);
-}
-.tab:hover { filter: brightness(0.98); }
 
-/* 滑动指示条（在两个tab之间平滑移动） */
+.tab:hover:not(.active) {
+  background: var(--bg-secondary);
+  border-color: var(--primary-300);
+  color: var(--primary-600);
+}
+
+.tab.active {
+  background: var(--primary-600);
+  border-color: var(--primary-600);
+  color: var(--bg-primary);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  transform: translateY(-1px);
+}
+
+.tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 滑动指示条 */
 .tab-indicator {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 50%;
   height: 3px;
-  background: #667eea;
-  border-radius: 3px;
-  transition: transform .25s cubic-bezier(.22,.61,.36,1);
+  background: var(--primary-600);
+  border-radius: var(--radius-full);
+  transition: transform var(--transition-slow) cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
-.form-area { padding: 16px 20px 20px; min-height: 340px; }
-
-/* 表单切换过渡动画：淡入淡出 + 轻微位移 */
-.form-switch-enter-active, .form-switch-leave-active {
-  transition: opacity .18s ease-out, transform .18s ease-out;
+/* 表单区域 */
+.form-area {
+  padding: 24px 24px;
+  min-height: 360px;
 }
-.form-switch-enter-from { opacity: 0; transform: translateX(6px); }
-.form-switch-enter-to   { opacity: 1; transform: translateX(0); }
-.form-switch-leave-from { opacity: 1; transform: translateX(0); }
-.form-switch-leave-to   { opacity: 0; transform: translateX(-6px); }
 
-/* 表单统一风格（影响子组件） */
-:deep(form) { display: flex; flex-direction: column; gap: 12px; }
-:deep(.form-group label) { font-weight: 500; color: #333; margin-bottom: 6px; }
+/* 表单切换过渡动画 */
+.form-switch-enter-active,
+.form-switch-leave-active {
+  transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+.form-switch-enter-from {
+  opacity: 0;
+  transform: translateX(10px) scale(0.98);
+}
+
+.form-switch-enter-to {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.form-switch-leave-from {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+
+.form-switch-leave-to {
+  opacity: 0;
+  transform: translateX(-10px) scale(0.98);
+}
+
+/* 表单统一风格 */
+:deep(form) {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+:deep(.form-group) {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+}
+
+:deep(.form-group label) {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.02em;
+}
+
 :deep(.form-group input) {
   width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #d9d9e3;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color .2s ease, box-shadow .2s ease;
+  padding: 12px 16px;
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
+  transition: all var(--transition-normal);
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
+
 :deep(.form-group input:focus) {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102,126,234,.2);
+  border-color: var(--primary-500);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  background: var(--bg-primary);
 }
+
+:deep(.form-group input:placeholder-shown) {
+  color: var(--text-muted);
+}
+
+:deep(.form-group input::placeholder) {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+/* 提交按钮 */
 :deep(button[type="submit"]) {
-  padding: 10px 14px;
+  padding: 12px 16px;
   border: none;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #5a67d8 100%);
-  color: #fff;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+  color: var(--bg-primary);
   cursor: pointer;
-  font-size: 15px;
-  transition: transform .05s ease, box-shadow .2s ease;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
 }
-:deep(button[type="submit"]:hover) { box-shadow: 0 8px 20px rgba(102,126,234,.35); }
-:deep(button[type="submit"]:active) { transform: translateY(1px); }
 
+:deep(button[type="submit"])::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+:deep(button[type="submit"]:hover::before) {
+  width: 300px;
+  height: 300px;
+}
+
+:deep(button[type="submit"]:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+}
+
+:deep(button[type="submit"]:active) {
+  transform: translateY(0);
+}
+
+:deep(button[type="submit"]:disabled) {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* 错误消息 */
 :deep(.error-message) {
-  background: #fdecea;
-  color: #d93025;
-  border: 1px solid #f2a19a;
-  padding: 8px 10px;
-  border-radius: 8px;
+  background: var(--error-100);
+  color: var(--error-700);
+  border: 1px solid var(--error);
+  padding: 10px 12px;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
 }
 
-:deep(.switch-tip) { text-align: center; }
-:deep(.link-btn) { font-size: 14px; }
+:deep(.error-message)::before {
+  content: '';
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23dc2626'%3E%3Cpath fill-rule='evenodd' d='M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z' clip-rule='evenodd'/%3E%3C/svg%3E") no-repeat center center;
+  background-size: contain;
+}
+
+/* 切换提示 */
+:deep(.switch-tip) {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: 16px;
+}
+
+:deep(.link-btn) {
+  font-size: var(--font-size-sm);
+  background: none;
+  border: none;
+  color: var(--primary-600);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  transition: all var(--transition-fast);
+  text-decoration: none;
+}
+
+:deep(.link-btn:hover) {
+  background: var(--primary-50);
+  color: var(--primary-700);
+}
+
+/* 页脚 */
+.auth-footer {
+  padding: 20px 24px;
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+  border-top: 3px solid var(--primary-400);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 页脚装饰元素 */
+.auth-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.15) 0%, transparent 20%),
+              radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 15%);
+  z-index: 1;
+}
+
+.auth-footer p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--bg-primary);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: 0.02em;
+  position: relative;
+  z-index: 2;
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  transition: all var(--transition-normal);
+}
+
+.auth-footer p:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 16px;
+  }
+  
+  .brand {
+    padding: 24px 20px 20px;
+  }
+  
+  .form-area {
+    padding: 20px 20px;
+  }
+  
+  .auth-card {
+    max-width: 100%;
+    border-radius: var(--radius-lg);
+  }
+}
 </style>

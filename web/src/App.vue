@@ -135,13 +135,70 @@ const handleMenuSelect = (key) => {
           </div>
           <div class="user-info">
             <div class="user-menu">
-              <button class="menu-trigger" @click="showMenu = !showMenu">
-                欢迎，{{ currentUser?.username }} ▾
+              <button 
+                class="menu-trigger"
+                :class="{ 'active': showMenu }"
+                @click="showMenu = !showMenu"
+                aria-expanded="showMenu"
+                aria-haspopup="true"
+                aria-controls="user-dropdown"
+              >
+                <span class="user-avatar">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M19 20C19 16.134 12 14 12 14C12 14 5 16.134 5 20V21H19V20Z" stroke="currentColor" stroke-width="1.5"/>
+                  </svg>
+                </span>
+                <span class="user-name">欢迎，{{ currentUser?.username }}</span>
+                <span class="dropdown-arrow" :class="{ 'rotate': showMenu }">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
               </button>
-              <div v-if="showMenu" class="dropdown">
-                <button @click="handleMenuSelect('teams')">协作团队</button>
-                <button @click="handleMenuSelect('personal')">个人中心</button>
-                <button @click="handleMenuSelect('logout')">退出登录</button>
+              <div 
+                v-show="showMenu" 
+                class="dropdown"
+                id="user-dropdown"
+                role="menu"
+                aria-labelledby="user-menu"
+              >
+                <button 
+                  @click="handleMenuSelect('teams')"
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" class="item-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M9 13C11.2091 13 13 11.2091 13 9C13 6.79086 11.2091 5 9 5C6.79086 5 5 6.79086 5 9C5 11.2091 6.79086 13 9 13Z" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M23 21V19C23 17.9391 22.5786 16.9217 21.8284 16.1716C21.0783 15.4214 20.0609 15 19 15C18.6118 15 18.2379 15.0583 17.8858 15.1716C17.9395 15.3562 17.9757 15.548 17.994 15.7456C18.7175 15.4198 19.5183 15.25 20.34 15.25C21.9503 15.25 23.375 15.8893 24 17V17C23.375 18.1107 21.9503 18.75 20.34 18.75C19.5183 18.75 18.7175 18.5802 17.994 18.2544C17.9757 18.452 17.9395 18.6438 17.8858 18.8284C18.2379 18.9417 18.6118 19 19 19C20.0609 19 21.0783 18.5786 21.8284 17.8284C22.5786 17.0783 23 16.0609 23 15" stroke="currentColor" stroke-width="1.5"/>
+                  </svg>
+                  <span>协作团队</span>
+                </button>
+                <button 
+                  @click="handleMenuSelect('personal')"
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" class="item-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="1.5"/>
+                  </svg>
+                  <span>个人中心</span>
+                </button>
+                <div class="dropdown-divider"></div>
+                <button 
+                  @click="handleMenuSelect('logout')"
+                  class="dropdown-item logout-item"
+                  role="menuitem"
+                >
+                  <svg viewBox="0 0 24 24" width="18" height="18" class="item-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 21H5C3.89543 21 3 20.1046 3 19V5C3 3.89543 3.89543 3 5 3H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M16 17L21 12L16 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M21 12H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <span>退出登录</span>
+                </button>
               </div>
             </div>
           </div>
@@ -199,12 +256,12 @@ const handleMenuSelect = (key) => {
       
       <footer class="app-footer">
         <div class="footer-content">
-          <div class="footer-left">
+          <!-- <div class="footer-left">
             <span class="brand">ToolCat</span>
             <span class="sep">·</span>
-          </div>
+          </div> -->
           <div class="footer-right">
-            <span class="version">v{{ appVersion }}</span>
+            <span class="version">ToolCat v{{ appVersion }}</span>
             <a class="github-link" href="https://github.com/liaotxcn/ToolCat" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
               <svg class="github-icon" viewBox="0 0 16 16" width="18" height="18" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
@@ -235,7 +292,7 @@ const handleMenuSelect = (key) => {
 .app-header {
   background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%);
   color: white;
-  padding: var(--space-4) 0;
+  padding: var(--space-6) 0;
   box-shadow: var(--shadow-md);
   position: sticky;
   top: 0;
@@ -253,7 +310,7 @@ const handleMenuSelect = (key) => {
 }
 
 .header-content h1 {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-3xl);
   font-weight: var(--font-weight-bold);
   margin-bottom: var(--space-1);
   background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0.8));
@@ -264,7 +321,7 @@ const handleMenuSelect = (key) => {
 }
 
 .header-content p {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-base);
   opacity: 0.9;
   margin: 0;
 }
@@ -275,48 +332,83 @@ const handleMenuSelect = (key) => {
 }
 
 .menu-trigger {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #fff;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-lg);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  transition: var(--transition-all);
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  color: white;
+  cursor: pointer;
+  transition: var(--transition-all);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
+  backdrop-filter: blur(4px);
 }
 
 .menu-trigger:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
   transform: translateY(-1px);
   box-shadow: var(--shadow-sm);
+}
+
+.menu-trigger.active {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .menu-trigger:active {
   transform: translateY(0);
 }
 
+.user-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.user-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.dropdown-arrow {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.dropdown-arrow.rotate {
+  transform: rotate(180deg);
+}
+
 .dropdown {
   position: absolute;
   right: 0;
   top: calc(100% + var(--space-2));
+  margin-top: var(--space-1);
   background: var(--bg-primary);
   border: 1px solid var(--border-medium);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 200px;
-  padding: var(--space-1);
   z-index: 200;
-  opacity: 0;
-  transform: translateY(-4px);
   animation: fadeInUp 0.2s ease forwards;
 }
 
 @keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
   to {
     opacity: 1;
     transform: translateY(0);
@@ -357,8 +449,31 @@ const handleMenuSelect = (key) => {
   color: var(--primary-600);
 }
 
+.dropdown button:focus {
+  outline: 2px solid var(--primary-600);
+  outline-offset: -2px;
+}
+
 .dropdown button:active {
   transform: scale(0.98);
+}
+
+.item-icon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.dropdown button:hover .item-icon {
+  opacity: 1;
+}
+
+.logout-item {
+  color: var(--danger-600);
+}
+
+.logout-item:hover {
+  background-color: var(--danger-50);
+  color: var(--danger-700);
 }
 
 /* 主内容区域 */
@@ -617,11 +732,25 @@ const handleMenuSelect = (key) => {
 
 /* 页脚样式 */
 .app-footer {
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-medium);
-  color: var(--text-tertiary);
+  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
+  border-top: 3px solid var(--primary-400);
+  color: white;
   margin-top: auto;
-  padding: var(--space-4) 0;
+  padding: var(--space-2) 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.app-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+              radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
+  z-index: 0;
 }
 
 .footer-content {
@@ -634,6 +763,8 @@ const handleMenuSelect = (key) => {
   align-items: center;
   text-align: center;
   gap: var(--space-3);
+  position: relative;
+  z-index: 1;
 }
 
 .footer-left {
@@ -646,12 +777,18 @@ const handleMenuSelect = (key) => {
 
 .footer-left .brand {
   font-weight: var(--font-weight-bold);
-  color: var(--primary-700);
-  font-size: var(--font-size-base);
+  color: white;
+  font-size: var(--font-size-lg);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.footer-left .brand:hover {
+  transform: scale(1.05);
 }
 
 .footer-left .sep {
-  color: var(--border-medium);
+  color: rgba(255, 255, 255, 0.7);
   display: inline;
 }
 
@@ -663,30 +800,40 @@ const handleMenuSelect = (key) => {
 
 .version {
   font-size: var(--font-size-sm);
-  color: var(--primary-700);
-  background: var(--primary-50);
-  border: 1px solid var(--primary-200);
+  color: var(--primary-900);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: var(--radius-full);
   padding: var(--space-1) var(--space-2);
   font-weight: var(--font-weight-medium);
+  backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+}
+
+.version:hover {
+  background: white;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .github-link {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-medium);
+  color: white;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: var(--radius-full);
   width: 36px;
   height: 36px;
   transition: var(--transition-all);
+  backdrop-filter: blur(4px);
 }
 
 .github-link:hover {
-  color: var(--primary-700);
-  border-color: var(--primary-300);
+  color: var(--primary-900);
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(255, 255, 255, 0.7);
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
 }
@@ -737,17 +884,22 @@ const handleMenuSelect = (key) => {
   }
   
   .footer-content {
-    gap: var(--space-2);
+    gap: var(--space-3);
+    padding: 0 var(--space-3);
   }
   
   .footer-left {
     flex-direction: column;
-    gap: var(--space-1);
+    gap: var(--space-2);
   }
   
   .footer-left .sep {
     display: none;
   }
+  
+  .app-footer {
+     padding: var(--space-1) 0;
+   }
 }
 
 @media (max-width: 480px) {
@@ -777,6 +929,18 @@ const handleMenuSelect = (key) => {
   .dropdown button {
     font-size: var(--font-size-xs);
     padding: var(--space-2) var(--space-2);
+  }
+  
+  .footer-content {
+    padding: 0 var(--space-2);
+  }
+  
+  .app-footer {
+     padding: var(--space-1) 0;
+   }
+  
+  .footer-left .brand {
+    font-size: var(--font-size-base);
   }
 }
 </style>
