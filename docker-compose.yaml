@@ -17,6 +17,8 @@ volumes:
     driver: local
   postgres-data:
     driver: local
+  redis-data:
+    driver: local
 
 
 # 定义服务
@@ -48,6 +50,9 @@ services:
       - DB_NAME=toolcat
       - DB_CHARSET=utf8mb4
       
+      # Redis配置
+      - REDIS_ADDR=redisearch:6379
+      
       # JWT配置
       - JWT_SECRET=${JWT_SECRET:-default_jwt_secret}
       - JWT_ACCESS_TOKEN_EXPIRY=60
@@ -65,6 +70,7 @@ services:
     # 依赖关系
     depends_on:
       - mysql
+      - redisearch
     # 卷挂载
     volumes:
       - logs:/app/logs
@@ -111,6 +117,31 @@ services:
     # 默认启用，如需禁用可通过docker-compose命令参数控制
     # 示例: docker-compose up -d --scale mysql=0 postgres
   
+  # RedisSearch服务
+  redisearch:
+    # 使用官方RedisSearch镜像
+    image: redislabs/redisearch:latest
+    # 容器名称
+    container_name: toolcat-redisearch
+    # 重启策略
+    restart: unless-stopped
+    # 网络配置
+    networks:
+      - toolcat-network
+    # 端口映射
+    ports:
+      - "6379:6379"
+    # 卷挂载 (数据持久化)
+    volumes:
+      - redis-data:/data
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   # PostgreSQL数据库服务（可选）
   postgres:
     # 使用官方PostgreSQL镜像
