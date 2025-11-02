@@ -3,17 +3,18 @@
 <div align="center">
   <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go Version">
   <img src="https://img.shields.io/badge/Microkernel-Layered-6BA539?style=for-the-badge" alt="Architecture">
-  <img src="https://img.shields.io/badge/Cloud_Native-3371E3?style=for-the-badge&logo=Docker&logoColor=white" alt="Cloud Native">
+  <img src="https://img.shields.io/badge/AI--LLM-74AA9C?style=for-the-badge&logo=brain&logoColor=white" alt="AI-LLM">
   <img src="https://img.shields.io/badge/Plugin System-FF6F00?style=for-the-badge&logo=ai&logoColor=white" alt="Plugin System">
+  <img src="https://img.shields.io/badge/Cloud_Native-3371E3?style=for-the-badge&logo=Docker&logoColor=white" alt="Cloud Native">
 </div>
 
 ## 📋 项目简介
 
-ToolCat 基于 Golang 开发的高性能、高效率、插件化易扩展的工具服务平台。采用微内核+分层架构设计，允许开发者轻松集成并且高效管理各种工具服务，同时保持系统的高性能和可扩展性。
+ToolCat 基于 Golang 开发的高性能、高效率、插件化易扩展的工具服务平台。采用微内核+分层架构设计，允许开发者高效开发并且轻松集成管理各种工具/服务，同时保持系统的高性能和可扩展性。
 
 主要应用场景包括：
-- 工具集成与管理平台
-- 微服务组件聚合层
+- 工具研发与集成
+- 服务研发与聚合
 - 数据/服务流转中台
 - API网关与服务编排
 - 高效开发和原型验证平台
@@ -22,7 +23,7 @@ ToolCat 基于 Golang 开发的高性能、高效率、插件化易扩展的工�
 
 ## 🏗️ 整体架构
 
-<img width="1631" height="621" alt="image" src="https://github.com/user-attachments/assets/1eaa7b01-4afd-42d3-bb36-3f1dc3f63d23" />
+<img width="1640" height="626" alt="image" src="https://github.com/user-attachments/assets/ad521b7a-4aab-4cc4-8e73-33542a8d7f6c" />
 
 ToolCat 采用**微内核+分层架构**设计模式，充分结合两种架构的优势，保障系统可用性，实现了高度的灵活性、可扩展性和良好的性能。
 
@@ -64,7 +65,7 @@ ToolCat 在微内核架构的基础上，融入了分层架构的设计思想，
 
 **高性能**：分层设计优化了请求处理流程，提高系统响应速度
 
-系统的核心是高效灵活的插件机制与分层结构的结合，允许功能模块以插件形式独立开发和部署，同时通过统一的接口进行交互。整体架构设计注重模块化、可扩展性和高性能。
+系统的核心是高效灵活的插件机制与分层结构的结合，允许功能模块以插件/服务形式独立开发和部署，同时通过统一的接口进行交互。整体架构设计注重模块化、可扩展性和高性能。
 
 ---
 
@@ -95,6 +96,14 @@ ToolCat 在微内核架构的基础上，融入了分层架构的设计思想，
 - 插件依赖和冲突检测机制
 - 脚手架工具便捷生成插件框架代码
 - 示例插件（Hello、Note）展示了完整插件开发流程
+
+### 🧠 服务深度集成 
+- 集成 RAG (Retrieval-Augmented Generation) 服务
+- 基于 RedisSearch 数据库实现高效文本检索
+- 支持多种文档格式的嵌入和索引
+- 提供灵活的检索 API，便于插件集成
+- 支持自定义嵌入模型和检索参数
+- 与微内核架构无缝集成，可作为服务聚合/插件使用
 
 ### 🔒 安全可靠
 - 基于 JWT 的认证授权系统
@@ -128,47 +137,33 @@ ToolCat 在微内核架构的基础上，融入了分层架构的设计思想，
 ToolCat采用微内核+分层架构，项目结构清晰地反映了这一设计理念。核心系统采用分层组织，功能扩展则通过插件机制实现
 
 ```
+├── .github/             # GitHub工作流配置
 ├── .gitignore           # Git忽略文件配置
 ├── Dockerfile           # Docker构建文件
 ├── Makefile             # 构建脚本
+├── README.md            
 ├── config/              # 配置管理
 ├── controllers/         # API控制器[接口层]
-│   ├── health_controller.go  # 健康检查控制器
-│   ├── plugin_controller.go  # 插件管理控制器
-│   ├── tool_controller.go    # 工具管理控制器
-│   └── user_controller.go    # 用户管理控制器
 ├── docker-compose.yaml  # Docker Compose配置
 ├── docs/                # 项目文档
-│   ├── API.md                # API文档
-│   ├── DATABASE_MIGRATION.md  # 数据库迁移指南
-│   ├── GRAFANA_MONITORING_GUIDE.md  # 监控系统指南
-│   ├── PLUGIN_DEVELOPMENT_GUIDE.md  # 插件开发指南
-│   └── PLUGIN_SCAFFOLD_USAGE.md     # 插件脚手架指南
-├── go.mod               
+├── go.mod                
+├── go.sum               
 ├── main.go              
-├── middleware/          # 中间件[接口层业务层中间]
-│   ├── auth.go               # 认证
-│   ├── buffer_request.go     # 请求缓冲
-│   ├── cors.go               # CORS跨域
-│   ├── csrf.go               # CSRF保护
-│   ├── error_handler.go      # 错误处理
-│   └── rate_limiter.go       # 限流
+├── middleware/          # 中间件
 ├── models/              # 数据模型[数据层]
 ├── pkg/                 # 公共包[基础设施层]
-│   ├── grafana/              # Grafana
-│   ├── metrics/              # 监控指标
-│   ├── migrate/              # 数据库迁移工具
 ├── plugins/             # 插件系统[微内核架构核心]
 │   ├── core/                 # 核心插件功能
 │   ├── doc.go                # 插件包文档
 │   ├── examples/             # 示例插件
-│   │   ├── hello_plugin.go       # Hello插件示例
-│   │   ├── sample_dependent_plugin.go # 依赖插件示例
-│   │   └── sample_optimized_plugin.go # 优化插件示例
 │   ├── features/             # 功能插件
+│   ├── init.go               # 插件初始化
+│   ├── loader/               # 插件加载器
 │   ├── templates/            # 插件模板
 │   └── watcher/              # 插件监控
 ├── routers/             # 路由定义注册
+├── services/            # 服务层
+│   └── rag/                  # RAG检索增强
 ├── test/                # 单元/集成测试
 ├── tools/               # 开发工具
 ├── utils/               # 工具函数
@@ -182,7 +177,7 @@ ToolCat采用微内核+分层架构，项目结构清晰地反映了这一设计
 ToolCat的核心组件设计充分体现了微内核+分层架构的思想，既保持了系统的灵活性和可扩展性，又保证了代码的结构清晰易维护
 
 ### 🔌 插件系统 - 微内核架构的核心实现
-插件系统是ToolCat的核心组件，负责插件的注册、加载、卸载和生命周期管理。它实现了一套完整的插件机制，使系统能够以插件形式扩展功能。在微内核+分层架构中，插件系统连接了核心内核和各种业务扩展。
+插件系统是ToolCat的重要组件，负责插件的注册、加载、卸载和生命周期管理。它实现了一套完整的插件机制，使系统能够以插件形式扩展功能。在微内核+分层架构中，插件系统连接了核心内核和各种业务扩展。
 
 在微内核架构下，插件系统具备以下特性：
 - **完整的生命周期管理**：从插件的初始化、注册、激活到关闭的全生命周期管理
@@ -228,6 +223,19 @@ type Route struct {
 
 插件管理器负责插件的整个生命周期管理，包括注册、注销、查询和执行插件功能。
 
+### 🧩 服务聚合
+服务聚合是ToolCat在微内核+分层架构基础上的重要扩展能力，提供了将多种服务、数据源和功能进行统一管理和调用的机制。如LLM-RAG服务聚合
+
+**LLM-RAG检索增强服务**作为ToolCat的服务聚合能力，提供了智能文本检索和增强生成功能：
+- **高效向量检索**：基于RedisSearch实现高性能向量相似度搜索
+- **多格式文档支持**：支持各种文档格式的解析、分块和向量化
+- **灵活的检索API**：提供丰富的检索接口，支持多种检索策略
+- **可配置的嵌入模型**：支持切换不同的嵌入模型，适应不同场景需求
+- **与插件系统集成**：可作为基础设施被各个插件调用，增强插件智能能力
+- **独立部署选项**：支持作为独立服务运行，也可集成到主应用中
+
+服务聚合的设计提升了系统功能灵活性，允许系统扩展整合各类服务和数据源，提供更强大的底层能力支持。
+
 ### 🔐 认证系统
 认证系统位于分层架构的基础设施层，提供完善的身份认证和授权机制，支持多种认证方式，认证系统与插件系统紧密结合，确保插件的安全访问，同时通过分层设计实现了安全机制的统一管理
 - 基于 JWT 的令牌认证
@@ -260,6 +268,7 @@ type Route struct {
 - **Docker** 和 **Docker Compose**（容器化部署）
 - **Git**（用于克隆代码库）
 - **MySQL 8.0+**（可选，如不使用Docker）
+- **PostgreSQL、Redis、Prometheus、Grafana**（可选、扩展）
 
 ### 部署方式
 
@@ -272,33 +281,7 @@ cd toolcat
 ```
 
 2. 创建环境变量文件（可选但推荐）
-创建`.env`文件，设置以下环境变量以增强安全性：
-```bash
-# 数据库配置
-DB_HOST=mysql
-DB_PORT=3306
-DB_USERNAME=root
-DB_PASSWORD=your_secure_password
-DB_NAME=toolcat
-
-# JWT配置
-JWT_SECRET=your_secure_jwt_secret
-JWT_ACCESS_TOKEN_EXPIRY=60
-JWT_REFRESH_TOKEN_EXPIRY=168
-
-# MySQL配置
-MYSQL_ROOT_PASSWORD=your_root_password
-
-# 服务器配置
-SERVER_PORT=8081
-
-# 日志配置
-LOG_LEVEL=info
-DEV_MODE=false
-
-# CSRF配置
-CSRF_ENABLED=true
-```
+`.env`文件，设置环境变量以增强安全性
 
 3. 启动服务
 使用Docker Compose一键启动整个服务栈：
@@ -309,6 +292,7 @@ docker-compose up -d
    首次启动时，Docker Compose会自动：
    - 构建ToolCat应用的Docker镜像
    - 创建MySQL数据库容器
+   - 创建RedisSearch向量数据库容器
    - 配置Prometheus和Grafana监控系统
    - 配置网络和卷
    - 启动所有服务
@@ -323,7 +307,7 @@ docker-compose up -d
 ```bash
 docker-compose ps
 ```
-正常情况下，`toolcat-app`和`toolcat-mysql`都应显示为`Up`状态。
+正常情况下，`toolcat-app`、`toolcat-mysql`和`toolcat-redisearch`都应显示为`Up`状态。
 
 5. 访问应用
 服务启动后，可以通过以下URL访问ToolCat应用：
@@ -337,8 +321,10 @@ http://localhost:8081
 docker-compose down    // 停止服务
 docker-compose logs -f toolcat-app   // 查看应用日志
 docker-compose logs -f toolcat-mysql // 查看数据库日志
+docker-compose logs -f toolcat-redisearch    // 查看RedisSearch日志
 docker-compose exec toolcat-app /bin/sh             // 进入应用容器
 docker-compose exec toolcat-mysql mysql -u root -p  // 进入数据库容器
+docker-compose exec toolcat-redisearch redis-cli    // 进入RedisSearch容器
 docker-compose up --build -d        // 重新构建并启动服务
 
 // 清理旧容器和卷数据
@@ -381,11 +367,15 @@ go build
 
 ### 注意事项
 
-1. **数据持久化**：MySQL数据存储在`mysql-data`卷中，确保数据不会丢失
+1. **数据持久化**：
+   - MySQL数据存储在`mysql-data`卷中，确保数据不会丢失
+   - RedisSearch数据存储在`redis-data`卷中，确保向量索引数据不会丢失
 2. **健康检查**：系统提供`/health`接口监控服务健康状态
 3. **资源限制**：默认配置了CPU和内存限制，可根据实际需求在`docker-compose.yaml`中调整
 4. **首次启动**：首次启动需要一些时间来构建镜像和初始化服务
-5. **端口映射**：默认将容器的8081端口映射到主机的8081端口
+5. **端口映射**：
+   - 默认将容器的8081端口映射到主机的8081端口
+   - 默认将容器的6379端口映射到主机的6379端口（RedisSearch）
 
 服务将在 http://localhost:8081 启动。
 
@@ -402,23 +392,7 @@ go build
 
 ### 🔧 创建新插件
 
-在ToolCat的微内核+分层架构下，创建新插件是扩展系统功能的主要方式。插件是一个实现了`Plugin`接口的Go结构体，通过这个接口，插件可以与核心系统进行交互。微内核架构提供了插件的灵活性，而分层架构则为插件内部的代码组织提供了良好的指导。
-
-### 📊 数据库迁移工具
-
-ToolCat提供了高效强大的数据库迁移工具，位于`pkg/migrate`目录，支持数据库结构的版本化管理：
-- 支持迁移的应用、回滚、状态查询等功能
-- 基于`golang-migrate`库实现
-- 自动生成版本号，避免冲突
-- 支持迁移状态检查和脏状态处理
-
-### 📈 监控系统
-
-ToolCat集成了完整 Prometheus + Grafana 监控系统：
-- 自动采集应用运行指标
-- 预置多种可视化仪表盘
-- 支持自定义告警规则
-- 实时监控系统健康状态和性能指标
+在ToolCat的微内核+分层架构下，创建新插件是扩展系统功能的方式之一。插件是一个实现了`Plugin`接口的Go结构体，通过这个接口，插件可以与核心系统进行交互。微内核架构提供了插件的灵活性，而分层架构则为插件内部的代码组织提供了良好的指导。
 
 创建新插件非常简单，只需遵循以下步骤：
 1. 实现 `plugins.Plugin` 接口，定义插件的基本信息、生命周期和功能
@@ -532,6 +506,14 @@ func (p *MyPlugin) RegisterRoutes(router *gin.Engine) {
 | 自动路由组 | ✅ 自动创建 | ❌ 需要手动创建 |
 | 中间件管理 | ✅ 支持全局和路由级别 | ❌ 需要手动添加 |
 | 文档生成 | ✅ 支持自动生成 API 文档 | ❌ 不支持 |
+
+### 📊 数据库迁移工具
+
+ToolCat提供了高效强大的数据库迁移工具，位于`pkg/migrate`目录，支持数据库结构的版本化管理：
+- 支持迁移的应用、回滚、状态查询等功能
+- 基于`golang-migrate`库实现
+- 自动生成版本号，避免冲突
+- 支持迁移状态检查和脏状态处理
 
 ---
 
