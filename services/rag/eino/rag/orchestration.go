@@ -121,26 +121,39 @@ func BuildRAG(ctx context.Context, useRedis bool, topK int) (*RAG, error) {
 
 // 重用嵌入模型创建函数
 func newEmbedding(ctx context.Context) (eb embedding.Embedder, err error) {
+	// 获取环境变量
+	baseURL := os.Getenv("ARK_API_BASE_URL")
+	apiKey := os.Getenv("ARK_API_KEY")
+	model := os.Getenv("ARK_EMBEDDING_MODEL")
+
+	// 验证必需的环境变量
+	if apiKey == "" {
+		return nil, fmt.Errorf("环境变量ARK_API_KEY未设置")
+	}
+
+	// 从环境变量获取有效 Endpoint ID
+	if model == "" {
+		return nil, fmt.Errorf("环境变量ARK_EMBEDDING_MODEL未设置，请提供有效的模型Endpoint ID")
+	}
+
+	// 可选默认基础URL
+	if baseURL == "" {
+		baseURL = "https://ark.cn-beijing.volces.com/api/v3"
+	}
+
+	// 创建配置
 	config := &ark.EmbeddingConfig{
-		BaseURL: os.Getenv("ARK_API_BASE_URL"),
-		APIKey:  os.Getenv("ARK_API_KEY"),
-		Model:   os.Getenv("ARK_EMBEDDING_MODEL"),
+		BaseURL: baseURL,
+		APIKey:  apiKey,
+		Model:   model,
 	}
 
-	// 使用默认值
-	if config.BaseURL == "" {
-		config.BaseURL = "https://ark.cn-beijing.volces.com/api/v3"
-	}
-
-	if config.Model == "" {
-		// 使用默认嵌入模型
-		config.Model = "embedding-v2"
-	}
-
+	// 创建嵌入模型
 	eb, err = ark.NewEmbedder(ctx, config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("创建嵌入模型失败: %w", err)
 	}
+
 	return eb, nil
 }
 
