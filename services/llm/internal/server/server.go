@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 	"time"
 	"toolcat/services/llm/internal/chat"
+	"toolcat/services/llm/internal/models"
 
 	"golang.org/x/time/rate"
 )
@@ -41,7 +43,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// 允许的域名列表
 		allowedOrigins := map[string]bool{
-			"htp://localhost:8080": true,
+			"http://localhost:8080": true,
 			// 添加其他允许的域名t
 		}
 
@@ -71,14 +73,6 @@ func StartWebServer(pool *chat.LLMPool) {
 			),
 		),
 	)
-
-	// 静态文件配置
-	fs := http.FileServer(http.Dir("./static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "./static/index.html")
-	})
 
 	// 对API路由应用限流中间件
 	// 统一使用respondJSON函数
@@ -116,6 +110,77 @@ func StartWebServer(pool *chat.LLMPool) {
 		})
 	})))
 
+	// 获取对话历史记录的HTTP端点
+	http.Handle("/api/history", rateLimitMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// 获取LLM实例
+		llm, err := pool.Get()
+		if err != nil {
+			http.Error(w, "Failed to get LLM instance", http.StatusInternalServerError)
+			return
+		}
+		defer pool.Put(llm)
+
+		// 创建chat服务实例
+		repo := MemoryRepository()
+		chatService := chat.NewChatService(repo, llm)
+
+		// 获取历史记录
+		histories, err := chatService.GetHistory(context.Background())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// 返回成功响应
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    histories,
+		})
+	})))
+
+	// 清空对话历史记录的HTTP端点
+	http.Handle("/api/clear-history", rateLimitMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// 获取LLM实例
+		llm, err := pool.Get()
+		if err != nil {
+			http.Error(w, "Failed to get LLM instance", http.StatusInternalServerError)
+			return
+		}
+		defer pool.Put(llm)
+
+		// 创建chat服务实例
+		repo := MemoryRepository()
+		chatService := chat.NewChatService(repo, llm)
+
+		// 清空历史记录
+		if err := chatService.ClearHistory(context.Background()); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// 返回成功响应
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(APIResponse{
+			Success: true,
+			Data:    nil,
+			Error:   "",
+		})
+	})))
+
+	// 初始化内存历史记录
+	memoryHistory = make([]*models.ChatHistory, 0)
+
 	fmt.Println("Web server started at http://localhost:8080")
 	// 启动服务器监听8080端口
 	http.ListenAndServe(":8080", handlerChain)
@@ -126,4 +191,41 @@ type APIResponse struct {
 	Success bool        `json:"success"`         // 请求是否成功
 	Data    interface{} `json:"data"`            // 响应数据
 	Error   string      `json:"error,omitempty"` // 错误信息(可选)
+}
+
+// 内存存储库实现
+var (
+	memoryHistory []*models.ChatHistory
+	memoryMutex   sync.RWMutex
+)
+
+// MemoryRepository 内存存储库实现
+// 实现ChatRepository接口
+func MemoryRepository() chat.ChatRepository {
+	return &memoryRepo{}
+}
+
+type memoryRepo struct{}
+
+func (r *memoryRepo) SaveHistory(history *models.ChatHistory) error {
+	memoryMutex.Lock()
+	defer memoryMutex.Unlock()
+	memoryHistory = append(memoryHistory, history)
+	return nil
+}
+
+func (r *memoryRepo) GetHistories() ([]*models.ChatHistory, error) {
+	memoryMutex.RLock()
+	defer memoryMutex.RUnlock()
+	// 返回历史记录的副本
+	histories := make([]*models.ChatHistory, len(memoryHistory))
+	copy(histories, memoryHistory)
+	return histories, nil
+}
+
+func (r *memoryRepo) ClearHistories() error {
+	memoryMutex.Lock()
+	defer memoryMutex.Unlock()
+	memoryHistory = make([]*models.ChatHistory, 0)
+	return nil
 }
