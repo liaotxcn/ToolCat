@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from 'vue'
 import PluginRenderer from './components/PluginRenderer.vue'
 import AuthContainer from './components/AuthContainer.vue'
+import AIAssistant from './components/AIAssistant.vue'
 import pluginManager from './pluginManager.js'
 import HelloPlugin from './plugins/HelloPlugin.js'
 import NotePlugin from './plugins/NotePlugin.js'
@@ -276,6 +277,9 @@ const handleMenuSelect = (key) => {
           </div>
         </div>
       </footer>
+      
+      <!-- AI智能助手（仅在登录后显示） -->
+      <AIAssistant v-if="isAuthenticated" />
     </template>
   </div>
 </template>
