@@ -130,9 +130,17 @@ const handleMenuSelect = (key) => {
     <template v-else>
       <header class="app-header">
         <div class="header-content">
-          <div>
-            <h1>ToolCat</h1>
-            <p>高性能、高效率、插件化易扩展的插件开发/服务聚合平台</p>
+          <div class="brand-section">
+            <div class="brand-container">
+              <svg class="brand-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- 图标 -->
+                <path d="M8 20H11L13 16L15 20H18L21 12V24H6V20Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <div class="brand-text">
+                <h1>Tool<span class="brand-highlight">Cat</span></h1>
+                <p>高性能、高效率、插件化易扩展的插件开发/服务聚合平台</p>
+              </div>
+            </div>
           </div>
           <div class="user-info">
             <div class="user-menu">
@@ -145,12 +153,12 @@ const handleMenuSelect = (key) => {
                 aria-controls="user-dropdown"
               >
                 <span class="user-avatar">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 12C14.2091 12 16 10.2091 16 8C16 5.79086 14.2091 4 12 4C9.79086 4 8 5.79086 8 8C8 10.2091 9.79086 12 12 12Z" stroke="currentColor" stroke-width="1.5"/>
                     <path d="M19 20C19 16.134 12 14 12 14C12 14 5 16.134 5 20V21H19V20Z" stroke="currentColor" stroke-width="1.5"/>
                   </svg>
                 </span>
-                <span class="user-name">欢迎，{{ currentUser?.username }}</span>
+                <span class="user-name">{{ currentUser?.username }}</span>
                 <span class="dropdown-arrow" :class="{ 'rotate': showMenu }">
                   <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -296,12 +304,17 @@ const handleMenuSelect = (key) => {
 .app-header {
   background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%);
   color: white;
-  padding: var(--space-6) 0;
-  box-shadow: var(--shadow-md);
+  padding: var(--space-4) 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+}
+
+.app-header:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
 }
 
 .header-content {
@@ -311,23 +324,63 @@ const handleMenuSelect = (key) => {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--space-4);
+  min-height: 80px;
 }
 
-.header-content h1 {
-  font-size: var(--font-size-3xl);
+.brand-section {
+  flex: 1;
+}
+
+.brand-container {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.brand-icon {
+  color: rgba(255, 255, 255, 0.9);
+  transition: transform 0.3s ease;
+}
+
+.app-header:hover .brand-icon {
+  transform: rotate(5deg) scale(1.05);
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-text h1 {
+  font-size: 2.25rem;
   font-weight: var(--font-weight-bold);
-  margin-bottom: var(--space-1);
-  background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0.8));
+  margin: 0;
+  background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0.9));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   letter-spacing: -0.025em;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
 }
 
-.header-content p {
-  font-size: var(--font-size-base);
+.brand-highlight {
+  position: relative;
+  background: linear-gradient(135deg, #ffd700, #ffb800);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+  margin-left: 4px;
+}
+
+.brand-text p {
+  font-size: var(--font-size-sm);
   opacity: 0.9;
-  margin: 0;
+  margin: 2px 0 0;
+  color: rgba(255, 255, 255, 0.9);
+  letter-spacing: 0.02em;
 }
 
 /* 用户菜单样式 */
