@@ -117,7 +117,7 @@ func main() {
 	if err := pkg.InitDatabase(); err != nil {
 		pkg.Fatal("Failed to initialize database", zap.Error(err))
 	}
-	defer pkg.CloseDatabase()
+	
 
 	// 执行数据库迁移
 	// 如果禁用了自动迁移，使用SQL迁移文件
@@ -192,11 +192,19 @@ func main() {
 	// 停止插件监控器
 	plugins.PluginManager.StopPluginWatcher()
 
-	// 创建超时上下文，用于优雅关闭服务器
+	// 创建超时上下文，用于优雅关闭服务器和数据库
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	
+	// 先关闭HTTP服务器
 	if err := srv.Shutdown(ctx); err != nil {
 		pkg.Fatal("Server forced to shutdown", zap.Error(err))
+	}
+	
+	// 然后使用相同上下文优雅关闭数据库连接
+	// 确保数据库连接在服务器停止接收新请求后有足够时间完成正在进行的操作
+	if err := pkg.CloseDatabaseWithContext(ctx); err != nil {
+		pkg.Error("Database shutdown error", zap.Error(err))
 	}
 
 	pkg.Info("Server exiting")
