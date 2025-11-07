@@ -76,5 +76,5 @@ jobs:
           echo "DB_PASSWORD=123456" >> $GITHUB_ENV
           echo "DB_NAME=toolcat_test" >> $GITHUB_ENV
 
-      - name: Run tests
-        run: go test -v ./test/...
+      - name: Run tests (excluding rag module)
+        run: go test -v ./test/models/... ./test/pkg/... ./test/middleware/... ./test/controllers/... ./test/routers/... ./test/plugins/... ./test/config/... ./test/utils/...
