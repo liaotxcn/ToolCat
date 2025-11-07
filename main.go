@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -20,12 +22,67 @@ import (
 	fc "toolcat/plugins/features/FormatConverter"
 	note "toolcat/plugins/features/Note"
 	"toolcat/routers"
+	"toolcat/services/llm"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
+// loadEnvFile 从.env文件加载环境变量
+func loadEnvFile(filePath string) {
+	// ioutil.ReadFile 读取整个文件，减少文件操作次数
+	content, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("Warning: .env file not found at %s", filePath)
+		} else {
+			log.Printf("Warning: Failed to read .env file: %v", err)
+		}
+		return
+	}
+
+	// 按行分割内容
+	lines := strings.Split(string(content), "\n")
+	successCount := 0
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// 跳过注释和空行
+		if line == "" || line[0] == '#' {
+			continue
+		}
+
+		// 解析key=value格式
+		if idx := strings.Index(line, "="); idx > 0 {
+			key := strings.TrimSpace(line[:idx])
+			value := strings.TrimSpace(line[idx+1:])
+
+			// 移除引号
+			if len(value) >= 2 {
+				switch {
+				case value[0] == '"' && value[len(value)-1] == '"':
+					value = value[1 : len(value)-1]
+				case value[0] == '\'' && value[len(value)-1] == '\'':
+					value = value[1 : len(value)-1]
+				}
+			}
+
+			// 设置环境变量
+			if err := os.Setenv(key, value); err != nil {
+				log.Printf("Warning: Failed to set %s: %v", key, err)
+			} else {
+				successCount++
+			}
+		}
+	}
+
+	log.Printf(".env file loaded successfully, set %d environment variables", successCount)
+}
+
 func main() {
+	// 加载.env 配置文件
+	loadEnvFile(".env")
+
 	// 初始化日志系统
 	if err := pkg.InitLogger(pkg.Options{
 		Level:       config.Config.Logger.Level,
@@ -172,6 +229,14 @@ func registerPlugins(router *gin.Engine) {
 		pkg.Error("Failed to register plugin", zap.String("plugin", formatConverter.Name()), zap.Error(err))
 	} else {
 		pkg.Info("Successfully registered plugin", zap.String("plugin", formatConverter.Name()))
+	}
+
+	// 注册LLM Service
+	llmChatPlugin := llm.NewLLMChatPlugin()
+	if err := plugins.PluginManager.Register(llmChatPlugin); err != nil {
+		pkg.Error("Failed to register plugin", zap.String("plugin", llmChatPlugin.Name()), zap.Error(err))
+	} else {
+		pkg.Info("Successfully registered plugin", zap.String("plugin", llmChatPlugin.Name()))
 	}
 
 	// 统一注册所有插件路由（可选）

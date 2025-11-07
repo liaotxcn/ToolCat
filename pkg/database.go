@@ -127,7 +127,12 @@ func InitDatabase() error {
 
 	// 启动数据库连接监控
 	go func() {
-		ticker := time.NewTicker(5 * time.Minute) // 监测时间间隔
+		// 根据环境配置监测时间间隔
+		monitorInterval := 5 * time.Minute // 生产环境(5分钟)
+		if config.Config.Logger.Development {
+			monitorInterval = 1 * time.Minute // 开发环境(1分钟)
+		}
+		ticker := time.NewTicker(monitorInterval)
 		for range ticker.C {
 			stats := sqlDB.Stats()
 			idle := stats.Idle

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/cloudwego/eino/schema"
 )
@@ -56,8 +57,26 @@ type chatResponse struct {
 	} `json:"choices"`
 }
 
+// API错误响应结构体
+type apiErrorResponse struct {
+	Error struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+}
+
 // Generate 生成回答
 func (g *ArkGenerator) Generate(ctx context.Context, query string, documents []*schema.Document) (string, error) {
+	fmt.Printf("[%s] 开始处理查询: %s\n", time.Now().Format("2006-01-02 15:04:05"), query)
+	fmt.Printf("[%s] 使用模型: %s, 基础URL: %s\n", time.Now().Format("2006-01-02 15:04:05"), g.modelName, g.baseURL)
+
+	// 验证API密钥
+	if g.apiKey == "" || strings.TrimSpace(g.apiKey) == "" {
+		errMsg := "API密钥为空或无效"
+		fmt.Printf("[%s] 错误: %s\n", time.Now().Format("2006-01-02 15:04:05"), errMsg)
+		return "", fmt.Errorf(errMsg)
+	}
+
 	// 组合上下文信息
 	context := ""
 	if len(documents) > 0 {
@@ -71,6 +90,9 @@ func (g *ArkGenerator) Generate(ctx context.Context, query string, documents []*
 			contextParts[i] = fmt.Sprintf("文档片段[%d]:\n%s%s\n", i+1, titleInfo, doc.Content)
 		}
 		context = strings.Join(contextParts, "\n---\n")
+		fmt.Printf("[%s] 检索到 %d 个文档用于上下文\n", time.Now().Format("2006-01-02 15:04:05"), len(documents))
+	} else {
+		fmt.Printf("[%s] 未检索到相关文档\n", time.Now().Format("2006-01-02 15:04:05"))
 	}
 
 	// 构建提示
@@ -95,49 +117,105 @@ func (g *ArkGenerator) Generate(ctx context.Context, query string, documents []*
 	// 序列化请求体
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return "", fmt.Errorf("序列化请求失败: %w", err)
+		errMsg := fmt.Sprintf("序列化请求失败: %v", err)
+		fmt.Printf("[%s] 错误: %s\n", time.Now().Format("2006-01-02 15:04:05"), errMsg)
+		return "", fmt.Errorf(errMsg)
 	}
 
 	// 创建HTTP请求
 	endpoint := fmt.Sprintf("%s/chat/completions", g.baseURL)
 	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return "", fmt.Errorf("创建HTTP请求失败: %w", err)
+		errMsg := fmt.Sprintf("创建HTTP请求失败: %v", err)
+		fmt.Printf("[%s] 错误: %s\n", time.Now().Format("2006-01-02 15:04:05"), errMsg)
+		return "", fmt.Errorf(errMsg)
 	}
 
 	// 添加头信息
 	req.Header.Set("Content-Type", "application/json")
+	// 隐藏API密钥的中间部分，只显示前后各8个字符
+	maskedAPIKey := maskAPIKey(g.apiKey)
+	fmt.Printf("[%s] 使用API密钥: %s\n", time.Now().Format("2006-01-02 15:04:05"), maskedAPIKey)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", g.apiKey))
 
+	// 设置超时
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
 	// 发送请求
-	client := &http.Client{}
+	fmt.Printf("[%s] 发送请求到: %s\n", time.Now().Format("2006-01-02 15:04:05"), endpoint)
+	startTime := time.Now()
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("发送请求失败: %w", err)
+		errMsg := fmt.Sprintf("发送请求失败: %v", err)
+		fmt.Printf("[%s] 错误: %s\n", time.Now().Format("2006-01-02 15:04:05"), errMsg)
+		return "", fmt.Errorf(errMsg)
 	}
 	defer resp.Body.Close()
+
+	duration := time.Since(startTime)
+	fmt.Printf("[%s] 收到响应，状态码: %d, 耗时: %v\n", time.Now().Format("2006-01-02 15:04:05"), resp.StatusCode, duration)
 
 	// 读取响应
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("读取响应失败: %w", err)
+		errMsg := fmt.Sprintf("读取响应失败: %v", err)
+		fmt.Printf("[%s] 错误: %s\n", time.Now().Format("2006-01-02 15:04:05"), errMsg)
+		return "", fmt.Errorf(errMsg)
 	}
 
 	// 检查响应状态
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("API返回错误: %s, 状态码: %d", string(body), resp.StatusCode)
+		// 尝试解析错误响应
+		var errorResp apiErrorResponse
+		if err := json.Unmarshal(body, &errorResp); err == nil {
+			// 成功解析到错误信息
+			errorCode := errorResp.Error.Code
+			errorMessage := errorResp.Error.Message
+
+			// 针对认证错误提供更详细的提示
+			if strings.Contains(strings.ToLower(errorCode), "auth") || strings.Contains(strings.ToLower(errorMessage), "auth") {
+				errMsg := fmt.Sprintf("API认证失败: %s (错误码: %s) - 请检查ARK_API_KEY是否正确且有效", errorMessage, errorCode)
+				fmt.Printf("[%s] 认证错误: %s\n", time.Now().Format("2006-01-02 15:04:05"), errMsg)
+				return "", fmt.Errorf(errMsg)
+			}
+
+			errMsg := fmt.Sprintf("API返回错误: %s (错误码: %s), 状态码: %d", errorMessage, errorCode, resp.StatusCode)
+			fmt.Printf("[%s] API错误: %s\n", time.Now().Format("2006-01-02 15:04:05"), errMsg)
+			return "", fmt.Errorf(errMsg)
+		} else {
+			// 无法解析错误响应，返回原始错误
+			errMsg := fmt.Sprintf("API返回错误, 状态码: %d, 响应内容: %s", resp.StatusCode, string(body))
+			fmt.Printf("[%s] API错误: %s\n", time.Now().Format("2006-01-02 15:04:05"), errMsg)
+			return "", fmt.Errorf(errMsg)
+		}
 	}
 
 	// 解析响应
 	var chatResp chatResponse
 	if err := json.Unmarshal(body, &chatResp); err != nil {
-		return "", fmt.Errorf("解析响应失败: %w", err)
+		errMsg := fmt.Sprintf("解析响应失败: %v, 响应内容: %s", err, string(body))
+		fmt.Printf("[%s] 错误: %s\n", time.Now().Format("2006-01-02 15:04:05"), errMsg)
+		return "", fmt.Errorf(errMsg)
 	}
 
 	// 提取回答
 	if len(chatResp.Choices) > 0 {
-		return chatResp.Choices[0].Message.Content, nil
+		answer := chatResp.Choices[0].Message.Content
+		fmt.Printf("[%s] 成功生成回答 (长度: %d 字符)\n", time.Now().Format("2006-01-02 15:04:05"), len(answer))
+		return answer, nil
 	}
 
-	return "", fmt.Errorf("API没有返回有效回答")
+	errMsg := "API没有返回有效回答"
+	fmt.Printf("[%s] 错误: %s\n", time.Now().Format("2006-01-02 15:04:05"), errMsg)
+	return "", fmt.Errorf(errMsg)
+}
+
+// maskAPIKey 隐藏API密钥的中间部分
+func maskAPIKey(apiKey string) string {
+	if len(apiKey) <= 16 {
+		return "***"
+	}
+	return apiKey[:8] + "..." + apiKey[len(apiKey)-8:]
 }

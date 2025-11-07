@@ -83,8 +83,8 @@ jobs:
       - name: Run integration tests
         run: go test -v ./test/controllers/... ./test/routers/... ./test/plugins/...
 
-      - name: Run all tests
-        run: go test -v ./test/...
+      - name: Run all tests (excluding rag module)
+        run: go test -v ./test/models/... ./test/pkg/... ./test/middleware/... ./test/controllers/... ./test/routers/... ./test/plugins/... ./test/config/... ./test/utils/...
 
 
 

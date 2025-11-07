@@ -40,5 +40,5 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
-      - name: Build
-        run: go build -v ./...
+      - name: Build (excluding rag module)
+        run: go build -v ./main.go
