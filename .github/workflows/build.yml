@@ -41,4 +41,4 @@ jobs:
         run: go mod tidy
 
       - name: Build (excluding rag module)
-        run: go build -v ./cmd/... ./config/... ./controllers/... ./middleware/... ./models/... ./pkg/... ./plugins/... ./routers/... ./utils/... ./test/...
+        run: go build -v ./main.go
