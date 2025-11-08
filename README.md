@@ -1,438 +1,444 @@
-# Weave - A microkernel architecture plugin development/management platform developed with Golang, designed to provide high-performance, highly extensible, secure, and reliable plugin services
+# Weave - A microkernel and layered architecture plugin/service development aggregation platform designed to provide high-performance, highly scalable, secure, and reliable plugin/service development
 
 <div align="center">
   <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go Version">
   <img src="https://img.shields.io/badge/Microkernel-Layered-6BA539?style=for-the-badge" alt="Architecture">
   <img src="https://img.shields.io/badge/AI--LLM-74AA9C?style=for-the-badge&logo=brain&logoColor=white" alt="AI-LLM">
-  <img src="https://img.shields.io/badge/Plugin System-FF6F00?style=for-the-badge&logo=ai&logoColor=white" alt="Plugin System">
+  <img src="https://img.shields.io/badge/Plugin%20and Service-FF6F00?style=for-the-badge&logo=ai&logoColor=white" alt="Plugin and Service">
   <img src="https://img.shields.io/badge/Cloud_Native-3371E3?style=for-the-badge&logo=Docker&logoColor=white" alt="Cloud Native">
+
+  **Language Options:** [中文](README.zh-CN.md) | [English](README.md)
 </div>
 
-## 📋 项目简介
 
-Weave 基于 Golang 开发的高性能、高效率、插件化易扩展的工具服务平台。采用微内核+分层架构设计，允许开发者高效开发并且轻松集成管理各种工具/服务，同时保持系统的高性能和可扩展性。
+## 📋 Project Introduction
 
-主要应用场景包括：
-- 工具研发与集成
-- 服务研发与聚合
-- 数据/服务流转中台
-- API网关与服务编排
-- 高效开发和原型验证平台
+Weave from a simple thread to a complex tapestry, weaving is the creative process from simplicity to complexity. Developers can use Weave to develop various plugins or services, and through connection and integration, plugins and services can be seamlessly integrated and deeply fused, thereby building efficient and stable application systems. Weave, crafting infinite possibilities.
+
+<img width="2590" height="1200" alt="Weaving" src="https://github.com/user-attachments/assets/5dfaa7bd-9817-42f8-847c-446d2f03ce05" />
+
+A high-performance, high-efficiency, pluggable, and easily extensible tool/service development platform based on Golang. It adopts a microkernel + layered architecture design, allowing developers to efficiently develop and easily integrate and manage various tools/services while maintaining system high performance and scalability.
+
+Main application scenarios include:
+- Tool development and integration
+- Service development and aggregation
+- Data/service flow middleware platform
+- API gateway and service orchestration
+- Efficient development and prototyping platform
 
 ---
 
-## 🏗️ 整体架构
+## 🏗️ Overall Architecture
 
 <img width="1640" height="626" alt="image" src="https://github.com/user-attachments/assets/ad521b7a-4aab-4cc4-8e73-33542a8d7f6c" />
 
-Weave 采用**微内核+分层架构**设计模式，充分结合两种架构的优势，保障系统可用性，实现了高度的灵活性、可扩展性和良好的性能。
+Weave adopts a **microkernel + layered architecture** design pattern, fully leveraging the advantages of both architectures to ensure system availability and achieve high flexibility, scalability, and good performance.
 
-### 微内核与分层架构的融合
+### Fusion of Microkernel and Layered Architecture
 
-Weave 在微内核架构的基础上，融入了分层架构的设计思想，形成了一套完整且高效灵活的架构体系：
+Weave integrates the design philosophy of layered architecture on the basis of the microkernel architecture, forming a complete, efficient, and flexible architectural system:
 
-1. **微内核架构（插件体系）**：提供插件管理、生命周期控制和插件间通信机制
-2. **分层架构（核心系统）**：将核心功能按关注点分离，形成清晰的层次结构
+1. **Microkernel Architecture (Plugin System)**: Provides plugin management, lifecycle control, and inter-plugin communication mechanisms.
+2. **Layered Architecture (Core System)**: Separates core functions by concerns, forming a clear hierarchical structure.
 
-### 微内核架构组成
+### Microkernel Architecture Components
 
-1. **核心内核（Core Kernel）**：提供基础运行时环境、插件管理、配置管理、日志服务、安全机制等基础功能
-2. **插件系统（Plugin System）**：插件管理器负责插件的注册、生命周期管理、依赖解析和冲突检测
-3. **扩展插件（Extensions）**：通过插件接口集成到核心系统，实现各种业务功能
+1. **Core Kernel**: Provides basic runtime environment, plugin management, configuration management, logging services, security mechanisms, and other basic functions.
+2. **Plugin System**: The plugin manager is responsible for plugin registration, lifecycle management, dependency resolution, and conflict detection.
+3. **Extension Plugins**: Integrated into the core system through plugin interfaces to implement various business functions.
 
-### 分层架构组成
+### Layered Architecture Components
 
-1. **接口层**：处理HTTP请求，包括路由管理和控制器
-2. **业务层**：包含核心业务逻辑和插件系统
-3. **数据层**：负责数据存储和访问
-4. **基础设施层**：提供日志、配置、安全等服务
+1. **Interface Layer**: Handles HTTP requests, including route management and controllers.
+2. **Business Layer**: Contains core business logic and the plugin system.
+3. **Data Layer**: Responsible for data storage and access.
+4. **Infrastructure Layer**: Provides services such as logging, configuration, and security.
 
-### 架构特点
+### Architectural Features
 
-**松耦合设计**：核心系统与插件之间通过定义良好的接口通信，降低模块间依赖
+**Loose Coupling Design**: The core system and plugins communicate through well-defined interfaces, reducing inter-module dependencies.
 
-**热插拔能力**：插件可在运行时动态加载和卸载，无需重启系统
+**Hot-Plug Capability**: Plugins can be dynamically loaded and unloaded at runtime without restarting the system.
 
-**功能隔离**：每个插件独立封装功能，拥有自己的命名空间和路由前缀
+**Functional Isolation**: Each plugin independently encapsulates functionality, having its own namespace and route prefix.
 
-**依赖与冲突管理**：内置依赖解析和冲突检测机制，确保插件间和谐共存
+**Dependency and Conflict Management**: Built-in dependency resolution and conflict detection mechanisms ensure harmonious coexistence among plugins.
 
-**统一接口**：所有插件实现相同的`Plugin`接口，标准化开发流程
+**Unified Interface**: All plugins implement the same `Plugin` interface, standardizing the development process.
 
-**可扩展性**：系统功能可按需扩展，无需修改内核代码
+**Extensibility**: System functions can be extended on demand without modifying the kernel code.
 
-**层次清晰**：核心系统采用分层设计，代码组织合理，易于维护和扩展
+**Clear Hierarchy**: The core system uses a layered design, with reasonable code organization, making it easy to maintain and extend.
 
-**高性能**：分层设计优化了请求处理流程，提高系统响应速度
+**High Performance**: The layered design optimizes the request processing flow, improving system response speed.
 
-系统的核心是高效灵活的插件机制与分层结构的结合，允许功能模块以插件/服务形式独立开发和部署，同时通过统一的接口进行交互。整体架构设计注重模块化、可扩展性和高性能。
-
----
-
-## 🌟 项目特点
-
-### 🏗️ 微内核+分层架构
-- **核心稳定与层次清晰**：核心系统保持最小化，分层设计使代码组织合理，易于维护和扩展
-- **功能扩展灵活**：通过插件机制按需扩展系统功能，无需修改内核代码
-- **低耦合高内聚**：系统组件间松耦合，便于维护和升级
-- **热插拔能力**：插件可在运行时动态加载和卸载，无需重启系统
-- **功能隔离与统一管理**：每个插件独立封装功能，拥有自己的命名空间和路由前缀，同时核心服务通过分层架构统一管理
-- **依赖与冲突管理**：内置依赖解析和冲突检测机制，确保插件间和谐共存
-- **统一接口**：所有插件实现相同的`Plugin`接口，标准化开发流程
-- **高性能**：分层设计优化了请求处理流程，提高系统响应速度
-
-### 🚀 高性能/效率
-- 基于 Gin 框架构建，处理请求速度快，并发能力强
-- 数据库连接池优化，支持高并发访问
-- 模块化架构设计，代码结构清晰，易于维护和扩展
-- 支持环境变量覆盖，便于不同环境配置
-- 高效路由管理，支持动态路由和参数绑定
-- 分层架构优化了请求处理流程，提高系统响应速度
-
-### 🔌 插件化易扩展
-- 统一的插件接口设计，支持热插拔
-- 插件管理器统一注册、管理和执行插件
-- 插件可独立注册路由，拥有独立命名空间
-- 插件依赖和冲突检测机制
-- 脚手架工具便捷生成插件框架代码
-- 示例插件（Hello、Note）展示了完整插件开发流程
-
-### 🧠 服务深度集成 
-- 集成 RAG (Retrieval-Augmented Generation) 服务
-- 基于 RedisSearch 数据库实现高效文本检索
-- 支持多种文档格式的嵌入和索引
-- 提供灵活的检索 API，便于插件集成
-- 支持自定义嵌入模型和检索参数
-- 与微内核架构无缝集成，可作为服务聚合/插件使用
-
-### 🔒 安全可靠
-- 基于 JWT 的认证授权系统
-- 完善的 CSRF 保护机制
-- 基于令牌桶算法的限流中间件
-- 密码哈希存储与验证
-- 详细的登录历史记录
-- 统一的错误处理中间件
-- 支持 HTTPS (可在配置中开启)
-- 分层架构将安全机制统一封装在基础设施层，便于统一管理和维护
-
-### 📊 可观测性
-- 集成结构化日志系统 (zap)
-- 健康检查接口，监控系统状态
-- 详细的请求/响应日志
-- 支持自定义监控指标
-- 分层架构将监控功能独立封装，确保系统各层运行状态的可观测性
-- 集成 Prometheus 和 Grafana 监控系统，提供可视化仪表盘
-- 支持自定义告警规则配置
-
-### 🚀 开发友好
-- 完整的插件开发文档和示例
-- 插件脚手架工具，快速生成插件模板
-- 支持本地开发和 Docker 部署
-- 清晰的项目结构和代码规范
+The core of the system is an efficient and stable plugin mechanism and service aggregation, allowing functional modules to be independently developed and deployed as plugins/services, while interacting through unified interfaces. The overall architectural design emphasizes modularity, scalability, and high performance.
 
 ---
 
-## 📂 项目结构
+## 🌟 Project Features
 
-Weave采用微内核+分层架构，项目结构清晰地反映了这一设计理念。核心系统采用分层组织，功能扩展则通过插件机制实现
+### 🏗️ Microkernel + Layered Architecture
+- **Stable Core & Clear Hierarchy**: The core system remains minimal, and the layered design makes code organization reasonable, easy to maintain, and extend.
+- **Flexible Functional Extension**: Extend system functions on demand through the plugin mechanism without modifying the kernel code.
+- **Low Coupling & High Cohesion**: Loose coupling between system components facilitates maintenance and upgrades.
+- **Hot-Plug Capability**: Plugins can be dynamically loaded and unloaded at runtime without restarting the system.
+- **Functional Isolation & Unified Management**: Each plugin independently encapsulates functionality, has its own namespace and route prefix, while core services are uniformly managed through the layered architecture.
+- **Dependency and Conflict Management**: Built-in dependency resolution and conflict detection mechanisms ensure harmonious coexistence among plugins.
+- **Unified Interface**: All plugins implement the same `Plugin` interface, standardizing the development process.
+- **High Performance**: The layered design optimizes the request processing flow, improving system response speed.
+
+### 🚀 High Performance/Efficiency
+- Built based on the Gin framework, offering fast request processing and strong concurrency capabilities.
+- Optimized database connection pool supporting high concurrent access.
+- Modular architecture design with clear code structure, easy to maintain and extend.
+- Supports environment variable overrides for easy configuration across different environments.
+- Efficient route management supporting dynamic routing and parameter binding.
+- The layered architecture optimizes the request processing flow, improving system response speed.
+
+### 🔌 Pluggable & Easy to Extend
+- Unified plugin interface design supporting hot-plugging.
+- Plugin manager uniformly registers, manages, and executes plugins.
+- Plugins can independently register routes and have independent namespaces.
+- Plugin dependency and conflict detection mechanisms.
+- Scaffolding tool for conveniently generating plugin framework code.
+- Example plugins demonstrating the complete plugin development process.
+
+### 🧠 Deep Service Integration
+- Seamlessly integrated with the microkernel architecture, highly extensible, and can be used as service aggregation/plugins.
+- For example, integrating services like LLM, RAG, etc., providing intelligent Q&A and document retrieval functions.
+- Efficient text retrieval based on RedisSearch.
+- Supports embedding, indexing, custom embedding models, and retrieval parameters for various document formats.
+- Provides flexible retrieval APIs for easy plugin integration.
+
+### 🔒 Secure & Reliable
+- JWT-based authentication and authorization system.
+- Comprehensive CSRF protection mechanism.
+- Rate limiting middleware based on the token bucket algorithm.
+- Password hashing storage and verification.
+- Detailed login history records.
+- Unified error handling middleware.
+- Supports HTTPS (can be enabled in configuration).
+- The layered architecture encapsulates security mechanisms uniformly in the infrastructure layer, facilitating unified management and maintenance.
+
+### 📊 Observability
+- Integrated structured logging system (zap).
+- Health check interface for monitoring system status.
+- Detailed request/response logging.
+- Supports custom monitoring metrics.
+- The layered architecture independently encapsulates monitoring functions, ensuring observability of the operational status of each system layer.
+- Integrated Prometheus and Grafana monitoring system providing visual dashboards.
+- Supports custom alert rule configuration.
+
+### 🚀 Developer Friendly
+- Complete plugin development documentation and examples.
+- Plugin scaffolding tool for quickly generating plugin templates.
+- Supports local development and Docker deployment.
+- Clear project structure and code specifications.
+
+---
+
+## 📂 Project Structure
+
+Weave adopts a microkernel + layered architecture, and the project structure clearly reflects this design philosophy. The core system is organized in layers, while functional extensions are achieved through the plugin mechanism/service aggregation.
 
 ```
-├── .github/             # GitHub工作流配置
-├── .gitignore           # Git忽略文件配置
-├── Dockerfile           # Docker构建文件
-├── Makefile             # 构建脚本
-├── README.md            
-├── config/              # 配置管理
-├── controllers/         # API控制器[接口层]
-├── docker-compose.yaml  # Docker Compose配置
-├── docs/                # 项目文档
-├── go.mod                
-├── go.sum               
-├── main.go              
-├── middleware/          # 中间件
-├── models/              # 数据模型[数据层]
-├── pkg/                 # 公共包[基础设施层]
-├── plugins/             # 插件系统[微内核架构核心]
-│   ├── core/                 # 核心插件功能
-│   ├── doc.go                # 插件包文档
-│   ├── examples/             # 示例插件
-│   ├── features/             # 功能插件
-│   ├── init.go               # 插件初始化
-│   ├── loader/               # 插件加载器
-│   ├── templates/            # 插件模板
-│   └── watcher/              # 插件监控
-├── routers/             # 路由定义注册
-├── services/            # 服务层
-│   └── rag/                  # RAG检索增强
-├── test/                # 单元/集成测试
-├── tools/               # 开发工具
-├── utils/               # 工具函数
-└── web/                 # 前端代码
+├── .github/
+├── .gitignore
+├── Dockerfile           # Docker build file
+├── Makefile             # Build scripts
+├── README.md
+├── config/              # Configuration management
+├── controllers/         # API controllers [Interface Layer]
+├── docker-compose.yaml  # Docker Compose configuration
+├── docs/                # Project documentation
+├── go.mod
+├── go.sum
+├── main.go
+├── middleware/          # Middleware
+├── models/              # Data models [Data Layer]
+├── pkg/                 # Common packages [Infrastructure Layer]
+├── plugins/             # Plugin system [Core of Microkernel Architecture]
+│ ├── core/              # Core plugin functionality
+│ ├── doc.go             # Plugin package documentation
+│ ├── examples/          # Example plugins
+│ ├── features/          # Feature plugins (extensible)
+│ ├── init.go            # Plugin initialization
+│ ├── loader/            # Plugin loader
+│ ├── templates/         # Plugin templates
+│ └── watcher/           # Plugin watcher
+├── routers/             # Route definition and registration
+├── services/            # Service aggregation
+├── llm/                 # LLM Service
+├── rag/                 # RAG Service  
+└── extended/            # Extensible services
+├── test/                # Unit/Integration tests
+├── tools/               # Development tools
+├── utils/               # Utility functions
+└── web/                 # Frontend code
 ```
 
 ---
 
-## 🧩 核心组件
+## 🧩 Core Components
 
-Weave的核心组件设计充分体现了微内核+分层架构的思想，既保持了系统的灵活性和可扩展性，又保证了代码的结构清晰易维护
+### 🔌 Plugin System - Core Implementation of Microkernel Architecture
+The plugin system is an important component of Weave, responsible for plugin registration, loading, unloading, and lifecycle management. It implements a complete plugin mechanism, enabling the system to extend functionality in the form of plugins. In the microkernel + layered architecture, the plugin system connects the core kernel with various business extensions.
 
-### 🔌 插件系统 - 微内核架构的核心实现
-插件系统是Weave的重要组件，负责插件的注册、加载、卸载和生命周期管理。它实现了一套完整的插件机制，使系统能够以插件形式扩展功能。在微内核+分层架构中，插件系统连接了核心内核和各种业务扩展。
-
-在微内核架构下，插件系统具备以下特性：
-- **完整的生命周期管理**：从插件的初始化、注册、激活到关闭的全生命周期管理
-- **自动依赖解析**：通过 `GetDependencies()` 方法自动解析插件间依赖关系
-- **冲突检测机制**：通过 `GetConflicts()` 方法避免插件间功能冲突
-- **路由自动注册**：支持两种路由注册方式，特别是推荐的 `GetRoutes()` 方法更符合微内核架构的设计理念
-- **命名空间隔离**：每个插件拥有独立的命名空间，避免资源冲突
-- **统一的中间件管理**：支持全局和插件级别的中间件配置
+Under the microkernel architecture, the plugin system has the following characteristics:
+- **Complete Lifecycle Management**: Full lifecycle management from plugin initialization, registration, activation to shutdown.
+- **Automatic Dependency Resolution**: Automatically resolves dependencies between plugins via the `GetDependencies()` method.
+- **Conflict Detection Mechanism**: Avoids functional conflicts between plugins via the `GetConflicts()` method.
+- **Automatic Route Registration**: Supports two methods of route registration; the recommended `GetRoutes()` method aligns better with the microkernel architecture design philosophy.
+- **Namespace Isolation**: Each plugin has an independent namespace to avoid resource conflicts.
+- **Unified Middleware Management**: Supports global and plugin-level middleware configuration.
 
 ```go
-// 插件接口定义
+// Plugin interface definition
 type Plugin interface {
-    Name() string              // 插件名称
-    Description() string       // 插件描述
-    Version() string           // 插件版本
-    Init() error               // 初始化插件
-    Shutdown() error           // 关闭插件
+    Name() string              // Plugin name
+    Description() string       // Plugin description
+    Version() string           // Plugin version
+    Init() error               // Initialize plugin
+    Shutdown() error           // Shutdown plugin
     
-    // 路由管理（新方式）- 推荐使用
+    // Route management (new way) - Recommended
     GetRoutes() []Route
     GetDefaultMiddlewares() []gin.HandlerFunc
     
-    // 路由管理（旧方式）- 为兼容性保留
-    RegisterRoutes(*gin.Engine) // 注册路由
+    // Route management (old way) - Retained for compatibility
+    RegisterRoutes(*gin.Engine) // Register routes
     
-    Execute(map[string]interface{}) (interface{}, error) // 执行功能
+    Execute(map[string]interface{}) (interface{}, error) // Execute function
 }
 
-// Route 结构体定义了路由的元数据和处理函数
-// 这是新的路由定义方式核心
+// The Route struct defines route metadata and handler functions.
+// This is the core of the new route definition method.
 type Route struct {
-    Path         string                 // 路由路径
-    Method       string                 // HTTP 方法（GET, POST, PUT, DELETE 等）
-    Handler      gin.HandlerFunc        // 请求处理函数
-    Middlewares  []gin.HandlerFunc      // 路由特定的中间件
-    Description  string                 // 路由描述
-    AuthRequired bool                   // 是否需要认证
-    Tags         []string               // 路由标签，用于文档生成
-    Params       map[string]string      // 参数说明，用于文档生成
-    Metadata     map[string]interface{} // 自定义元数据
+    Path         string                 // Route path
+    Method       string                 // HTTP method (GET, POST, PUT, DELETE, etc.)
+    Handler      gin.HandlerFunc        // Request handler function
+    Middlewares  []gin.HandlerFunc      // Route-specific middlewares
+    Description  string                 // Route description
+    AuthRequired bool                   // Whether authentication is required
+    Tags         []string               // Route tags, for documentation generation
+    Params       map[string]string      // Parameter descriptions, for documentation generation
+    Metadata     map[string]interface{} // Custom metadata
 }
 ```
 
-插件管理器负责插件的整个生命周期管理，包括注册、注销、查询和执行插件功能。
+The plugin manager is responsible for the entire lifecycle management of plugins, including registration, deregistration, querying, and executing plugin functions.
 
-### 🧩 服务聚合
-服务聚合是Weave在微内核+分层架构基础上的重要扩展能力，提供了将多种服务、数据源和功能进行统一管理和调用的机制。如LLM-RAG服务聚合
-  
-- **LLM-RAG检索增强服务**作为Weave的服务聚合能力，提供了智能文本检索和增强生成功能：
-  - **高效向量检索**：基于RedisSearch实现高性能向量相似度搜索
-- **多格式文档支持**：支持各种文档格式的解析、分块和向量化
-- **灵活的检索API**：提供丰富的检索接口，支持多种检索策略
-- **可配置的嵌入模型**：支持切换不同的嵌入模型，适应不同场景需求
-- **与插件系统集成**：可作为基础设施被各个插件调用，增强插件智能能力
-- **独立部署选项**：支持作为独立服务运行，也可集成到主应用中
+### 🧩 Service Aggregation
+Service aggregation is an important extension capability of Weave based on the microkernel + layered architecture, providing a mechanism for unified management and invocation of various services, data sources, and functions. For example, the LLM-RAG service aggregation.
 
-服务聚合的设计提升了系统功能灵活性，允许系统扩展整合各类服务和数据源，提供更强大的底层能力支持。
+- **LLM-RAG Retrieval-Augmented Generation Service**, as one of Weave's service aggregations, provides intelligent text retrieval and enhanced generation functions.
+- **Efficient Vector Retrieval**: High-performance vector similarity search based on RedisSearch.
+- **Multi-format Document Support**: Supports parsing, chunking, and vectorization of various document formats.
+- **Flexible Retrieval API**: Provides rich retrieval interfaces supporting multiple retrieval strategies.
+- **Configurable Embedding Models**: Supports switching different embedding models to adapt to different scenario requirements.
+- **Integration with Plugin System**: Can be used as infrastructure called by various plugins, enhancing plugin intelligence capabilities.
+- **Independent Deployment Option**: Supports running as an independent service or integrating into the main application.
 
-### 🔐 认证系统
-认证系统位于分层架构的基础设施层，提供完善的身份认证和授权机制，支持多种认证方式，认证系统与插件系统紧密结合，确保插件的安全访问，同时通过分层设计实现了安全机制的统一管理
-- 基于 JWT 的令牌认证
-- 支持访问令牌和刷新令牌机制
-- 密码哈希存储，增强安全性
-- 登录历史记录，便于审计和追踪
-- 基于角色的访问控制
+The service aggregation design enhances system functional flexibility, allowing the system to extend and integrate various services and data sources, providing stronger underlying capability support.
 
-### 🔄 中间件系统
-中间件系统位于分层架构的接口层和业务层之间，支持全局中间件和插件级中间件，可用于日志记录、请求验证、性能监控等场景。中间件系统采用链式调用模式，灵活组合各种功能，体现了分层架构的请求处理优化
-- 认证中间件：验证用户身份
-- 限流中间件：防止API滥用
-- CORS中间件：处理跨域请求
-- CSRF保护中间件：防止跨站请求伪造
-- 错误处理中间件：统一处理和记录错误
+### 🔐 Authentication System
+The authentication system is located in the infrastructure layer of the layered architecture, providing comprehensive identity authentication and authorization mechanisms, supporting multiple authentication methods. The authentication system is closely integrated with the plugin system, ensuring secure access to plugins, while achieving unified management of security mechanisms through layered design.
 
-### 📈 监控系统
+- JWT-based token authentication.
+- Supports access token and refresh token mechanisms.
+- Password hashing storage enhances security.
+- Login history records facilitate auditing and tracking.
+- Role-based access control.
 
-Weave集成了完整 Prometheus + Grafana 监控系统：
-- 自动采集应用运行指标
-- 预置多种可视化仪表盘
-- 支持自定义告警规则
-- 实时监控系统健康状态和性能指标
+### 🔄 Middleware System
+The middleware system is located between the interface layer and the business layer of the layered architecture, supporting global middleware and plugin-level middleware. It can be used for scenarios such as logging, request validation, and performance monitoring. The middleware system adopts a chain invocation pattern, flexibly combining various functions, reflecting the request processing optimization of the layered architecture.
 
-### 🩺 健康检查
-健康检查功能覆盖了分层架构的各个层次，定期检查系统各组件的运行状态，确保系统稳定运行。支持自定义健康检查项，满足不同场景的需求。通过微内核+分层架构的设计，健康检查能够精确到每个插件和每个层次的运行状态
-- 数据库连接健康检查
-- 插件系统状态检查
-- 整体系统健康评估
-- 根据健康状态返回适当的HTTP状态码
+- **Authentication Middleware**: Verifies user identity.
+- **Rate Limiting Middleware**: Prevents API abuse.
+- **CORS Middleware**: Handles cross-origin requests.
+- **CSRF Protection Middleware**: Prevents cross-site request forgery.
+- **Error Handling Middleware**: Uniformly handles and logs errors.
 
----
+### 📈 Monitoring System
+Weave integrates a complete Prometheus + Grafana monitoring system:
 
-## 快速开始
+- Automatically collects application runtime metrics.
+- Pre-configured with various visualization dashboards.
+- Supports custom alert rules.
+- Real-time monitoring of system health status and performance metrics.
 
-### 环境准备
-- **Go 1.21+**（本地开发）
-- **Docker** 和 **Docker Compose**（容器化部署）
-- **Git**（用于克隆代码库）
-- **MySQL 8.0+**（可选，如不使用Docker）
-- **PostgreSQL、Redis、Prometheus、Grafana**（可选、扩展）
+### 🩺 Health Check
+The health check function covers all layers of the layered architecture, periodically checking the operational status of various system components to ensure stable system operation. Supports custom health check items to meet the needs of different scenarios. Through the microkernel + layered architecture design, health checks can precisely target the operational status of each plugin and each layer.
 
-### 部署方式
+- Database connection health check.
+- Plugin system status check.
+- Overall system health assessment.
+- Returns appropriate HTTP status codes based on health status.
 
-#### 1. Docker Compose 部署（推荐）
+## Quick Start
 
-1. 克隆代码库
+### Environment Preparation
+- **Go 1.21+** (for local development)
+- **Git** (for cloning the repository)
+- **Docker** and **Docker Compose** (for containerized deployment)
+- **MySQL 8.0+**
+- **PostgreSQL、Redis、Prometheus、Grafana** (Optional, for extension)
+
+### Deployment Methods
+
+#### 1. Docker Compose Deployment (Recommended)
+
+1. Clone the repository
 ```bash
 git clone https://github.com/liaotxcn/weave.git
 cd weave
 ```
 
-2. 创建环境变量文件（可选但推荐）
-`.env`文件，设置环境变量以增强安全性
+2. Create an environment variable file (Optional but recommended)
+Create a .env file to set environment variables for enhanced security.
 
-3. 启动服务
-使用Docker Compose一键启动整个服务栈：
+3. Start the services
+Use Docker Compose to start the entire service stack with one command:
 ```bash
 docker-compose up -d
 ```
 
-   首次启动时，Docker Compose会自动：
-   - 构建Weave应用的Docker镜像
-   - 创建MySQL数据库容器
-   - 创建RedisSearch向量数据库容器
-   - 配置Prometheus和Grafana监控系统
-   - 配置网络和卷
-   - 启动所有服务
+   On the first startup, Docker Compose will automatically:
+   - Build the Docker image for the Weave application.
+   - Create the MySQL database container.
+   - Create the RedisSearch vector database container.
+   - Configure the Prometheus and Grafana monitoring system.
+   - Configure networks and volumes.
+   - Start all services.
    
-   服务启动后，可以访问以下地址：
-   - Weave应用：http://localhost:8081
-   - Prometheus监控：http://localhost:9090
-   - Grafana仪表盘：http://localhost:3000（默认账号密码：admin/admin）
+   After the services start, you can access the following addresses:
+   - Application Backend: http://localhost:8081
+   - Prometheus Monitoring: http://localhost:9090
+   - Grafana Dashboard: http://localhost:3000 (Default credentials: admin/admin)
 
-4. 验证服务状态
-查看所有服务是否正常运行：
+4. Verify Service Status
+Check if all services are running normally:
 ```bash
 docker-compose ps
 ```
-正常情况下，`weave-app`、`weave-mysql`和`weave-redis`都应显示为`Up`状态。
+Under normal circumstances,`weave-app`、`weave-mysql`and`weave-redis` should all show Up status.
 
-5. 访问应用
-服务启动后，可以通过以下URL访问Weave应用：
-```
-http://localhost:8081
-```
-
-### Docker Compose 命令
+### Docker Compose Commands
 
 ```bash
-docker-compose down    // 停止服务
-docker-compose logs -f weave-app   // 查看应用日志
-docker-compose logs -f weave-mysql // 查看数据库日志
-docker-compose logs -f weave-redis    // 查看Redis日志
-docker-compose exec weave-app /bin/sh             // 进入应用容器
-docker-compose exec weave-mysql mysql -u root -p  // 进入数据库容器
-docker-compose exec weave-redis redis-cli    // 进入Redis容器
-docker-compose up --build -d        // 重新构建并启动服务
+docker-compose down    // Stop services
+docker-compose logs -f weave-app   // View application logs
+docker-compose logs -f weave-mysql // View database logs
+docker-compose logs -f weave-redis    // View Redis logs
+docker-compose exec weave-app /bin/sh             // Enter the application container
+docker-compose exec weave-mysql mysql -u root -p  // Enter the database container
+docker-compose exec weave-redis redis-cli    // Enter the Redis container
+docker-compose up --build -d        // Rebuild and start services
 
-// 清理旧容器和卷数据
+// Clean up old containers and volume data
 docker-compose down -v 
 docker system prune -f
-docker-compose build --no-cache     // 重建镜像
-docker-compose up --force-recreate -d   // 使用--force-recreate选项启动
+docker-compose build --no-cache     // Rebuild images
+docker-compose up --force-recreate -d   // Start with --force-recreate option
 ```
 
-#### 2. 本地开发环境设置
+#### 2. Local Development Environment Setup
 
-1. 克隆代码库并进入项目目录
+1. Clone the repository and enter the project directory
 ```bash
 git clone https://github.com/liaotxcn/weave.git
 cd weave
 ```
 
-2. 安装依赖
+2. Install dependencies
 ```bash
 go mod download
 ```
 
-3. 配置数据库
-确保本地MySQL服务已启动，并创建数据库：
+3. Configure the database
+Ensure the local MySQL service is started and create the database:
 ```sql
 CREATE DATABASE weave;
 ```
 
-4. 设置环境变量或修改`config/config.go`中的默认配置
+4. Set environment variables or modify the default configuration in `config/config.go`
 
-5. 运行应用
+5. Run the application
 ```bash
 go run main.go
 ```
 
-6. 构建应用
+6. Build the application
 ```bash
 go build
 ```
 
-### 注意事项
+#### Frontend Build
+```bash
+cd web
+npm install
+npm run dev
+```
 
-1. **数据持久化**：
-   - MySQL数据存储在`mysql-data`卷中，确保数据不会丢失
-   - RedisSearch数据存储在`redis-data`卷中，确保向量索引数据不会丢失
-2. **健康检查**：系统提供`/health`接口监控服务健康状态
-3. **资源限制**：默认配置了CPU和内存限制，可根据实际需求在`docker-compose.yaml`中调整
-4. **首次启动**：首次启动需要一些时间来构建镜像和初始化服务
-5. **端口映射**：
-   - 默认将容器的8081端口映射到主机的8081端口
-   - 默认将容器的6379端口映射到主机的6379端口（RedisSearch）
+### Notes
 
-服务将在 http://localhost:8081 启动。
+1. **Data Persistence**:
+   - MySQL data is stored in the `mysql-data` volume, ensuring data is not lost
+   - RedisSearch data is stored in the `redis-data` volume, ensuring vector index data is not lost
+2. **Health Check**: The system provides a `/health` interface to monitor service health status
+3. **Resource Limits**: CPU and memory limits are configured by default and can be adjusted in `docker-compose.yaml` according to actual needs
+4. **First Startup**: The first startup requires some time to build images and initialize services
+5. **Port Mapping**:
+   - By default, the container's port 8081 is mapped to the host's port 8081
+   - By default, the container's port 6379 is mapped to the host's port 6379 (RedisSearch)
 
 ---
 
-## 项目文档
+## Project Documentation
 
-### 详细请阅读
-[API文档](./docs/API.md)
-[插件开发指南](./docs/PLUGIN_DEVELOPMENT_GUIDE.md)
-[插件脚手架工具](./docs/PLUGIN_SCAFFOLD_USAGE.md)
-[数据库迁移指南](./docs/DATABASE_MIGRATION.md)
-[监控系统指南](./docs/GRAFANA_MONITORING_GUIDE.md)
+### Please read in detail
+[API Documentation](./docs/API.md)
+[Plugin Development Guide](./docs/PLUGIN_DEVELOPMENT_GUIDE.md)
+[Plugin Scaffold Tool Usage](./docs/PLUGIN_SCAFFOLD_USAGE.md)
+[Database Migration Guide](./docs/DATABASE_MIGRATION.md)
+[Monitoring System Guide](./docs/GRAFANA_MONITORING_GUIDE.md)
 
-### 🔧 创建新插件
+### 🔧 Creating a New Plugin
 
-在Weave的微内核+分层架构下，创建新插件是扩展系统功能的方式之一。插件是一个实现了`Plugin`接口的Go结构体，通过这个接口，插件可以与核心系统进行交互。微内核架构提供了插件的灵活性，而分层架构则为插件内部的代码组织提供了良好的指导。
+In Weave's microkernel + layered architecture, creating a new plugin is one way to extend system functionality. A plugin is a Go struct that implements the `Plugin` interface. Through this interface, the plugin can interact with the core system. The microkernel architecture provides plugin flexibility, while the layered architecture provides good guidance for the internal code organization of the plugin.
 
-创建新插件非常简单，只需遵循以下步骤：
-1. 实现 `plugins.Plugin` 接口，定义插件的基本信息、生命周期和功能
-2. 在 `main.go` 的 `registerPlugins` 函数中注册插件
+Creating a new plugin is very efficient, just follow these steps:
+1. Implement the `plugins.Plugin` interface, defining the plugin's basic information, lifecycle, and functionality
+2. Register the plugin in the `registerPlugins` function in `main.go`
 
-微内核+分层架构的插件开发优势：
-- **低侵入性**：无需修改核心代码即可扩展系统功能
-- **独立演进**：插件可以独立开发、测试和部署
-- **标准化接口**：统一的插件接口简化了开发流程
-- **灵活组合**：用户可以根据需求组合不同的插件
-- **结构清晰**：分层架构思想指导插件内部代码组织，提高可维护性
+Advantages of plugin development in the microkernel + layered architecture:
+- **Low Intrusiveness**: Extend system functionality without modifying core code
+- **Independent Evolution**: Plugins can be developed, tested, and deployed independently
+- **Standardized Interface**: Unified plugin interface simplifies the development process
+- **Flexible Combination**: Users can combine different plugins according to their needs
+- **Clear Structure**: The layered architecture philosophy guides the internal code organization of plugins, improving maintainability
 
-### 插件示例（使用推荐的 GetRoutes 方法）
+### Plugin Example (Using the recommended GetRoutes method)
 ```go
-// 示例插件结构
+// Example plugin structure
 type MyPlugin struct{}
 
-// 实现 Plugin 接口的方法
+// Methods implementing the Plugin interface
 func (p *MyPlugin) Name() string { return "myplugin" }
-func (p *MyPlugin) Description() string { return "我的自定义插件" }
+func (p *MyPlugin) Description() string { return "My custom plugin" }
 func (p *MyPlugin) Version() string { return "1.0.0" }
-func (p *MyPlugin) Init() error { /* 初始化逻辑 */ return nil }
-func (p *MyPlugin) Shutdown() error { /* 关闭逻辑 */ return nil }
+func (p *MyPlugin) Init() error { /* Initialization logic */ return nil }
+func (p *MyPlugin) Shutdown() error { /* Shutdown logic */ return nil }
 
-// 使用推荐的 GetRoutes 方法注册路由
+// Register routes using the recommended GetRoutes method
 func (p *MyPlugin) GetRoutes() []Route {
     return []Route{
         {
             Path:        "/",
             Method:      "GET",
             Handler:     p.handleIndex,
-            Description: "插件主页",
+            Description: "Plugin homepage",
             AuthRequired: false,
             Tags:        []string{"home"},
         },
@@ -440,24 +446,24 @@ func (p *MyPlugin) GetRoutes() []Route {
             Path:        "/api/data",
             Method:      "GET",
             Handler:     p.handleGetData,
-            Description: "获取数据API",
+            Description: "Get data API",
             AuthRequired: true,
             Tags:        []string{"data", "api"},
             Params: map[string]string{
-                "id": "数据ID",
+                "id": "Data ID",
             },
         },
     }
 }
 
-// 定义插件的默认中间件
+// Define the plugin's default middlewares
 func (p *MyPlugin) GetDefaultMiddlewares() []gin.HandlerFunc {
     return []gin.HandlerFunc{
         p.logMiddleware,
     }
 }
 
-// 路由处理函数
+// Route handler functions
 func (p *MyPlugin) handleIndex(c *gin.Context) {
     c.JSON(200, gin.H{
         "plugin": p.Name(),
@@ -469,72 +475,77 @@ func (p *MyPlugin) handleGetData(c *gin.Context) {
     id := c.Query("id")
     c.JSON(200, gin.H{
         "id": id,
-        "data": "示例数据",
+        "data": "Example data",
     })
 }
 
-// 中间件示例
+// Middleware example
 func (p *MyPlugin) logMiddleware(c *gin.Context) {
-    // 记录请求日志
+    // Log request
     c.Next()
 }
 
-// 为兼容性保留的 RegisterRoutes 方法
+// RegisterRoutes method retained for compatibility
 func (p *MyPlugin) RegisterRoutes(router *gin.Engine) {
-    // 注意：推荐使用 GetRoutes 方法，此方法仅为兼容性保留
-    // 这里可以保留空实现或添加日志提示
+    // Note: Using GetRoutes method is recommended, this method is only retained for compatibility
+    // Can keep empty implementation or add log hint here
 }
 
-// 插件执行逻辑
+// Plugin execution logic
 func (p *MyPlugin) Execute(params map[string]interface{}) (interface{}, error) {
-    // 实现插件功能
+    // Implement plugin functionality
     return map[string]interface{}{"result": "success"}, nil
 }
 ```
 
-### 插件示例（旧的 RegisterRoutes 方法 - 仅为兼容性保留）
+### Plugin Example (RegisterRoutes method - Retained only for compatibility)
+
 ```go
-// 注册插件路由（旧方式 - 不推荐）
+// Register plugin routes
 func (p *MyPlugin) RegisterRoutes(router *gin.Engine) {
     group := router.Group(fmt.Sprintf("/plugins/%s", p.Name()))
     {
         group.GET("/", func(c *gin.Context) {
             c.JSON(200, gin.H{"plugin": p.Name()})
         })
-        // 添加更多路由...
+        // Add more routes...
     }
 }
 ```
 
-### 两种路由注册方式的对比
-| 特性 | GetRoutes 方法（推荐） | RegisterRoutes 方法（兼容性保留） |
-|------|-----------------------|-----------------------------------|
-| 路由定义 | 使用 Route 结构体数组 | 直接操作 gin.Engine 对象 |
-| 元数据支持 | ✅ 完整支持 | ❌ 不支持 |
-| 自动路由组 | ✅ 自动创建 | ❌ 需要手动创建 |
-| 中间件管理 | ✅ 支持全局和路由级别 | ❌ 需要手动添加 |
-| 文档生成 | ✅ 支持自动生成 API 文档 | ❌ 不支持 |
+### Comparison of Two Route Registration Methods
 
-### 📊 数据库迁移工具
+| Feature | GetRoutes Method (Recommended) | RegisterRoutes Method (Compatibility) |
+|---------|-------------------------------|--------------------------------------|
+| Route Definition | Uses Route struct array | Directly operates gin.Engine object |
+| Metadata Support | ✅ Full support | ❌ Not supported |
+| Automatic Route Group | ✅ Automatically created | ❌ Requires manual creation |
+| Middleware Management | ✅ Supports global and route level | ❌ Requires manual addition |
+| Documentation Generation | ✅ Supports automatic API doc generation | ❌ Not supported |
 
-Weave提供了高效强大的数据库迁移工具，位于`pkg/migrate`目录，支持数据库结构的版本化管理：
-- 支持迁移的应用、回滚、状态查询等功能
-- 基于`golang-migrate`库实现
-- 自动生成版本号，避免冲突
-- 支持迁移状态检查和脏状态处理
+### 📊 Database Migration Tool
 
----
+Weave provides an efficient and powerful database migration tool located in the `pkg/migrate` directory, supporting version management of the database structure:
 
-## 🤝 贡献指南
-
-欢迎对项目进行贡献！感谢！
-
-1. **Fork 仓库**并克隆到本地
-2. **创建分支**进行开发（`git checkout -b feature/your-feature`）
-3. **提交代码**并确保通过测试
-4. **创建 Pull Request** 描述您的更改
-5. 等待**代码审查**并根据反馈进行修改
+- Implemented based on the `golang-migrate` library
+- Supports migration application, rollback, status query, etc.
+- Automatically generates version numbers to avoid conflicts
+- Supports migration status check and dirty state handling
 
 ---
 
-### <div align="center"> <strong>✨ 持续更新完善中... ✨</strong> </div>
+## 🤝 Contribution Guide
+
+Welcome contributions to the project! Thank you!
+
+1. **Fork the repository** and clone it locally
+2. **Create a branch** for development (`git checkout -b feature/your-feature`)
+3. **Commit your code** and ensure tests pass
+4. **Create a Pull Request** describing your changes
+5. Wait for **code review** and make modifications based on feedback
+
+---
+
+### <div align="center"> <strong>✨ Continuously updating and improving... ✨</strong> </div>
+
+
