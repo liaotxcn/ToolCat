@@ -159,19 +159,19 @@ Weave adopts a microkernel + layered architecture, and the project structure cle
 ├── models/              # Data models [Data Layer]
 ├── pkg/                 # Common packages [Infrastructure Layer]
 ├── plugins/             # Plugin system [Core of Microkernel Architecture]
-│ ├── core/              # Core plugin functionality
-│ ├── doc.go             # Plugin package documentation
-│ ├── examples/          # Example plugins
-│ ├── features/          # Feature plugins (extensible)
-│ ├── init.go            # Plugin initialization
-│ ├── loader/            # Plugin loader
-│ ├── templates/         # Plugin templates
-│ └── watcher/           # Plugin watcher
+│   ├── core/              # Core plugin functionality
+│   ├── doc.go             # Plugin package documentation
+│   ├── examples/          # Example plugins
+│   ├── features/          # Feature plugins (extensible)
+│   ├── init.go            # Plugin initialization
+│   ├── loader/            # Plugin loader
+│   ├── templates/         # Plugin templates
+│   └── watcher/           # Plugin watcher
 ├── routers/             # Route definition and registration
 ├── services/            # Service aggregation
-├── llm/                 # LLM Service
-├── rag/                 # RAG Service  
-└── extended/            # Extensible services
+│   ├── llm/               # LLM Service
+│   ├── rag/               # RAG Service  
+│   └── extended/          # Extensible services
 ├── test/                # Unit/Integration tests
 ├── tools/               # Development tools
 ├── utils/               # Utility functions
