@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"toolcat/pkg"
+	"weave/pkg"
 )
 
 func TestNewPluginLoaderInitialState(t *testing.T) {
@@ -39,7 +39,7 @@ func TestGetPluginPath(t *testing.T) {
 }
 
 func TestGetPluginPathAbsolute(t *testing.T) {
-	dir := filepath.FromSlash("/opt/toolcat/plugins")
+	dir := filepath.FromSlash("/opt/weave/plugins")
 	name := "world"
 	got := GetPluginPath(dir, name)
 	want := filepath.Join(dir, "world.so")
@@ -161,7 +161,7 @@ func TestLoadRealPluginOnLinux(t *testing.T) {
 
 	source := `package main
 import (
-    "toolcat/plugins/core"
+    "weave/plugins/core"
     "github.com/gin-gonic/gin"
 )
 
@@ -249,7 +249,7 @@ func TestLoadPluginNameMismatch(t *testing.T) {
 
 	source := `package main
 import (
-    "toolcat/plugins/core"
+    "weave/plugins/core"
     "github.com/gin-gonic/gin"
 )
 
@@ -308,7 +308,7 @@ func TestLoadPluginSuccessReload(t *testing.T) {
 
 	source := `package main
 import (
-    "toolcat/plugins/core"
+    "weave/plugins/core"
     "github.com/gin-gonic/gin"
 )
 

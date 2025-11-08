@@ -9,9 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"toolcat/models"
-	"toolcat/pkg"
-	"toolcat/plugins/core"
+	"weave/models"
+	"weave/pkg"
+	"weave/plugins/core"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"

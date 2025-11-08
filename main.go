@@ -12,17 +12,17 @@ import (
 	"syscall"
 	"time"
 
-	"toolcat/config"
-	"toolcat/middleware"
-	"toolcat/models"
-	"toolcat/pkg"
-	"toolcat/pkg/migrate/migration"
-	"toolcat/plugins"
-	"toolcat/plugins/examples"
-	fc "toolcat/plugins/features/FormatConverter"
-	note "toolcat/plugins/features/Note"
-	"toolcat/routers"
-	"toolcat/services/llm"
+	"weave/config"
+	"weave/middleware"
+	"weave/models"
+	"weave/pkg"
+	"weave/pkg/migrate/migration"
+	"weave/plugins"
+	"weave/plugins/examples"
+	fc "weave/plugins/features/FormatConverter"
+	note "weave/plugins/features/Note"
+	"weave/routers"
+	"weave/services/llm"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -177,7 +177,7 @@ func main() {
 	}
 
 	go func() {
-		pkg.Info("ToolCat 服务启动成功", zap.String("address", fmt.Sprintf("http://localhost:%d", port)))
+		pkg.Info("Weave 服务启动成功", zap.String("address", fmt.Sprintf("http://localhost:%d", port)))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			pkg.Fatal("Failed to start server", zap.Error(err))
 		}

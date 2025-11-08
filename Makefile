@@ -1,7 +1,7 @@
-# Makefile for ToolCat project
+# Makefile for Weave project
 
 # 设置变量
-APP_NAME := toolcat
+APP_NAME := weave
 GO_FILES := $(shell find . -name "*.go" -not -path "./vendor/*")
 TEST_FLAGS := -v
 

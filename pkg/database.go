@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"toolcat/config"
-	"toolcat/pkg/metrics"
+	"weave/config"
+	"weave/pkg/metrics"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"

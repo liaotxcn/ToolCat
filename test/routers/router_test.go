@@ -12,10 +12,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
-	"toolcat/config"
-	"toolcat/pkg"
-	"toolcat/routers"
-	"toolcat/utils"
+	"weave/config"
+	"weave/pkg"
+	"weave/routers"
+	"weave/utils"
 )
 
 func TestRootRouteOK(t *testing.T) {
@@ -39,8 +39,8 @@ func TestRootRouteOK(t *testing.T) {
 		t.Fatalf("expected api_base=/api/v1, got %#v", body["api_base"])
 	}
 	msg, _ := body["message"].(string)
-	if !strings.Contains(msg, "ToolCat") {
-		t.Fatalf("expected message to contain 'ToolCat', got %q", msg)
+	if !strings.Contains(msg, "Weave") {
+		t.Fatalf("expected message to contain 'Weave', got %q", msg)
 	}
 }
 

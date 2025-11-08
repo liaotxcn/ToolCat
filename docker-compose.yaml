@@ -2,7 +2,7 @@ version: '3.7'
 
 # 定义网络
 networks:
-  toolcat-network:
+  weave-network:
     driver: bridge
 
 # 定义卷
@@ -23,17 +23,17 @@ volumes:
 
 # 定义服务
 services:
-  # ToolCat应用服务
-  toolcat:
+  # Weave应用服务
+  weave:
     # 从当前目录构建Docker镜像
     build: .
     # 容器名称
-    container_name: toolcat-app
+    container_name: weave-app
     # 重启策略
     restart: unless-stopped
     # 网络配置
     networks:
-      - toolcat-network
+      - weave-network
     # 端口映射 (主机端口:容器端口)
     ports:
       - "8081:8081"
@@ -45,9 +45,9 @@ services:
       # 数据库配置
       - DB_HOST=mysql
       - DB_PORT=3306
-      - DB_USERNAME=toolcat_user
+      - DB_USERNAME=weave_user
       - DB_PASSWORD=${DB_PASSWORD:-default_password}
-      - DB_NAME=toolcat
+      - DB_NAME=weave
       - DB_CHARSET=utf8mb4
       
       # Redis配置
@@ -87,20 +87,20 @@ services:
     # 使用官方MySQL镜像
     image: mysql:8.0
     # 容器名称
-    container_name: toolcat-mysql
+    container_name: weave-mysql
     # 重启策略
     restart: unless-stopped
     # 网络配置
     networks:
-      - toolcat-network
+      - weave-network
     # 端口映射 (可选，仅当需要从主机直接访问数据库时启用)
     # ports:
     #   - "3306:3306"
     # 环境变量配置
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root_password}
-      - MYSQL_DATABASE=toolcat
-      - MYSQL_USER=toolcat_user
+      - MYSQL_DATABASE=weave
+      - MYSQL_USER=weave_user
       - MYSQL_PASSWORD=${DB_PASSWORD:-default_password}
     # 卷挂载 (数据持久化)
     volumes:
@@ -120,9 +120,9 @@ services:
   # Redis服务
   redisearch:
     image: redis/redis-stack:latest
-    container_name: toolcat-redis
+    container_name: weave-redis
     networks:
-      - toolcat-network
+      - weave-network
     ports:
       - "6379:6379"  # Redis port
       - "8001:8001"  # RedisInsight port
@@ -142,20 +142,20 @@ services:
     # 使用官方PostgreSQL镜像
     image: postgres:15
     # 容器名称
-    container_name: toolcat-postgres
+    container_name: weave-postgres
     # 重启策略
     restart: unless-stopped
     # 网络配置
     networks:
-      - toolcat-network
+      - weave-network
     # 端口映射 (可选，仅当需要从主机直接访问数据库时启用)
     # ports:
     #   - "5432:5432"
     # 环境变量配置
     environment:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - POSTGRES_USER=${DB_USERNAME:-toolcat_user}
-      - POSTGRES_DB=toolcat
+      - POSTGRES_USER=${DB_USERNAME:-weave_user}
+      - POSTGRES_DB=weave
     # 卷挂载 (数据持久化)
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -163,7 +163,7 @@ services:
       # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     # 健康检查
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-toolcat_user} -d toolcat"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-weave_user} -d weave"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -174,10 +174,10 @@ services:
   # Prometheus监控服务
   prometheus:
     image: prom/prometheus:latest
-    container_name: toolcat-prometheus
+    container_name: weave-prometheus
     restart: unless-stopped
     networks:
-      - toolcat-network
+      - weave-network
     ports:
       - "9090:9090"
     volumes:
@@ -190,15 +190,15 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
     depends_on:
-      - toolcat
+      - weave
 
   # Grafana可视化服务
   grafana:
     image: grafana/grafana:latest
-    container_name: toolcat-grafana
+    container_name: weave-grafana
     restart: unless-stopped
     networks:
-      - toolcat-network
+      - weave-network
     ports:
       - "3000:3000"
     volumes:
@@ -226,12 +226,12 @@ services:
 #    docker-compose down
 # 
 # 4. 查看日志：
-#    docker-compose logs -f toolcat-app
-#    docker-compose logs -f toolcat-mysql
+#    docker-compose logs -f weave-app
+#    docker-compose logs -f weave-mysql
 # 
 # 5. 进入容器：
-#    docker-compose exec toolcat-app /bin/sh
-#    docker-compose exec toolcat-mysql mysql -u root -p
+#    docker-compose exec weave-app /bin/sh
+#    docker-compose exec weave-mysql mysql -u root -p
 # 
 # 6. 查看服务状态：
 #    docker-compose ps

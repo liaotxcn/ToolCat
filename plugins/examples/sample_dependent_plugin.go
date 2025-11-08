@@ -2,8 +2,9 @@ package examples
 
 import (
 	"fmt"
+	"weave/plugins/core"
+
 	"github.com/gin-gonic/gin"
-	"toolcat/plugins/core"
 )
 
 // SampleDependentPlugin 示例依赖插件
@@ -125,9 +126,9 @@ func (p *SampleDependentPlugin) GetDefaultMiddlewares() []gin.HandlerFunc {
 // handleIndex 处理首页请求
 func (p *SampleDependentPlugin) handleIndex(c *gin.Context) {
 	c.JSON(200, gin.H{
-		"plugin":      p.Name(),
-		"version":     p.Version(),
-		"description": p.Description(),
+		"plugin":       p.Name(),
+		"version":      p.Version(),
+		"description":  p.Description(),
 		"dependencies": p.GetDependencies(),
 		"available_endpoints": []string{
 			"GET /plugins/sample_dependent/ - 获取插件信息",
@@ -142,7 +143,7 @@ func (p *SampleDependentPlugin) handleUseDependency(c *gin.Context) {
 	// 使用依赖的插件执行某些功能
 	action := c.DefaultQuery("action", "greet")
 	params := map[string]interface{}{"action": action}
-	
+
 	result, err := p.pluginManager.ExecutePlugin("sample_optimized", params)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
@@ -150,9 +151,9 @@ func (p *SampleDependentPlugin) handleUseDependency(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"plugin":               p.Name(),
-		"used_dependency":      "sample_optimized",
-		"action":               action,
+		"plugin":                 p.Name(),
+		"used_dependency":        "sample_optimized",
+		"action":                 action,
 		"result_from_dependency": result,
 	})
 }
@@ -161,16 +162,16 @@ func (p *SampleDependentPlugin) handleUseDependency(c *gin.Context) {
 func (p *SampleDependentPlugin) handleGetDependencies(c *gin.Context) {
 	// 获取所有已注册插件的依赖关系
 	depGraph := p.pluginManager.GetDependencyGraph()
-	
+
 	// 获取当前插件的依赖状态
 	var dependenciesStatus []map[string]interface{}
 	for _, depName := range p.GetDependencies() {
 		if depPlugin, exists := p.pluginManager.GetPlugin(depName); exists {
 			dependenciesStatus = append(dependenciesStatus, map[string]interface{}{
-				"name":      depName,
-				"version":   depPlugin.Version(),
+				"name":        depName,
+				"version":     depPlugin.Version(),
 				"description": depPlugin.Description(),
-				"status":    "available",
+				"status":      "available",
 			})
 		} else {
 			dependenciesStatus = append(dependenciesStatus, map[string]interface{}{
@@ -181,8 +182,8 @@ func (p *SampleDependentPlugin) handleGetDependencies(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"plugin":       p.Name(),
-		"dependencies": dependenciesStatus,
+		"plugin":           p.Name(),
+		"dependencies":     dependenciesStatus,
 		"dependency_graph": depGraph,
 	})
 }

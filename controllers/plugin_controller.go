@@ -2,7 +2,7 @@ package controllers
 
 import (
 	"net/http"
-	"toolcat/plugins"
+	"weave/plugins"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,10 +25,10 @@ func (pc *PluginController) GetAllPlugins(c *gin.Context) {
 	response := make([]map[string]interface{}, 0, len(pluginsInfo))
 	for _, info := range pluginsInfo {
 		pluginData := map[string]interface{}{
-			"name":        info.Plugin.Name(),
-			"description": info.Plugin.Description(),
-			"version":     info.Plugin.Version(),
-			"enabled":     info.IsEnabled,
+			"name":         info.Plugin.Name(),
+			"description":  info.Plugin.Description(),
+			"version":      info.Plugin.Version(),
+			"enabled":      info.IsEnabled,
 			"dependencies": info.Dependencies,
 			"conflicts":    info.Conflicts,
 		}

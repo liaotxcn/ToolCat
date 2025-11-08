@@ -1,12 +1,12 @@
-# ToolCat 监控系统指南
+# Weave 监控系统指南
 
-本文档详细介绍了如何使用Prometheus和Grafana进行ToolCat应用的监控可视化配置与使用。
+本文档详细介绍了如何使用Prometheus和Grafana进行Weave应用的监控可视化配置与使用。
 
 ## 监控架构概述
 
-ToolCat监控系统采用以下架构：
+Weave监控系统采用以下架构：
 
-1. **ToolCat应用**：暴露Prometheus格式的监控指标（`/metrics`端点）
+1. **Weave应用**：暴露Prometheus格式的监控指标（`/metrics`端点）
 2. **Prometheus**：负责抓取、存储和处理监控指标
 3. **Grafana**：提供直观的可视化界面，连接Prometheus数据源
 
@@ -17,7 +17,7 @@ ToolCat监控系统采用以下架构：
 监控系统已集成到Docker Compose配置中，只需启动完整的服务栈：
 
 ```bash
-# 启动所有服务（ToolCat应用、MySQL、Prometheus、Grafana）
+# 启动所有服务（Weave应用、MySQL、Prometheus、Grafana）
 docker-compose up -d
 ```
 
@@ -25,7 +25,7 @@ docker-compose up -d
 
 启动后，可以访问以下服务：
 
-- **ToolCat应用**：http://localhost:8081
+- **Weave应用**：http://localhost:8081
 - **Prometheus界面**：http://localhost:9090
 - **Grafana界面**：http://localhost:3000
 
@@ -55,12 +55,12 @@ docker-compose up -d
 
 ### 监控仪表盘
 
-系统已自动配置并加载了ToolCat监控仪表盘。
+系统已自动配置并加载了Weave监控仪表盘。
 
 #### 访问仪表盘
 
 1. 点击左侧菜单的 **Dashboards（仪表盘）> Manage（管理）**
-2. 在 **ToolCat** 文件夹下找到 **ToolCat 应用监控** 仪表盘
+2. 在 **Weave** 文件夹下找到 **Weave 应用监控** 仪表盘
 3. 点击打开仪表盘
 
 #### 仪表盘内容
@@ -121,11 +121,11 @@ docker-compose up -d
 
 1. **验证Prometheus数据采集**：
    - 访问 http://localhost:9090 打开Prometheus界面
-   - 点击顶部菜单的"Status" > "Targets"，检查ToolCat应用的抓取状态是否为"UP"
+   - 点击顶部菜单的"Status" > "Targets"，检查Weave应用的抓取状态是否为"UP"
    - 如果状态显示为"DOWN"，检查错误消息并修复连接问题
 
 2. **检查应用metrics端点**：
-   - 确认ToolCat应用的/metrics端点是否正常工作
+   - 确认Weave应用的/metrics端点是否正常工作
    - 可以通过以下命令检查：`curl http://localhost:8081/metrics`
    - 如果返回404或其他错误，需要检查应用的metrics初始化代码
 
@@ -153,14 +153,14 @@ docker-compose up -d
 
 **排查步骤**：
 
-1. 确认ToolCat应用正常运行且/metrics端点可访问
+1. 确认Weave应用正常运行且/metrics端点可访问
 2. 检查Prometheus抓取配置，确认抓取间隔设置
 3. 验证Grafana仪表盘的刷新间隔设置（默认10秒）
 4. 检查系统时间同步，确保各容器间时间一致
 
 ### 仪表盘未自动加载
 
-**症状**：Grafana中找不到ToolCat仪表盘
+**症状**：Grafana中找不到Weave仪表盘
 
 **排查步骤**：
 
@@ -178,10 +178,10 @@ docker-compose up -d
 sum(http_requests_total) by (method, endpoint)
 
 # 检查系统指标（如果已配置）
-process_resident_memory_bytes{job="toolcat"}
+process_resident_memory_bytes{job="weave"}
 
 # 检查数据库连接
-go_sql_stats_open_connections{database="toolcat"}
+go_sql_stats_open_connections{database="weave"}
 ```
 
 ## 高级配置
@@ -244,7 +244,7 @@ go_sql_stats_open_connections{database="toolcat"}
 
 ## 升级指南
 
-当ToolCat应用升级时，监控系统可能需要相应更新：
+当Weave应用升级时，监控系统可能需要相应更新：
 
 1. 检查是否有新增的监控指标
 2. 更新仪表盘以包含新指标

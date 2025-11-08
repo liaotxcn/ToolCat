@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"toolcat/middleware"
-	"toolcat/pkg"
-	"toolcat/pkg/metrics"
+	"weave/middleware"
+	"weave/pkg"
+	"weave/pkg/metrics"
 
 	"github.com/gin-gonic/gin"
 )
@@ -184,7 +184,7 @@ func (pm *PluginManager) EnablePlugin(name string) error {
 
 	startTime := time.Now()
 	success := true
-	
+
 	// 调用插件的OnEnable方法
 	if err := info.Plugin.OnEnable(); err != nil {
 		success = false

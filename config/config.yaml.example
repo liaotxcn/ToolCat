@@ -1,4 +1,4 @@
-# ToolCat配置文件示例
+# Weave 配置文件示例
 # 将此文件复制为 config.yaml 使用自定义配置
 
 # 服务器配置
@@ -14,7 +14,7 @@ database:
   port: 3306
   username: root
   password: "123456"
-  dbname: toolcat
+  dbname: weave
   charset: utf8mb4 # 仅MySQL使用，PostgreSQL会忽略此参数
 
 # 日志配置

@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"net/http"
 
-	"toolcat/config"
-	"toolcat/pkg"
+	"weave/config"
+	"weave/pkg"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"

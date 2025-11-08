@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"toolcat/models"
-	"toolcat/pkg"
+	"weave/models"
+	"weave/pkg"
 
 	"github.com/gin-gonic/gin"
 	"github.com/glebarez/sqlite"
@@ -24,7 +24,7 @@ func setupTestDB(t *testing.T) {
 	}
 
 	// 为当前测试创建临时数据库文件
-	dbPath := filepath.Join(t.TempDir(), "toolcat_test.db")
+	dbPath := filepath.Join(t.TempDir(), "weave_test.db")
 	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("failed to open sqlite test db: %v", err)

@@ -1,4 +1,4 @@
-# ToolCat - A microkernel architecture plugin development/management platform developed with Golang, designed to provide high-performance, highly extensible, secure, and reliable plugin services
+# Weave - A microkernel architecture plugin development/management platform developed with Golang, designed to provide high-performance, highly extensible, secure, and reliable plugin services
 
 <div align="center">
   <img src="https://img.shields.io/badge/Go-1.21+-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go Version">
@@ -10,7 +10,7 @@
 
 ## 📋 项目简介
 
-ToolCat 基于 Golang 开发的高性能、高效率、插件化易扩展的工具服务平台。采用微内核+分层架构设计，允许开发者高效开发并且轻松集成管理各种工具/服务，同时保持系统的高性能和可扩展性。
+Weave 基于 Golang 开发的高性能、高效率、插件化易扩展的工具服务平台。采用微内核+分层架构设计，允许开发者高效开发并且轻松集成管理各种工具/服务，同时保持系统的高性能和可扩展性。
 
 主要应用场景包括：
 - 工具研发与集成
@@ -25,11 +25,11 @@ ToolCat 基于 Golang 开发的高性能、高效率、插件化易扩展的工�
 
 <img width="1640" height="626" alt="image" src="https://github.com/user-attachments/assets/ad521b7a-4aab-4cc4-8e73-33542a8d7f6c" />
 
-ToolCat 采用**微内核+分层架构**设计模式，充分结合两种架构的优势，保障系统可用性，实现了高度的灵活性、可扩展性和良好的性能。
+Weave 采用**微内核+分层架构**设计模式，充分结合两种架构的优势，保障系统可用性，实现了高度的灵活性、可扩展性和良好的性能。
 
 ### 微内核与分层架构的融合
 
-ToolCat 在微内核架构的基础上，融入了分层架构的设计思想，形成了一套完整且高效灵活的架构体系：
+Weave 在微内核架构的基础上，融入了分层架构的设计思想，形成了一套完整且高效灵活的架构体系：
 
 1. **微内核架构（插件体系）**：提供插件管理、生命周期控制和插件间通信机制
 2. **分层架构（核心系统）**：将核心功能按关注点分离，形成清晰的层次结构
@@ -134,7 +134,7 @@ ToolCat 在微内核架构的基础上，融入了分层架构的设计思想，
 
 ## 📂 项目结构
 
-ToolCat采用微内核+分层架构，项目结构清晰地反映了这一设计理念。核心系统采用分层组织，功能扩展则通过插件机制实现
+Weave采用微内核+分层架构，项目结构清晰地反映了这一设计理念。核心系统采用分层组织，功能扩展则通过插件机制实现
 
 ```
 ├── .github/             # GitHub工作流配置
@@ -174,10 +174,10 @@ ToolCat采用微内核+分层架构，项目结构清晰地反映了这一设计
 
 ## 🧩 核心组件
 
-ToolCat的核心组件设计充分体现了微内核+分层架构的思想，既保持了系统的灵活性和可扩展性，又保证了代码的结构清晰易维护
+Weave的核心组件设计充分体现了微内核+分层架构的思想，既保持了系统的灵活性和可扩展性，又保证了代码的结构清晰易维护
 
 ### 🔌 插件系统 - 微内核架构的核心实现
-插件系统是ToolCat的重要组件，负责插件的注册、加载、卸载和生命周期管理。它实现了一套完整的插件机制，使系统能够以插件形式扩展功能。在微内核+分层架构中，插件系统连接了核心内核和各种业务扩展。
+插件系统是Weave的重要组件，负责插件的注册、加载、卸载和生命周期管理。它实现了一套完整的插件机制，使系统能够以插件形式扩展功能。在微内核+分层架构中，插件系统连接了核心内核和各种业务扩展。
 
 在微内核架构下，插件系统具备以下特性：
 - **完整的生命周期管理**：从插件的初始化、注册、激活到关闭的全生命周期管理
@@ -224,10 +224,10 @@ type Route struct {
 插件管理器负责插件的整个生命周期管理，包括注册、注销、查询和执行插件功能。
 
 ### 🧩 服务聚合
-服务聚合是ToolCat在微内核+分层架构基础上的重要扩展能力，提供了将多种服务、数据源和功能进行统一管理和调用的机制。如LLM-RAG服务聚合
-
-**LLM-RAG检索增强服务**作为ToolCat的服务聚合能力，提供了智能文本检索和增强生成功能：
-- **高效向量检索**：基于RedisSearch实现高性能向量相似度搜索
+服务聚合是Weave在微内核+分层架构基础上的重要扩展能力，提供了将多种服务、数据源和功能进行统一管理和调用的机制。如LLM-RAG服务聚合
+  
+- **LLM-RAG检索增强服务**作为Weave的服务聚合能力，提供了智能文本检索和增强生成功能：
+  - **高效向量检索**：基于RedisSearch实现高性能向量相似度搜索
 - **多格式文档支持**：支持各种文档格式的解析、分块和向量化
 - **灵活的检索API**：提供丰富的检索接口，支持多种检索策略
 - **可配置的嵌入模型**：支持切换不同的嵌入模型，适应不同场景需求
@@ -254,7 +254,7 @@ type Route struct {
 
 ### 📈 监控系统
 
-ToolCat集成了完整 Prometheus + Grafana 监控系统：
+Weave集成了完整 Prometheus + Grafana 监控系统：
 - 自动采集应用运行指标
 - 预置多种可视化仪表盘
 - 支持自定义告警规则
@@ -284,8 +284,8 @@ ToolCat集成了完整 Prometheus + Grafana 监控系统：
 
 1. 克隆代码库
 ```bash
-git clone https://github.com/liaotxcn/toolcat.git
-cd toolcat
+git clone https://github.com/liaotxcn/weave.git
+cd weave
 ```
 
 2. 创建环境变量文件（可选但推荐）
@@ -298,7 +298,7 @@ docker-compose up -d
 ```
 
    首次启动时，Docker Compose会自动：
-   - 构建ToolCat应用的Docker镜像
+   - 构建Weave应用的Docker镜像
    - 创建MySQL数据库容器
    - 创建RedisSearch向量数据库容器
    - 配置Prometheus和Grafana监控系统
@@ -306,7 +306,7 @@ docker-compose up -d
    - 启动所有服务
    
    服务启动后，可以访问以下地址：
-   - ToolCat应用：http://localhost:8081
+   - Weave应用：http://localhost:8081
    - Prometheus监控：http://localhost:9090
    - Grafana仪表盘：http://localhost:3000（默认账号密码：admin/admin）
 
@@ -315,10 +315,10 @@ docker-compose up -d
 ```bash
 docker-compose ps
 ```
-正常情况下，`toolcat-app`、`toolcat-mysql`和`toolcat-redisearch`都应显示为`Up`状态。
+正常情况下，`weave-app`、`weave-mysql`和`weave-redis`都应显示为`Up`状态。
 
 5. 访问应用
-服务启动后，可以通过以下URL访问ToolCat应用：
+服务启动后，可以通过以下URL访问Weave应用：
 ```
 http://localhost:8081
 ```
@@ -327,12 +327,12 @@ http://localhost:8081
 
 ```bash
 docker-compose down    // 停止服务
-docker-compose logs -f toolcat-app   // 查看应用日志
-docker-compose logs -f toolcat-mysql // 查看数据库日志
-docker-compose logs -f toolcat-redisearch    // 查看RedisSearch日志
-docker-compose exec toolcat-app /bin/sh             // 进入应用容器
-docker-compose exec toolcat-mysql mysql -u root -p  // 进入数据库容器
-docker-compose exec toolcat-redisearch redis-cli    // 进入RedisSearch容器
+docker-compose logs -f weave-app   // 查看应用日志
+docker-compose logs -f weave-mysql // 查看数据库日志
+docker-compose logs -f weave-redis    // 查看Redis日志
+docker-compose exec weave-app /bin/sh             // 进入应用容器
+docker-compose exec weave-mysql mysql -u root -p  // 进入数据库容器
+docker-compose exec weave-redis redis-cli    // 进入Redis容器
 docker-compose up --build -d        // 重新构建并启动服务
 
 // 清理旧容器和卷数据
@@ -346,8 +346,8 @@ docker-compose up --force-recreate -d   // 使用--force-recreate选项启动
 
 1. 克隆代码库并进入项目目录
 ```bash
-git clone https://github.com/liaotxcn/toolcat.git
-cd toolcat
+git clone https://github.com/liaotxcn/weave.git
+cd weave
 ```
 
 2. 安装依赖
@@ -358,7 +358,7 @@ go mod download
 3. 配置数据库
 确保本地MySQL服务已启动，并创建数据库：
 ```sql
-CREATE DATABASE toolcat;
+CREATE DATABASE weave;
 ```
 
 4. 设置环境变量或修改`config/config.go`中的默认配置
@@ -400,7 +400,7 @@ go build
 
 ### 🔧 创建新插件
 
-在ToolCat的微内核+分层架构下，创建新插件是扩展系统功能的方式之一。插件是一个实现了`Plugin`接口的Go结构体，通过这个接口，插件可以与核心系统进行交互。微内核架构提供了插件的灵活性，而分层架构则为插件内部的代码组织提供了良好的指导。
+在Weave的微内核+分层架构下，创建新插件是扩展系统功能的方式之一。插件是一个实现了`Plugin`接口的Go结构体，通过这个接口，插件可以与核心系统进行交互。微内核架构提供了插件的灵活性，而分层架构则为插件内部的代码组织提供了良好的指导。
 
 创建新插件非常简单，只需遵循以下步骤：
 1. 实现 `plugins.Plugin` 接口，定义插件的基本信息、生命周期和功能
@@ -517,7 +517,7 @@ func (p *MyPlugin) RegisterRoutes(router *gin.Engine) {
 
 ### 📊 数据库迁移工具
 
-ToolCat提供了高效强大的数据库迁移工具，位于`pkg/migrate`目录，支持数据库结构的版本化管理：
+Weave提供了高效强大的数据库迁移工具，位于`pkg/migrate`目录，支持数据库结构的版本化管理：
 - 支持迁移的应用、回滚、状态查询等功能
 - 基于`golang-migrate`库实现
 - 自动生成版本号，避免冲突

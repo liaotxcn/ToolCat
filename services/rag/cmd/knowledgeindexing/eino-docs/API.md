@@ -1,8 +1,8 @@
-# ToolCat API 接口文档
+# Weave API 接口文档
 
 ## 1. 概述
 
-本文档提供 ToolCat 服务的API接口说明，包括认证接口、用户管理接口、工具管理接口和插件管理接口等。所有接口基于HTTP协议，使用JSON格式进行数据交换。
+本文档提供 Weave 服务的API接口说明，包括认证接口、用户管理接口、工具管理接口和插件管理接口等。所有接口基于HTTP协议，使用JSON格式进行数据交换。
 
 ## 2. 基础信息
 
@@ -35,7 +35,7 @@ JWT令牌包含用户的身份信息，有效期等。当令牌过期或无效�
 
 ## 5. CSRF保护机制
 
-ToolCat服务启用了CSRF（跨站请求伪造）保护机制，对于非GET/HEAD/OPTIONS/TRACE的请求，需要进行CSRF令牌验证。
+Weave服务启用了CSRF（跨站请求伪造）保护机制，对于非GET/HEAD/OPTIONS/TRACE的请求，需要进行CSRF令牌验证。
 
 ### 5.1 CSRF令牌获取
 
@@ -1140,7 +1140,7 @@ Authorization: Bearer YOUR_JWT_TOKEN_HERE
 **响应**: 
 ```json
 {
-  "message": "欢迎使用工具猫(ToolCat)服务！",
+  "message": "欢迎使用Weave服务！",
   "version": "1.0.0",
   "api_base": "/api/v1",
   "health_check": "/health",

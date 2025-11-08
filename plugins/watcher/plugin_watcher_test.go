@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"toolcat/config"
-	"toolcat/pkg"
-	"toolcat/plugins/loader"
+	"weave/config"
+	"weave/pkg"
+	"weave/plugins/loader"
 )
 
 // stubManager implements PluginManager for watcher unit tests

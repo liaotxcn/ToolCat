@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"toolcat/models"
+	"weave/models"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -72,7 +72,7 @@ func (al *AuditLogger) Log(options AuditLogOptions) error {
 	// 保存到数据库（异步保存，不阻塞主流程）
 	go func() {
 		if err := DB.Create(&auditLog).Error; err != nil {
-			Error("Failed to save audit log", 
+			Error("Failed to save audit log",
 				zap.Error(err),
 				zap.String("action", options.Action),
 				zap.String("resource_type", options.ResourceType),
@@ -147,11 +147,11 @@ func AuditLogMiddleware() gin.HandlerFunc {
 		}
 
 		// 记录处理时间（调试用）
-		Debug("Audit middleware processed", 
-		zap.String("method", method),
-		zap.String("path", path),
-		zap.Duration("duration", time.Since(start)),
-	)
+		Debug("Audit middleware processed",
+			zap.String("method", method),
+			zap.String("path", path),
+			zap.Duration("duration", time.Since(start)),
+		)
 	}
 }
 

@@ -3,7 +3,7 @@ package config_test
 import (
 	"os"
 	"testing"
-	"toolcat/config"
+	"weave/config"
 )
 
 // 重置环境变量为测试前状态
@@ -58,14 +58,14 @@ func TestLoadConfigFromEnv(t *testing.T) {
 
 	// 设置测试环境变量
 	testVars := map[string]string{
-		"SERVER_PORT":        "8082",
-		"DB_HOST":            "test-db-host",
-		"DB_PORT":            "3307",
-		"DB_USERNAME":        "test-user",
-		"DB_PASSWORD":        "test-pass",
-		"DB_NAME":            "test-db",
-		"JWT_SECRET":         "test-jwt-secret",
-		"CSRF_COOKIE_NAME":   "test-csrf",
+		"SERVER_PORT":           "8082",
+		"DB_HOST":               "test-db-host",
+		"DB_PORT":               "3307",
+		"DB_USERNAME":           "test-user",
+		"DB_PASSWORD":           "test-pass",
+		"DB_NAME":               "test-db",
+		"JWT_SECRET":            "test-jwt-secret",
+		"CSRF_COOKIE_NAME":      "test-csrf",
 		"CSRF_COOKIE_HTTP_ONLY": "true",
 		"CSRF_COOKIE_SAME_SITE": "Lax",
 	}
@@ -129,25 +129,25 @@ func TestCSRFConfigLoading(t *testing.T) {
 
 	// 测试CSRF CookieHttpOnly的各种值
 	testCases := []struct {
-		name        string
-		envValue    string
-		expected    bool
+		name     string
+		envValue string
+		expected bool
 	}{{
-		name:        "true string",
-		envValue:    "true",
-		expected:    true,
+		name:     "true string",
+		envValue: "true",
+		expected: true,
 	}, {
-		name:        "false string",
-		envValue:    "false",
-		expected:    false,
+		name:     "false string",
+		envValue: "false",
+		expected: false,
 	}, {
-		name:        "empty string",
-		envValue:    "",
-		expected:    false,
+		name:     "empty string",
+		envValue: "",
+		expected: false,
 	}, {
-		name:        "invalid string",
-		envValue:    "invalid",
-		expected:    false,
+		name:     "invalid string",
+		envValue: "invalid",
+		expected: false,
 	}}
 
 	for _, tc := range testCases {
@@ -163,29 +163,29 @@ func TestCSRFConfigLoading(t *testing.T) {
 
 	// 测试CSRF CookieSameSite
 	testCasesSameSite := []struct {
-		name        string
-		envValue    string
-		expected    string
+		name     string
+		envValue string
+		expected string
 	}{{
-		name:        "Lax",
-		envValue:    "Lax",
-		expected:    "Lax",
+		name:     "Lax",
+		envValue: "Lax",
+		expected: "Lax",
 	}, {
-		name:        "Strict",
-		envValue:    "Strict",
-		expected:    "Strict",
+		name:     "Strict",
+		envValue: "Strict",
+		expected: "Strict",
 	}, {
-		name:        "None",
-		envValue:    "None",
-		expected:    "None",
+		name:     "None",
+		envValue: "None",
+		expected: "None",
 	}, {
-		name:        "empty string",
-		envValue:    "",
-		expected:    "Lax",
+		name:     "empty string",
+		envValue: "",
+		expected: "Lax",
 	}, {
-		name:        "invalid string",
-		envValue:    "invalid",
-		expected:    "invalid",
+		name:     "invalid string",
+		envValue: "invalid",
+		expected: "invalid",
 	}}
 
 	for _, tc := range testCasesSameSite {
@@ -201,17 +201,17 @@ func TestCSRFConfigLoading(t *testing.T) {
 
 	// 测试CSRF Enabled配置
 	testCasesEnabled := []struct {
-		name        string
-		envValue    string
-		expected    bool
+		name     string
+		envValue string
+		expected bool
 	}{{
-		name:        "true string",
-		envValue:    "true",
-		expected:    true,
+		name:     "true string",
+		envValue: "true",
+		expected: true,
 	}, {
-		name:        "false string",
-		envValue:    "false",
-		expected:    false,
+		name:     "false string",
+		envValue: "false",
+		expected: false,
 	}}
 
 	for _, tc := range testCasesEnabled {

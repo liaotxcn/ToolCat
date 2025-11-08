@@ -7,9 +7,9 @@ import (
 
 	"gorm.io/gorm"
 
-	"toolcat/models"
-	"toolcat/pkg"
-	"toolcat/utils"
+	"weave/models"
+	"weave/pkg"
+	"weave/utils"
 
 	"github.com/gin-gonic/gin"
 )

@@ -16,14 +16,14 @@ global:
 
 # 抓取配置
 scrape_configs:
-  # ToolCat应用监控
-  - job_name: 'toolcat'
-    metrics_path: '/metrics' # ToolCat应用的指标路径
+  # Weave应用监控
+  - job_name: 'weave'
+    metrics_path: '/metrics' # Weave应用的指标路径
     scrape_interval: 10s
     static_configs:
-      - targets: ['toolcat:8081'] # ToolCat应用容器名称和端口
+      - targets: ['weave:8081'] # Weave应用容器名称和端口
         labels:
-          instance: 'toolcat-app'
+          instance: 'weave-app'
           environment: 'production'
 
   # Prometheus自身监控

@@ -7,12 +7,12 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"toolcat/models"
-	"toolcat/pkg"
+	"weave/models"
+	"weave/pkg"
 
 	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
 	"github.com/glebarez/sqlite"
+	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )

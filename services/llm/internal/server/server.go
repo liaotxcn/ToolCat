@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
-	"toolcat/services/llm/internal/chat"
-	"toolcat/services/llm/internal/models"
+	"weave/services/llm/internal/chat"
+	"weave/services/llm/internal/models"
 
 	"golang.org/x/time/rate"
 )

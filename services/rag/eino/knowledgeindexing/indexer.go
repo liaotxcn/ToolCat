@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 	redisCli "github.com/redis/go-redis/v9"
 
-	redispkg "toolcat/services/rag/pkg/redis"
+	redispkg "weave/services/rag/pkg/redis"
 )
 
 func init() {

@@ -11,10 +11,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
-	"toolcat/controllers"
-	"toolcat/pkg"
-	"toolcat/plugins"
-	"toolcat/plugins/core"
+	"weave/controllers"
+	"weave/pkg"
+	"weave/plugins"
+	"weave/plugins/core"
 )
 
 func setupMemoryDBForHealth(t *testing.T) *gorm.DB {
@@ -28,19 +28,19 @@ func setupMemoryDBForHealth(t *testing.T) *gorm.DB {
 
 type hcTestPlugin struct{ pm *core.PluginManager }
 
-func (p *hcTestPlugin) Name() string                             { return "hc_demo" }
-func (p *hcTestPlugin) Description() string                      { return "health test plugin" }
-func (p *hcTestPlugin) Version() string                          { return "1.0.0" }
-func (p *hcTestPlugin) GetDependencies() []string                { return nil }
-func (p *hcTestPlugin) GetConflicts() []string                   { return nil }
-func (p *hcTestPlugin) Init() error                              { return nil }
-func (p *hcTestPlugin) Shutdown() error                          { return nil }
-func (p *hcTestPlugin) OnEnable() error                          { return nil }
-func (p *hcTestPlugin) OnDisable() error                         { return nil }
-func (p *hcTestPlugin) GetRoutes() []core.Route                  { return nil }
-func (p *hcTestPlugin) GetDefaultMiddlewares() []gin.HandlerFunc { return nil }
-func (p *hcTestPlugin) SetPluginManager(manager *core.PluginManager) { p.pm = manager }
-func (p *hcTestPlugin) RegisterRoutes(router *gin.Engine)        {}
+func (p *hcTestPlugin) Name() string                                               { return "hc_demo" }
+func (p *hcTestPlugin) Description() string                                        { return "health test plugin" }
+func (p *hcTestPlugin) Version() string                                            { return "1.0.0" }
+func (p *hcTestPlugin) GetDependencies() []string                                  { return nil }
+func (p *hcTestPlugin) GetConflicts() []string                                     { return nil }
+func (p *hcTestPlugin) Init() error                                                { return nil }
+func (p *hcTestPlugin) Shutdown() error                                            { return nil }
+func (p *hcTestPlugin) OnEnable() error                                            { return nil }
+func (p *hcTestPlugin) OnDisable() error                                           { return nil }
+func (p *hcTestPlugin) GetRoutes() []core.Route                                    { return nil }
+func (p *hcTestPlugin) GetDefaultMiddlewares() []gin.HandlerFunc                   { return nil }
+func (p *hcTestPlugin) SetPluginManager(manager *core.PluginManager)               { p.pm = manager }
+func (p *hcTestPlugin) RegisterRoutes(router *gin.Engine)                          {}
 func (p *hcTestPlugin) Execute(params map[string]interface{}) (interface{}, error) { return nil, nil }
 
 func TestGetHealth_OK(t *testing.T) {

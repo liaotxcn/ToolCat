@@ -935,7 +935,8 @@
   "refresh": "10s",
   "schemaVersion": 30,
   "style": "dark",
-  "tags": ["toolcat", "monitoring"],
+  "tags": ["weave", "monitoring"],
+        "uid": "weave-dashboard",
   "templating": {
     "list": []
   },
@@ -945,7 +946,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "ToolCat 应用监控",
-  "uid": "toolcat-dashboard",
+  "title": "Weave 应用监控",
+  
   "version": 1
 }

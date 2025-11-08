@@ -23,13 +23,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"toolcat/services/rag/pkg/env"
+	"weave/services/rag/pkg/env"
 
 	"github.com/cloudwego/eino/components/document"
 	"github.com/cloudwego/eino/components/embedding"
 	"github.com/redis/go-redis/v9"
 
-	"toolcat/services/rag/eino/knowledgeindexing"
+	"weave/services/rag/eino/knowledgeindexing"
 )
 
 func init() {
