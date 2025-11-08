@@ -12,17 +12,17 @@ import (
 	"syscall"
 	"time"
 
-	"toolcat/config"
-	"toolcat/middleware"
-	"toolcat/models"
-	"toolcat/pkg"
-	"toolcat/pkg/migrate/migration"
-	"toolcat/plugins"
-	"toolcat/plugins/examples"
-	fc "toolcat/plugins/features/FormatConverter"
-	note "toolcat/plugins/features/Note"
-	"toolcat/routers"
-	"toolcat/services/llm"
+	"weave/config"
+	"weave/middleware"
+	"weave/models"
+	"weave/pkg"
+	"weave/pkg/migrate/migration"
+	"weave/plugins"
+	"weave/plugins/examples"
+	fc "weave/plugins/features/FormatConverter"
+	note "weave/plugins/features/Note"
+	"weave/routers"
+	"weave/services/llm"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -117,7 +117,7 @@ func main() {
 	if err := pkg.InitDatabase(); err != nil {
 		pkg.Fatal("Failed to initialize database", zap.Error(err))
 	}
-	defer pkg.CloseDatabase()
+	
 
 	// 执行数据库迁移
 	// 如果禁用了自动迁移，使用SQL迁移文件
@@ -177,7 +177,7 @@ func main() {
 	}
 
 	go func() {
-		pkg.Info("ToolCat 服务启动成功", zap.String("address", fmt.Sprintf("http://localhost:%d", port)))
+		pkg.Info("Weave 服务启动成功", zap.String("address", fmt.Sprintf("http://localhost:%d", port)))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			pkg.Fatal("Failed to start server", zap.Error(err))
 		}
@@ -192,11 +192,19 @@ func main() {
 	// 停止插件监控器
 	plugins.PluginManager.StopPluginWatcher()
 
-	// 创建超时上下文，用于优雅关闭服务器
+	// 创建超时上下文，用于优雅关闭服务器和数据库
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+	
+	// 先关闭HTTP服务器
 	if err := srv.Shutdown(ctx); err != nil {
 		pkg.Fatal("Server forced to shutdown", zap.Error(err))
+	}
+	
+	// 然后使用相同上下文优雅关闭数据库连接
+	// 确保数据库连接在服务器停止接收新请求后有足够时间完成正在进行的操作
+	if err := pkg.CloseDatabaseWithContext(ctx); err != nil {
+		pkg.Error("Database shutdown error", zap.Error(err))
 	}
 
 	pkg.Info("Server exiting")

@@ -8,9 +8,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"toolcat/controllers"
-	"toolcat/plugins"
-	"toolcat/plugins/core"
+	"weave/controllers"
+	"weave/plugins"
+	"weave/plugins/core"
 )
 
 // clearPlugins removes all registered plugins for test isolation

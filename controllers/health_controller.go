@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"toolcat/pkg"
-	"toolcat/pkg/metrics"
-	"toolcat/plugins"
-	"toolcat/plugins/core"
+	"weave/pkg"
+	"weave/pkg/metrics"
+	"weave/plugins"
+	"weave/plugins/core"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -190,7 +190,7 @@ func checkPluginHealth() gin.H {
 		// 记录插件健康检查执行时间
 		duration := time.Since(startTime)
 		metrics.RecordPluginExecution(plugin.Name(), healthy, duration)
-		
+
 		pluginStatuses = append(pluginStatuses, gin.H{
 			"name":    plugin.Name(),
 			"version": plugin.Version(),

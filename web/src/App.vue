@@ -137,7 +137,7 @@ const handleMenuSelect = (key) => {
                 <path d="M8 20H11L13 16L15 20H18L21 12V24H6V20Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
               <div class="brand-text">
-                <h1>Tool<span class="brand-highlight">Cat</span></h1>
+                <h1>Weave</h1>
                 <p>高性能、高效率、插件化易扩展的插件开发/服务聚合平台</p>
               </div>
             </div>
@@ -266,12 +266,12 @@ const handleMenuSelect = (key) => {
       <footer class="app-footer">
         <div class="footer-content">
           <!-- <div class="footer-left">
-            <span class="brand">ToolCat</span>
+            <span class="brand">Weave</span>
             <span class="sep">·</span>
           </div> -->
           <div class="footer-right">
-            <span class="version">ToolCat v{{ appVersion }}</span>
-            <a class="github-link" href="https://github.com/liaotxcn/ToolCat" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+            <span class="version">Weave v{{ appVersion }}</span>
+            <a class="github-link" href="https://github.com/liaotxcn/Weave" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
               <svg class="github-icon" viewBox="0 0 16 16" width="18" height="18" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
                 <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
                 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53

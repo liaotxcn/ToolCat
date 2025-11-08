@@ -2,10 +2,10 @@ package plugins
 
 import (
 	"fmt"
-	"toolcat/config"
-	"toolcat/pkg"
-	"toolcat/plugins/core"
-	"toolcat/plugins/watcher"
+	"weave/config"
+	"weave/pkg"
+	"weave/plugins/core"
+	"weave/plugins/watcher"
 
 	"go.uber.org/zap"
 )
@@ -58,7 +58,7 @@ func InitPluginSystem() error {
 	if config.Config.Plugins.WatcherEnabled {
 		// 创建适配器
 		adapter := &pluginManagerAdapter{manager: PluginManager}
-		
+
 		// 创建插件监控器实例
 		pw, err := watcher.NewPluginWatcher(pluginsDir, adapter, pkg.GetLogger())
 		if err != nil {

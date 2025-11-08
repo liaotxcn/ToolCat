@@ -68,8 +68,8 @@ func generatePluginCode(info PluginInfo) string {
 	code.WriteString("	\"sync\"\n")
 	code.WriteString("	\"github.com/gin-gonic/gin\"\n")
 	code.WriteString("	\"errors\"\n")
-	code.WriteString("	\"toolcat/pkg\"\n")
-	code.WriteString("	\"toolcat/plugins/core\"\n")
+	code.WriteString("	\"weave/pkg\"\n")
+	code.WriteString("	\"weave/plugins/core\"\n")
 	code.WriteString("\n")
 	code.WriteString(")\n\n")
 
@@ -550,7 +550,7 @@ func generatePluginReadme(info PluginInfo) string {
 	readme.WriteString("\n\n## 配置说明\n\n如果插件需要配置，请在此处说明配置项和配置方法。\n\n## 依赖说明\n\n如果插件依赖其他库或服务，请在此处说明。")
 
 	// 写入使用示例
-	readme.WriteString("\n\n## 使用示例\n\n```go\n// 在main.go中注册插件\nimport (\n\t\"toolcat/plugins\"\n\t\"toolcat/plugins/core\"\n)\n\nfunc registerPlugins() {\n\t// 注册插件\n\tcore.GlobalPluginManager.Register(plugins." + strings.ToLower(info.Name[:1]) + info.Name[1:] + ")\n}\n```")
+	readme.WriteString("\n\n## 使用示例\n\n```go\n// 在main.go中注册插件\nimport (\n\t\"weave/plugins\"\n\t\"weave/plugins/core\"\n)\n\nfunc registerPlugins() {\n\t// 注册插件\n\tcore.GlobalPluginManager.Register(plugins." + strings.ToLower(info.Name[:1]) + info.Name[1:] + ")\n}\n```")
 
 	// 写入开发说明
 	readme.WriteString("\n\n## 开发说明\n\n- 编辑 " + strings.ToLower(strings.TrimSuffix(info.Name, "Plugin")) + "_plugin.go 文件实现具体功能\n- 可以添加自定义字段到" + info.Name + "结构体中\n- 根据需要实现更多的API接口\n- 实现GetDefaultMiddlewares方法添加插件特定的中间件")
@@ -580,7 +580,7 @@ func saveReadme(content string, filePath string) error {
 }
 
 func main() {
-	fmt.Println("=== ToolCat 插件脚手架生成器 ===")
+	fmt.Println("=== Weave 插件脚手架生成器 ===")
 	fmt.Println("这个工具将帮助你快速生成符合规范的插件代码文件。")
 
 	// 解析命令行参数

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"toolcat/models"
-	"toolcat/pkg"
+	"weave/models"
+	"weave/pkg"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"

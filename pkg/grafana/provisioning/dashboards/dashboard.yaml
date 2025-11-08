@@ -1,17 +1,17 @@
 apiVersion: 1
 
 dashboards:
-  - name: 'ToolCat监控仪表盘'
-    file: '/etc/grafana/provisioning/dashboards/toolcat-dashboard.json'
-    folder: 'ToolCat'
+  - name: 'Weave监控仪表盘'
+    file: '/etc/grafana/provisioning/dashboards/weave-dashboard.json'
+    folder: 'Weave'
     type: file
     disableDeletion: true
     updateIntervalSeconds: 10
 
 providers:
-  - name: 'ToolCat-Dashboards'
+  - name: 'Weave-Dashboards'
     orgId: 1
-    folder: 'ToolCat'
+    folder: 'Weave'
     type: file
     disableDeletion: false
     updateIntervalSeconds: 10

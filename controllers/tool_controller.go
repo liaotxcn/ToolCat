@@ -3,8 +3,8 @@ package controllers
 import (
 	"net/http"
 
-	"toolcat/models"
-	"toolcat/pkg"
+	"weave/models"
+	"weave/pkg"
 
 	"github.com/gin-gonic/gin"
 )

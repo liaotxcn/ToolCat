@@ -12,9 +12,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
-	"toolcat/controllers"
-	"toolcat/models"
-	"toolcat/pkg"
+	"weave/controllers"
+	"weave/models"
+	"weave/pkg"
 )
 
 func TestAuditControllerGetAuditLogsTenantIsolation(t *testing.T) {

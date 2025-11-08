@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"toolcat/services/llm/internal/config"
+	"weave/services/llm/internal/config"
 
 	"github.com/tmc/langchaingo/llms"
 )

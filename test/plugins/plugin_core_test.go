@@ -11,11 +11,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"toolcat/config"
-	"toolcat/pkg"
-	"toolcat/plugins"
-	"toolcat/plugins/core"
-	"toolcat/plugins/watcher"
+	"weave/config"
+	"weave/pkg"
+	"weave/plugins"
+	"weave/plugins/core"
+	"weave/plugins/watcher"
 )
 
 // mockPlugin implements core.Plugin for testing

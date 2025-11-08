@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"toolcat/services/rag/eino/rag"
-	"toolcat/services/rag/pkg/env"
+	"weave/services/rag/eino/rag"
+	"weave/services/rag/pkg/env"
 )
 
 func main() {

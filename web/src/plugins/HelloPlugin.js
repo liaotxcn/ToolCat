@@ -24,7 +24,7 @@ class HelloPlugin {
 
   // 插件方法示例
   sayHello() {
-    return 'Hello, ToolCat!'
+    return 'Hello, Weave!'
   }
 
   // 渲染插件内容

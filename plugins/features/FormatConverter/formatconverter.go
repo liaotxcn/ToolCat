@@ -7,8 +7,8 @@ import (
 	"io"
 	"sync"
 
-	"toolcat/pkg"
-	"toolcat/plugins/core"
+	"weave/pkg"
+	"weave/plugins/core"
 
 	"github.com/gin-gonic/gin"
 	"google.golang.org/protobuf/encoding/protojson"

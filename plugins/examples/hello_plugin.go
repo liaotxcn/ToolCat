@@ -3,12 +3,13 @@ package examples
 import (
 	"fmt"
 
+	"weave/plugins/core"
+
 	"github.com/gin-gonic/gin"
-	"toolcat/plugins/core"
 )
 
 // HelloPlugin 示例插件
-type HelloPlugin struct{
+type HelloPlugin struct {
 	pluginManager *core.PluginManager
 }
 
@@ -87,8 +88,8 @@ func (p *HelloPlugin) RegisterRoutes(router *gin.Engine) {
 func (p *HelloPlugin) GetRoutes() []core.Route {
 	return []core.Route{
 		{
-			Path:         "/",
-			Method:       "GET",
+			Path:   "/",
+			Method: "GET",
 			Handler: func(c *gin.Context) {
 				c.JSON(200, gin.H{
 					"plugin":      p.Name(),
@@ -100,8 +101,8 @@ func (p *HelloPlugin) GetRoutes() []core.Route {
 			AuthRequired: false,
 		},
 		{
-			Path:         "/say",
-			Method:       "GET",
+			Path:   "/say",
+			Method: "GET",
 			Handler: func(c *gin.Context) {
 				name := c.DefaultQuery("name", "World")
 				result, _ := p.Execute(map[string]interface{}{

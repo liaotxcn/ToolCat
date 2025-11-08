@@ -1,4 +1,4 @@
-module toolcat
+module weave
 
 go 1.24.4
 

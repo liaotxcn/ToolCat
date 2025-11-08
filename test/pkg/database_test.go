@@ -3,7 +3,7 @@ package pkg_test
 import (
 	"os"
 	"testing"
-	"toolcat/pkg"
+	"weave/pkg"
 )
 
 func TestMain(m *testing.M) {
@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 		os.Setenv("DB_PASSWORD", "123456")
 	}
 	if testDBName == "" {
-		os.Setenv("DB_NAME", "toolcat_test")
+		os.Setenv("DB_NAME", "weave_test")
 	}
 
 	// 运行测试

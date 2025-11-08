@@ -18,7 +18,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: 123456
-          MYSQL_DATABASE: toolcat_test
+          MYSQL_DATABASE: weave_test
         ports:
           - 3306:3306
         options: >-
@@ -62,7 +62,7 @@ jobs:
 
       - name: Create test database
         run: |
-          mysql -h 127.0.0.1 -P 3306 -u root -p123456 -e "CREATE DATABASE IF NOT EXISTS toolcat_test;"
+          mysql -h 127.0.0.1 -P 3306 -u root -p123456 -e "CREATE DATABASE IF NOT EXISTS weave_test;"
 
       - name: Set up test environment variables
         run: |
@@ -70,12 +70,12 @@ jobs:
           echo "TEST_DB_PORT=3306" >> $GITHUB_ENV
           echo "TEST_DB_USERNAME=root" >> $GITHUB_ENV
           echo "TEST_DB_PASSWORD=123456" >> $GITHUB_ENV
-          echo "TEST_DB_NAME=toolcat_test" >> $GITHUB_ENV
+          echo "TEST_DB_NAME=weave_test" >> $GITHUB_ENV
           echo "DB_HOST=127.0.0.1" >> $GITHUB_ENV
           echo "DB_PORT=3306" >> $GITHUB_ENV
           echo "DB_USERNAME=root" >> $GITHUB_ENV
           echo "DB_PASSWORD=123456" >> $GITHUB_ENV
-          echo "DB_NAME=toolcat_test" >> $GITHUB_ENV
+          echo "DB_NAME=weave_test" >> $GITHUB_ENV
 
       - name: Run unit tests
         run: go test -v ./test/models/... ./test/pkg/... ./test/middleware/...
@@ -119,7 +119,7 @@ jobs:
         run: go mod tidy
 
       - name: Build application
-        run: go build -v -o toolcat main.go
+        run: go build -v -o weave main.go
 
 
 

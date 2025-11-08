@@ -1,8 +1,8 @@
-# ToolCat 数据库迁移工具
+# Weave 数据库迁移工具
 
 ## 1. 概述
 
-本文档提供 ToolCat 数据库迁移工具的详细使用说明。ToolCat支持两种数据库迁移方式：
+本文档提供 Weave 数据库迁移工具的详细使用说明。Weave支持两种数据库迁移方式：
 
 1. **GORM自动迁移**：基于GORM框架的自动迁移功能，适合开发阶段快速迭代
 2. **SQL文件迁移**：基于`golang-migrate`库实现的版本化SQL文件迁移，适合生产环境的精确控制
@@ -92,7 +92,7 @@ go run ./pkg/migrate/main.go up
 
 **成功输出示例：**
 ```
-Database connection established successfully host=localhost port=3306 database=toolcat
+Database connection established successfully host=localhost port=3306 database=weave
 Migrations applied successfully
 ```
 
@@ -167,7 +167,7 @@ go run ./pkg/migrate/main.go status
 
 **输出示例：**
 ```
-Database connection established successfully host=localhost port=3306 database=toolcat
+Database connection established successfully host=localhost port=3306 database=weave
 Current version: 1
 Available versions: 1 2 3
 ```
@@ -244,7 +244,7 @@ Failed to apply migrations: failed to apply migrations: Dirty database version 1
 3. 解决脏标记方法：
    ```bash
    # 连接到MySQL数据库
-   mysql -h localhost -u root -p toolcat
+   mysql -h localhost -u root -p weave
    
    # 查看schema_migrations表
    SELECT * FROM schema_migrations;

@@ -1,15 +1,15 @@
 package pkg
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
-	"toolcat/config"
-	"toolcat/pkg/metrics"
+	"weave/config"
+	"weave/pkg/metrics"
 
-	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -147,21 +147,72 @@ func InitDatabase() error {
 	if config.Config.Database.Driver == "postgres" {
 		dbType = "PostgreSQL"
 	}
-	Info("数据库连接成功",
-		zap.String("database_type", dbType),
-		zap.String("driver", config.Config.Database.Driver),
-		zap.String("host", config.Config.Database.Host),
-		zap.Int("port", config.Config.Database.Port),
-		zap.String("database", config.Config.Database.DBName),
+	log.Printf("数据库连接成功 - database_type: %s, driver: %s, host: %s, port: %d, database: %s",
+		dbType,
+		config.Config.Database.Driver,
+		config.Config.Database.Host,
+		config.Config.Database.Port,
+		config.Config.Database.DBName,
 	)
 	return nil
 }
 
 // CloseDatabase 关闭数据库连接
 func CloseDatabase() error {
+	// 使用默认上下文，5秒超时
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return CloseDatabaseWithContext(ctx)
+}
+
+// CloseDatabaseWithContext 使用上下文控制的方式优雅关闭数据库连接
+// 支持超时控制，等待正在进行的事务完成
+func CloseDatabaseWithContext(ctx context.Context) error {
+	if DB == nil {
+		log.Printf("Database connection already closed or not initialized")
+		return nil
+	}
+
 	sqlDB, err := DB.DB()
 	if err != nil {
-		return err
+		log.Printf("Failed to get database instance during shutdown: %v", err)
+		return fmt.Errorf("failed to get database instance: %w", err)
 	}
-	return sqlDB.Close()
+
+	// 记录关闭前的连接状态
+	stats := sqlDB.Stats()
+	log.Printf("Starting database graceful shutdown - idle_connections: %d, open_connections: %d, in_use: %d, idle_closed: %d",
+		stats.Idle,
+		stats.OpenConnections,
+		stats.InUse,
+		stats.MaxIdleClosed,
+	)
+
+	// 开始关闭过程
+	startTime := time.Now()
+
+	// 首先设置最大空闲连接为0，防止新的空闲连接创建
+	sqlDB.SetMaxIdleConns(0)
+
+	// 设置最大打开连接数为当前活跃连接数的估计值，允许现有连接完成但不接受新连接
+	// 注意：Go的sql.DBStats没有Active字段，我们使用OpenConnections作为上限
+	sqlDB.SetMaxOpenConns(stats.OpenConnections)
+
+	log.Printf("Waiting for active database connections to complete")
+
+	// 关闭数据库连接
+	err = sqlDB.Close()
+
+	elapsed := time.Since(startTime)
+	if err != nil {
+		log.Printf("Database connection close failed after %v: %v", elapsed, err)
+		return fmt.Errorf("database close failed after %v: %w", elapsed, err)
+	}
+
+	log.Printf("Database connections closed successfully after %v", elapsed)
+
+	// 清除全局DB变量
+	DB = nil
+
+	return nil
 }

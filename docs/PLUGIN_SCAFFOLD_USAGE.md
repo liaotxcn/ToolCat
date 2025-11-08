@@ -1,6 +1,6 @@
-# ToolCat 插件脚手架工具
+# Weave 插件脚手架工具
 
-ToolCat 提供了一个高效生成ToolCat插件代码的脚手架，帮助开发者快速创建符合规范的插件项目结构。
+Weave 提供了一个高效生成Weave插件代码的脚手架，帮助开发者快速创建符合规范的插件项目结构。
 
 ## 功能特性
 
@@ -21,7 +21,7 @@ ToolCat 提供了一个高效生成ToolCat插件代码的脚手架，帮助开�
 
 ```bash
 # 在项目根目录下运行
-cd /path/to/ToolCat
+cd /path/to/Weave
 # Windows/Linux/Mac
 go run tools/plugin_scaffold.go
 ```
@@ -138,8 +138,8 @@ plugin_scaffold -name CalendarPlugin -dir /path/to/plugins -non-interactive
 
 ```go
 import (
-	"toolcat/plugins"
-	"toolcat/plugins/core"
+	"weave/plugins"
+	"weave/plugins/core"
 )
 
 func registerPlugins() {

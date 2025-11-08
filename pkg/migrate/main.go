@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 
-	"toolcat/config"
-	"toolcat/pkg"
-	"toolcat/pkg/migrate/migration"
+	"weave/config"
+	"weave/pkg"
+	"weave/pkg/migrate/migration"
 )
 
 func main() {

@@ -2,10 +2,10 @@ package routers
 
 import (
 	"time"
-	"toolcat/controllers"
-	"toolcat/middleware"
-	"toolcat/pkg"
-	"toolcat/pkg/metrics"
+	"weave/controllers"
+	"weave/middleware"
+	"weave/pkg"
+	"weave/pkg/metrics"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
@@ -160,7 +160,7 @@ func SetupRouter() *gin.Engine {
 	healthCtrl := &controllers.HealthController{}
 	appGroup.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message":             "欢迎使用 ToolCat 服务！",
+			"message":             "欢迎使用 Weave 服务！",
 			"version":             "1.0.0",
 			"api_base":            "/api/v1",
 			"health_check":        "/health",

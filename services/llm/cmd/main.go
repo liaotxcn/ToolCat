@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 
-	"toolcat/services/llm/internal/chat"
-	"toolcat/services/llm/internal/config"
-	"toolcat/services/llm/internal/server"
+	"weave/services/llm/internal/chat"
+	"weave/services/llm/internal/config"
+	"weave/services/llm/internal/server"
 
 	"github.com/tmc/langchaingo/llms"
 	"github.com/tmc/langchaingo/llms/ollama"

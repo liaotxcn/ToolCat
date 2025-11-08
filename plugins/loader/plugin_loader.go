@@ -7,8 +7,8 @@ import (
 	"plugin"
 	"sync"
 
-	"toolcat/pkg"
-	"toolcat/plugins/core"
+	"weave/pkg"
+	"weave/plugins/core"
 
 	"go.uber.org/zap"
 )

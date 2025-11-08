@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"toolcat/config"
-	"toolcat/pkg"
-	"toolcat/pkg/metrics"
-	"toolcat/plugins/loader"
+	"weave/config"
+	"weave/pkg"
+	"weave/pkg/metrics"
+	"weave/plugins/loader"
 
 	"github.com/fsnotify/fsnotify"
 	"go.uber.org/zap"
@@ -358,8 +358,8 @@ func (pw *PluginWatcher) tryLoadNewPlugin(pluginName string) {
 	// 检查.so文件是否存在
 	soPath := loader.GetPluginPath(pw.pluginDir, pluginName)
 	if _, err := os.Stat(soPath); os.IsNotExist(err) {
-		pw.logger.Warn("插件编译文件不存在，跳过加载", 
-			zap.String("pluginName", pluginName), 
+		pw.logger.Warn("插件编译文件不存在，跳过加载",
+			zap.String("pluginName", pluginName),
 			zap.String("expectedPath", soPath))
 		metrics.RecordPluginError(pluginName, "plugin_file_not_found")
 		return
@@ -368,8 +368,8 @@ func (pw *PluginWatcher) tryLoadNewPlugin(pluginName string) {
 	// 尝试加载插件
 	pluginInstance, err := pw.loader.LoadPlugin(soPath, pluginName)
 	if err != nil {
-		pw.logger.Error("动态加载插件失败", 
-			zap.String("pluginName", pluginName), 
+		pw.logger.Error("动态加载插件失败",
+			zap.String("pluginName", pluginName),
 			zap.Error(err))
 		metrics.RecordPluginError(pluginName, "dynamic_load_failed")
 		return
@@ -377,8 +377,8 @@ func (pw *PluginWatcher) tryLoadNewPlugin(pluginName string) {
 
 	// 注册插件
 	if err := pw.manager.Register(pluginInstance); err != nil {
-		pw.logger.Error("注册插件失败", 
-			zap.String("pluginName", pluginName), 
+		pw.logger.Error("注册插件失败",
+			zap.String("pluginName", pluginName),
 			zap.Error(err))
 		metrics.RecordPluginError(pluginName, "hot_register_failed")
 		// 加载失败，卸载插件

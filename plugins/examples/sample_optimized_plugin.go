@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"log"
 
+	"weave/plugins/core"
+
 	"github.com/gin-gonic/gin"
-	"toolcat/plugins/core"
 )
 
 // SampleOptimizedPlugin 展示如何使用优化后的插件路由注册机制的示例插件

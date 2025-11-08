@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"toolcat/pkg"
+	"weave/pkg"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -112,8 +112,6 @@ func generateRequestID() string {
 	// 这里为了简化，使用时间戳和随机数的组合
 	return time.Now().Format("20060102150405") + "-" + pkg.RandomString(8)
 }
-
-
 
 // responseWriterWrapper 用于包装http.ResponseWriter，捕获状态码
 // 这个结构体用于内部跟踪响应状态码，以便在中间件中记录日志

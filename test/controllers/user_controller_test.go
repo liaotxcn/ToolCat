@@ -12,10 +12,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
-	"toolcat/controllers"
-	"toolcat/models"
-	"toolcat/pkg"
-	"toolcat/utils"
+	"weave/controllers"
+	"weave/models"
+	"weave/pkg"
+	"weave/utils"
 )
 
 func setupMemoryDB(t *testing.T) *gorm.DB {
@@ -48,8 +48,8 @@ func TestUserRegister_Success(t *testing.T) {
 		t.Fatalf("expected 201, got %d", w.Code)
 	}
 	var body struct {
-		Message string       `json:"message"`
-		User    models.User  `json:"user"`
+		Message string      `json:"message"`
+		User    models.User `json:"user"`
 	}
 	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
 		t.Fatalf("json unmarshal error: %v", err)
@@ -118,8 +118,12 @@ func TestGetUsers_TenantIsolation(t *testing.T) {
 
 	u1 := models.User{Username: "alice", Password: "x", Email: "a@example.com", TenantID: 1}
 	u2 := models.User{Username: "bob", Password: "y", Email: "b@example.com", TenantID: 2}
-	if err := db.Create(&u1).Error; err != nil { t.Fatalf("seed u1 error: %v", err) }
-	if err := db.Create(&u2).Error; err != nil { t.Fatalf("seed u2 error: %v", err) }
+	if err := db.Create(&u1).Error; err != nil {
+		t.Fatalf("seed u1 error: %v", err)
+	}
+	if err := db.Create(&u2).Error; err != nil {
+		t.Fatalf("seed u2 error: %v", err)
+	}
 
 	uc := controllers.UserController{}
 	r := gin.New()
@@ -134,7 +138,9 @@ func TestGetUsers_TenantIsolation(t *testing.T) {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
 	var users []models.User
-	if err := json.Unmarshal(w.Body.Bytes(), &users); err != nil { t.Fatalf("json unmarshal error: %v", err) }
+	if err := json.Unmarshal(w.Body.Bytes(), &users); err != nil {
+		t.Fatalf("json unmarshal error: %v", err)
+	}
 	if len(users) != 1 || users[0].TenantID != 1 || users[0].Username != "alice" {
 		t.Fatalf("expected 1 user for tenant 1, got %#v", users)
 	}
@@ -156,8 +162,10 @@ func TestGetUser_NotFound(t *testing.T) {
 		t.Fatalf("expected 404, got %d", w.Code)
 	}
 	var body map[string]interface{}
-	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil { t.Fatalf("json unmarshal error: %v", err) }
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json unmarshal error: %v", err)
+	}
 	if body["message"] != "User not found" {
-		t.Fatalf("expected message 'User not found', got %#v", body["message"]) 
+		t.Fatalf("expected message 'User not found', got %#v", body["message"])
 	}
 }

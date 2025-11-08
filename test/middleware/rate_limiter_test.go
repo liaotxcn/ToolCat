@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"toolcat/middleware"
+	"weave/middleware"
 
 	"github.com/gin-gonic/gin"
 )

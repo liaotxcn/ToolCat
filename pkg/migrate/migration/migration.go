@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"toolcat/config"
-	"toolcat/pkg"
+	"weave/config"
+	"weave/pkg"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database"

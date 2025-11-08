@@ -12,9 +12,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
-	"toolcat/controllers"
-	"toolcat/models"
-	"toolcat/pkg"
+	"weave/controllers"
+	"weave/models"
+	"weave/pkg"
 )
 
 func setupMemoryDBForTeam(t *testing.T) *gorm.DB {
@@ -49,7 +49,9 @@ func TestCreateTeam_Success(t *testing.T) {
 		t.Fatalf("expected 201, got %d", w.Code)
 	}
 	var team models.Team
-	if err := json.Unmarshal(w.Body.Bytes(), &team); err != nil { t.Fatalf("json unmarshal error: %v", err) }
+	if err := json.Unmarshal(w.Body.Bytes(), &team); err != nil {
+		t.Fatalf("json unmarshal error: %v", err)
+	}
 	if team.ID == 0 || team.Name != "alpha" || team.TenantID != 10 || team.OwnerID != 99 {
 		t.Fatalf("unexpected created team: %#v", team)
 	}
@@ -60,7 +62,9 @@ func TestCreateTeam_DuplicateName(t *testing.T) {
 	db := setupMemoryDBForTeam(t)
 	// Seed one team in tenant 5
 	seed := models.Team{Name: "alpha", TenantID: 5, OwnerID: 7}
-	if err := db.Create(&seed).Error; err != nil { t.Fatalf("seed team error: %v", err) }
+	if err := db.Create(&seed).Error; err != nil {
+		t.Fatalf("seed team error: %v", err)
+	}
 
 	tc := controllers.TeamController{}
 	r := gin.New()
@@ -77,7 +81,9 @@ func TestCreateTeam_DuplicateName(t *testing.T) {
 		t.Fatalf("expected 409, got %d", w.Code)
 	}
 	var body map[string]interface{}
-	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil { t.Fatalf("json unmarshal error: %v", err) }
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json unmarshal error: %v", err)
+	}
 	if body["code"] != "CONFLICT" {
 		t.Fatalf("expected code 'CONFLICT', got %#v", body["code"])
 	}

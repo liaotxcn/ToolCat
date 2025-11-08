@@ -97,7 +97,7 @@ func resetDefaults() {
 	Config.Database.Driver = "mysql"
 	Config.Database.Host = "localhost"
 	Config.Database.Port = 3306
-	Config.Database.DBName = "toolcat"
+	Config.Database.DBName = "weave"
 	Config.Database.Charset = "utf8mb4"
 	// 敏感字段（数据库用户名和密码）将通过环境变量或配置文件设置
 	Config.Database.Username = ""

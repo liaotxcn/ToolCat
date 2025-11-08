@@ -13,7 +13,7 @@
               <path d="M12 20H16L18 16L20 20H24L28 12V28H12V20Z" fill="currentColor" opacity="0.8"/>
             </svg>
           </div>
-          <h1>ToolCat</h1>
+          <h1>Weave</h1>
         </div>
         <p class="brand-subtitle">欢迎使用，请先登录或注册</p>
       </div>
@@ -61,7 +61,7 @@
       
       <!-- 页脚信息 -->
       <div class="auth-footer">
-        <p>© {{ new Date().getFullYear() }} ToolCat - 插件开发/服务聚合平台</p>
+        <p>© {{ new Date().getFullYear() }} Weave - 插件开发/服务聚合平台</p>
       </div>
     </div>
   </div>

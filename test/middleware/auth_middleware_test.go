@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"toolcat/config"
-	"toolcat/middleware"
-	"toolcat/utils"
+	"weave/config"
+	"weave/middleware"
+	"weave/utils"
 
 	"github.com/gin-gonic/gin"
 )

@@ -12,9 +12,9 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 
-	"toolcat/controllers"
-	"toolcat/models"
-	"toolcat/pkg"
+	"weave/controllers"
+	"weave/models"
+	"weave/pkg"
 )
 
 func setupMemoryDBForTool(t *testing.T) *gorm.DB {
@@ -35,8 +35,12 @@ func TestGetTools_TenantIsolation(t *testing.T) {
 
 	t1 := models.Tool{Name: "toolA", Description: "A", PluginName: "p1", IsEnabled: true, TenantID: 1}
 	t2 := models.Tool{Name: "toolB", Description: "B", PluginName: "p2", IsEnabled: true, TenantID: 2}
-	if err := db.Create(&t1).Error; err != nil { t.Fatalf("seed t1 error: %v", err) }
-	if err := db.Create(&t2).Error; err != nil { t.Fatalf("seed t2 error: %v", err) }
+	if err := db.Create(&t1).Error; err != nil {
+		t.Fatalf("seed t1 error: %v", err)
+	}
+	if err := db.Create(&t2).Error; err != nil {
+		t.Fatalf("seed t2 error: %v", err)
+	}
 
 	tc := controllers.ToolController{}
 	r := gin.New()
@@ -51,7 +55,9 @@ func TestGetTools_TenantIsolation(t *testing.T) {
 		t.Fatalf("expected 200, got %d", w.Code)
 	}
 	var tools []models.Tool
-	if err := json.Unmarshal(w.Body.Bytes(), &tools); err != nil { t.Fatalf("json unmarshal error: %v", err) }
+	if err := json.Unmarshal(w.Body.Bytes(), &tools); err != nil {
+		t.Fatalf("json unmarshal error: %v", err)
+	}
 	if len(tools) != 1 || tools[0].TenantID != 1 || tools[0].Name != "toolA" {
 		t.Fatalf("expected 1 tool for tenant 1, got %#v", tools)
 	}
@@ -74,7 +80,9 @@ func TestGetTool_NotFound(t *testing.T) {
 		t.Fatalf("expected 404, got %d", w.Code)
 	}
 	var body map[string]interface{}
-	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil { t.Fatalf("json unmarshal error: %v", err) }
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json unmarshal error: %v", err)
+	}
 	if body["message"] != "Tool not found" {
 		t.Fatalf("expected message 'Tool not found', got %#v", body["message"])
 	}
@@ -99,7 +107,9 @@ func TestCreateTool_Success(t *testing.T) {
 		t.Fatalf("expected 201, got %d", w.Code)
 	}
 	var created models.Tool
-	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil { t.Fatalf("json unmarshal error: %v", err) }
+	if err := json.Unmarshal(w.Body.Bytes(), &created); err != nil {
+		t.Fatalf("json unmarshal error: %v", err)
+	}
 	if created.ID == 0 || created.Name != "toolC" || created.TenantID != 3 {
 		t.Fatalf("unexpected created tool: %#v", created)
 	}
