@@ -166,9 +166,9 @@ Weave 采用微内核+分层架构，项目结构清晰地反映了这一设计�
 │   └── watcher/              # 插件监控
 ├── routers/             # 路由定义注册
 ├── services/            # 服务聚合
-|   ├── llm/                  # LLM 服务
-|   ├── rag/                  # RAG 服务
-|   └── extended...           # 可扩展服务
+│   ├── llm/                  # LLM 服务
+│   ├── rag/                  # RAG 服务
+│   └── extended...           # 可扩展服务
 ├── test/                # 单元/集成测试
 ├── tools/               # 开发工具
 ├── utils/               # 工具函数
