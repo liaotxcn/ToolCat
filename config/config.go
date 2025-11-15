@@ -22,6 +22,7 @@ var Config struct {
 	// 服务器配置
 	Server struct {
 		Port int
+		InstanceID string // 实例标识，用于多实例部署
 	}
 
 	// 数据库配置
@@ -92,6 +93,7 @@ func resetDefaults() {
 
 	// 服务器配置
 	Config.Server.Port = 8081
+	Config.Server.InstanceID = "weave-default"
 
 	// 数据库配置（非敏感字段默认值）
 	Config.Database.Driver = "mysql"
