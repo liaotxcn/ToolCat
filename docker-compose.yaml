@@ -35,9 +35,9 @@ services:
     networks:
       - weave-network
     ports:
-      - "80:80"      # HTTP入口
+      - "8084:80"     # 负载均衡器入口
+      - "80:80"       # HTTP入口
       - "443:443"     # HTTPS入口（可选）
-      - "8080:8080"   # Nginx状态页面
     volumes:
       - nginx-config:/etc/nginx/conf.d
       - nginx-logs:/var/log/nginx
@@ -48,7 +48,7 @@ services:
       - weave-2
       - weave-3
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/nginx_status"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/nginx_status"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -282,7 +282,9 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
     depends_on:
-      - weave
+      - weave-1
+      - weave-2
+      - weave-3
 
   # Grafana可视化服务
   grafana:
