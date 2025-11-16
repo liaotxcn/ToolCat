@@ -132,10 +132,7 @@ const handleMenuSelect = (key) => {
         <div class="header-content">
           <div class="brand-section">
             <div class="brand-container">
-              <svg class="brand-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- 图标 -->
-                <path d="M8 20H11L13 16L15 20H18L21 12V24H6V20Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+              <img src="/logo.png" alt="Weave Logo" class="brand-icon" />
               <div class="brand-text">
                 <h1>Weave</h1>
                 <p>高性能、高效率、插件化易扩展的插件开发/服务聚合平台</p>
@@ -338,7 +335,10 @@ const handleMenuSelect = (key) => {
 }
 
 .brand-icon {
-  color: rgba(255, 255, 255, 0.9);
+  width: 68px;
+  height: 68px;
+  object-fit: contain;
+  border-radius: 6px;
   transition: transform 0.3s ease;
 }
 
