@@ -19,64 +19,156 @@ volumes:
     driver: local
   redis-data:
     driver: local
+  nginx-config:
+    driver: local
+  nginx-logs:
+    driver: local
 
 
 # 定义服务
 services:
-  # Weave应用服务
-  weave:
-    # 从当前目录构建Docker镜像
-    build: .
-    # 容器名称
-    container_name: weave-app
-    # 重启策略
+  # Nginx负载均衡服务
+  nginx:
+    image: nginx:alpine
+    container_name: weave-nginx
     restart: unless-stopped
-    # 网络配置
     networks:
       - weave-network
-    # 端口映射 (主机端口:容器端口)
+    ports:
+      - "80:80"      # HTTP入口
+      - "443:443"     # HTTPS入口（可选）
+      - "8080:8080"   # Nginx状态页面
+    volumes:
+      - nginx-config:/etc/nginx/conf.d
+      - nginx-logs:/var/log/nginx
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./config/nginx/weave.conf:/etc/nginx/conf.d/weave.conf:ro
+    depends_on:
+      - weave-1
+      - weave-2
+      - weave-3
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/nginx_status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Weave应用服务 - 实例1
+  weave-1:
+    build: .
+    container_name: weave-app-1
+    restart: unless-stopped
+    networks:
+      - weave-network
     ports:
       - "8081:8081"
-    # 环境变量配置
     environment:
-      # 服务器配置
       - SERVER_PORT=8081
-      
-      # 数据库配置
+      - INSTANCE_ID=weave-1
       - DB_HOST=mysql
       - DB_PORT=3306
       - DB_USERNAME=weave_user
       - DB_PASSWORD=${DB_PASSWORD:-default_password}
       - DB_NAME=weave
       - DB_CHARSET=utf8mb4
-      
-      # Redis配置
       - REDIS_ADDR=redisearch:6379
-      
-      # JWT配置
       - JWT_SECRET=${JWT_SECRET:-default_jwt_secret}
       - JWT_ACCESS_TOKEN_EXPIRY=60
       - JWT_REFRESH_TOKEN_EXPIRY=168
-      
-      # CSRF配置
       - CSRF_ENABLED=true
       - CSRF_COOKIE_NAME=XSRF-TOKEN
       - CSRF_HEADER_NAME=X-CSRF-Token
-      
-      # 日志配置
       - LOG_LEVEL=info
       - LOG_OUTPUT_PATH=/app/logs/output.log
       - LOG_ERROR_PATH=/app/logs/error.log
-    # 依赖关系
     depends_on:
       - mysql
       - redisearch
-    # 卷挂载
     volumes:
       - logs:/app/logs
-    # 健康检查
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8081/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Weave应用服务 - 实例2
+  weave-2:
+    build: .
+    container_name: weave-app-2
+    restart: unless-stopped
+    networks:
+      - weave-network
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVER_PORT=8082
+      - INSTANCE_ID=weave-2
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=weave_user
+      - DB_PASSWORD=${DB_PASSWORD:-default_password}
+      - DB_NAME=weave
+      - DB_CHARSET=utf8mb4
+      - REDIS_ADDR=redisearch:6379
+      - JWT_SECRET=${JWT_SECRET:-default_jwt_secret}
+      - JWT_ACCESS_TOKEN_EXPIRY=60
+      - JWT_REFRESH_TOKEN_EXPIRY=168
+      - CSRF_ENABLED=true
+      - CSRF_COOKIE_NAME=XSRF-TOKEN
+      - CSRF_HEADER_NAME=X-CSRF-Token
+      - LOG_LEVEL=info
+      - LOG_OUTPUT_PATH=/app/logs/output.log
+      - LOG_ERROR_PATH=/app/logs/error.log
+    depends_on:
+      - mysql
+      - redisearch
+    volumes:
+      - logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8082/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Weave应用服务 - 实例3
+  weave-3:
+    build: .
+    container_name: weave-app-3
+    restart: unless-stopped
+    networks:
+      - weave-network
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVER_PORT=8083
+      - INSTANCE_ID=weave-3
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=weave_user
+      - DB_PASSWORD=${DB_PASSWORD:-default_password}
+      - DB_NAME=weave
+      - DB_CHARSET=utf8mb4
+      - REDIS_ADDR=redisearch:6379
+      - JWT_SECRET=${JWT_SECRET:-default_jwt_secret}
+      - JWT_ACCESS_TOKEN_EXPIRY=60
+      - JWT_REFRESH_TOKEN_EXPIRY=168
+      - CSRF_ENABLED=true
+      - CSRF_COOKIE_NAME=XSRF-TOKEN
+      - CSRF_HEADER_NAME=X-CSRF-Token
+      - LOG_LEVEL=info
+      - LOG_OUTPUT_PATH=/app/logs/output.log
+      - LOG_ERROR_PATH=/app/logs/error.log
+    depends_on:
+      - mysql
+      - redisearch
+    volumes:
+      - logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8083/health" ]
       interval: 30s
       timeout: 10s
       retries: 3
