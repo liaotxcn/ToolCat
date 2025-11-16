@@ -166,6 +166,8 @@ func main() {
 
 	// 启动服务器
 	port := config.Config.Server.Port
+	instanceID := config.Config.Server.InstanceID
+	
 	// 创建HTTP服务器并配置连接复用参数
 	srv := &http.Server{
 		Addr:           fmt.Sprintf(":%d", port),
@@ -177,7 +179,9 @@ func main() {
 	}
 
 	go func() {
-		pkg.Info("Weave 服务启动成功", zap.String("address", fmt.Sprintf("http://localhost:%d", port)))
+		pkg.Info("Weave 服务启动成功", 
+			zap.String("instance_id", instanceID),
+			zap.String("address", fmt.Sprintf("http://localhost:%d", port)))
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			pkg.Fatal("Failed to start server", zap.Error(err))
 		}

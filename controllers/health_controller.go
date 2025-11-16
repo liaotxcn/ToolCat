@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"weave/config"
 	"weave/pkg"
 	"weave/pkg/metrics"
 	"weave/plugins"
@@ -23,8 +24,9 @@ func (hc *HealthController) GetHealth(c *gin.Context) {
 
 	// 初始化健康检查结果
 	result := gin.H{
-		"status":    "ok",
-		"timestamp": time.Now().Unix(),
+		"status":      "ok",
+		"timestamp":   time.Now().Unix(),
+		"instance_id": config.Config.Server.InstanceID,
 	}
 
 	// 检查数据库连接健康状态

@@ -19,6 +19,9 @@ RUN go mod download
 # 复制源代码
 COPY . .
 
+# 更新依赖
+RUN go mod tidy
+
 # 编译应用
 RUN CGO_ENABLED=0 GOOS=linux go build -o weave main.go
 
