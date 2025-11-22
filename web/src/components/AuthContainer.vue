@@ -8,10 +8,7 @@
       <div class="brand">
         <div class="logo-container">
           <div class="logo">
-            <svg viewBox="0 0 40 40" width="40" height="40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="5" y="5" width="30" height="30" rx="6" stroke="currentColor" stroke-width="2"/>
-              <path d="M12 20H16L18 16L20 20H24L28 12V28H12V20Z" fill="currentColor" opacity="0.8"/>
-            </svg>
+            <img src="/logo.png" alt="Weave Logo" class="logo-image" />
           </div>
           <h1>Weave</h1>
         </div>
@@ -184,6 +181,13 @@ const handleRegisterSuccess = () => {
   background: rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-lg);
   color: var(--bg-primary);
+}
+
+.logo-image {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 .brand h1 {

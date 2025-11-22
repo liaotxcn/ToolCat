@@ -71,7 +71,11 @@ func SetupRouter() *gin.Engine {
 		// 认证相关路由
 		auth := appGroup.Group("/auth")
 		{
-			//  限流保护，为认证接口添加限流：每秒允许10个请求，突发容量20
+			// 为认证服务添加重试和超时保护
+			auth.Use(middleware.RetryMiddleware(middleware.DefaultRetryConfig()))
+			auth.Use(middleware.TimeoutMiddleware(middleware.DefaultTimeoutConfig()))
+
+			// 限流保护，为认证接口添加限流：每秒允许10个请求，突发容量20
 			auth.Use(middleware.RateLimiter(10, 20))
 			userCtrl := &controllers.UserController{}
 			auth.POST("/register", userCtrl.Register)
@@ -90,6 +94,10 @@ func SetupRouter() *gin.Engine {
 			// 用户相关路由
 			users := api.Group("/users")
 			{
+				// 为用户服务添加重试和超时保护
+				users.Use(middleware.RetryMiddleware(middleware.DefaultRetryConfig()))
+				users.Use(middleware.TimeoutMiddleware(middleware.DefaultTimeoutConfig()))
+
 				userCtrl := &controllers.UserController{}
 				users.GET("/", userCtrl.GetUsers)
 				users.GET("/:id", userCtrl.GetUser)
@@ -101,6 +109,10 @@ func SetupRouter() *gin.Engine {
 			// 团队相关路由
 			teams := api.Group("/teams")
 			{
+				// 为团队服务添加重试和超时保护
+				teams.Use(middleware.RetryMiddleware(middleware.DefaultRetryConfig()))
+				teams.Use(middleware.TimeoutMiddleware(middleware.DefaultTimeoutConfig()))
+
 				teamCtrl := &controllers.TeamController{}
 				teams.GET("/", teamCtrl.GetTeams) // 获取用户所属的团队列表
 				teams.POST("/", teamCtrl.CreateTeam)
@@ -118,6 +130,10 @@ func SetupRouter() *gin.Engine {
 			// 审计日志相关路由
 			audit := api.Group("/audit")
 			{
+				// 为审计服务添加重试和超时保护
+				audit.Use(middleware.RetryMiddleware(middleware.DefaultRetryConfig()))
+				audit.Use(middleware.TimeoutMiddleware(middleware.DefaultTimeoutConfig()))
+
 				auditCtrl := &controllers.AuditController{}
 				audit.GET("/logs", auditCtrl.GetAuditLogs)    // 获取审计日志列表
 				audit.GET("/logs/:id", auditCtrl.GetAuditLog) // 获取单个审计日志详情
@@ -127,18 +143,31 @@ func SetupRouter() *gin.Engine {
 			// 工具相关路由
 			tools := api.Group("/tools")
 			{
+				// 为工具服务添加重试和超时保护
+				tools.Use(middleware.RetryMiddleware(middleware.DefaultRetryConfig()))
+				tools.Use(middleware.TimeoutMiddleware(middleware.DefaultTimeoutConfig()))
+
 				toolCtrl := &controllers.ToolController{}
 				tools.GET("/", toolCtrl.GetTools)
 				tools.GET("/:id", toolCtrl.GetTool)
 				tools.POST("/", toolCtrl.CreateTool)
 				tools.PUT("/:id", toolCtrl.UpdateTool)
 				tools.DELETE("/:id", toolCtrl.DeleteTool)
-				tools.POST("/:id/execute", toolCtrl.ExecuteTool)
+				// 工具执行接口使用更严格的超时配置
+				tools.POST("/:id/execute",
+					middleware.TimeoutMiddleware(middleware.TimeoutConfig{
+						DefaultTimeout: 60 * time.Second, // 工具执行使用60秒超时
+					}),
+					toolCtrl.ExecuteTool)
 			}
 
 			// 插件相关路由
 			plugins := api.Group("/plugins")
 			{
+				// 为插件服务添加重试和超时保护
+				plugins.Use(middleware.RetryMiddleware(middleware.DefaultRetryConfig()))
+				plugins.Use(middleware.TimeoutMiddleware(middleware.DefaultTimeoutConfig()))
+
 				pluginCtrl := &controllers.PluginController{}
 				// 获取所有插件信息
 				plugins.GET("/", pluginCtrl.GetAllPlugins)
@@ -157,6 +186,10 @@ func SetupRouter() *gin.Engine {
 			// 负载均衡管理路由
 			loadbalancer := api.Group("/loadbalancer")
 			{
+				// 为负载均衡服务添加重试和超时保护
+				loadbalancer.Use(middleware.RetryMiddleware(middleware.DefaultRetryConfig()))
+				loadbalancer.Use(middleware.TimeoutMiddleware(middleware.DefaultTimeoutConfig()))
+
 				lbCtrl := &controllers.LoadBalancerController{}
 				// 获取负载均衡状态
 				loadbalancer.GET("/status", lbCtrl.GetLoadBalancerStatus)

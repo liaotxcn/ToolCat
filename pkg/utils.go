@@ -112,6 +112,12 @@ func GenerateShortID() string {
 	return base36Time + "-" + RandomString(6)
 }
 
+// GenerateRequestID 生成请求ID
+// 格式: req-时间戳-12位随机字符串
+func GenerateRequestID() string {
+	return "req-" + time.Now().Format("20060102150405") + "-" + RandomString(12)
+}
+
 // StringInSlice 检查字符串是否在切片中（别名函数，为了兼容）
 func StringInSlice(str string, list []string) bool {
 	return StrSliceContains(list, str)

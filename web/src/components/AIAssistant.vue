@@ -230,11 +230,7 @@ const handleKeyDown = (event) => {
       type="button"
       style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; pointer-events: all;"
     >
-      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="currentColor" stroke-width="1.5"/>
-        <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M9 21a1 1 0 1 0 2 0 1 1 0 1 0-2 0z" fill="currentColor"/>
-      </svg>
+      <img src="/chat.png" alt="AI助手" class="chat-icon-image" />
     </button>
     
     <!-- 聊天窗口 -->
@@ -398,6 +394,15 @@ const handleKeyDown = (event) => {
 .ai-chat-icon:active {
   transform: translateY(0);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.chat-icon-image {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: white;
+  padding: 4px;
 }
 
 /* 聊天窗口样式 */

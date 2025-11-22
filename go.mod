@@ -1,8 +1,6 @@
 module weave
 
-go 1.24.4
-
-toolchain go1.24.9
+go 1.24.9
 
 require (
 	github.com/cloudwego/eino-ext/components/document/loader/file v0.0.0-20251105133430-149843ccfe5d

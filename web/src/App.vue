@@ -85,10 +85,23 @@ const selectPlugin = (pluginName) => {
 
 // 检查用户认证状态
 const checkAuthentication = () => {
-  if (authService.isAuthenticated()) {
-    isAuthenticated.value = true
+  const authStatus = authService.isAuthenticated()
+  console.log('App组件 - 认证状态检查结果:', authStatus)
+  isAuthenticated.value = authStatus
+  if (authStatus) {
     currentUser.value = authService.getCurrentUser()
+    console.log('App组件 - 当前用户信息:', currentUser.value)
   }
+}
+
+// 调试功能：强制清除认证状态（可通过控制台调用）
+window.clearWeaveAuth = () => {
+  console.log('执行强制清除认证状态操作')
+  authService.clearAuthData()
+  isAuthenticated.value = false
+  currentUser.value = null
+  selectedPlugin.value = null
+  console.log('认证状态已重置，请刷新页面查看登录界面')
 }
 
 // 处理认证成功
@@ -108,11 +121,23 @@ const handleLogout = () => {
   selectedPlugin.value = null
 }
 const handleMenuSelect = (key) => {
-  if (key === 'teams') {
+  if (key === 'services') {
+    selectedSection.value = 'services'
+    selectedPlugin.value = null
+  } else if (key === 'plugins') {
+    selectedSection.value = 'plugins'
+    // 如果没有选中插件，默认选择第一个
+    if (!selectedPlugin.value && availablePlugins.value.length > 0) {
+      selectedPlugin.value = availablePlugins.value[0].name
+    }
+  } else if (key === 'teams') {
     selectedSection.value = 'teams'
     selectedPlugin.value = null
   } else if (key === 'personal') {
     selectedSection.value = 'personal'
+    selectedPlugin.value = null
+  } else if (key === 'security') {
+    selectedSection.value = 'security'
     selectedPlugin.value = null
   } else if (key === 'logout') {
     handleLogout()
@@ -132,13 +157,10 @@ const handleMenuSelect = (key) => {
         <div class="header-content">
           <div class="brand-section">
             <div class="brand-container">
-              <svg class="brand-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <!-- 图标 -->
-                <path d="M8 20H11L13 16L15 20H18L21 12V24H6V20Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+              <img src="/logo.png" alt="Weave Logo" class="brand-icon" />
               <div class="brand-text">
                 <h1>Weave</h1>
-                <p>高性能、高效率、插件化易扩展的插件开发/服务聚合平台</p>
+                <p>高性能、高效率、安全可靠的插件开发/服务聚合平台</p>
               </div>
             </div>
           </div>
@@ -166,36 +188,12 @@ const handleMenuSelect = (key) => {
                 </span>
               </button>
               <div 
-                v-show="showMenu" 
                 class="dropdown"
+                :class="{ 'show': showMenu }"
                 id="user-dropdown"
                 role="menu"
                 aria-labelledby="user-menu"
               >
-                <button 
-                  @click="handleMenuSelect('teams')"
-                  class="dropdown-item"
-                  role="menuitem"
-                >
-                  <svg viewBox="0 0 24 24" width="18" height="18" class="item-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M9 13C11.2091 13 13 11.2091 13 9C13 6.79086 11.2091 5 9 5C6.79086 5 5 6.79086 5 9C5 11.2091 6.79086 13 9 13Z" stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M23 21V19C23 17.9391 22.5786 16.9217 21.8284 16.1716C21.0783 15.4214 20.0609 15 19 15C18.6118 15 18.2379 15.0583 17.8858 15.1716C17.9395 15.3562 17.9757 15.548 17.994 15.7456C18.7175 15.4198 19.5183 15.25 20.34 15.25C21.9503 15.25 23.375 15.8893 24 17V17C23.375 18.1107 21.9503 18.75 20.34 18.75C19.5183 18.75 18.7175 18.5802 17.994 18.2544C17.9757 18.452 17.9395 18.6438 17.8858 18.8284C18.2379 18.9417 18.6118 19 19 19C20.0609 19 21.0783 18.5786 21.8284 17.8284C22.5786 17.0783 23 16.0609 23 15" stroke="currentColor" stroke-width="1.5"/>
-                  </svg>
-                  <span>协作团队</span>
-                </button>
-                <button 
-                  @click="handleMenuSelect('personal')"
-                  class="dropdown-item"
-                  role="menuitem"
-                >
-                  <svg viewBox="0 0 24 24" width="18" height="18" class="item-icon" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="1.5"/>
-                  </svg>
-                  <span>个人中心</span>
-                </button>
-                <div class="dropdown-divider"></div>
                 <button 
                   @click="handleMenuSelect('logout')"
                   class="dropdown-item logout-item"
@@ -215,51 +213,159 @@ const handleMenuSelect = (key) => {
       </header>
       
       <main class="app-main">
-        <div class="plugin-selection">
-          <h2>Plugins/Service</h2>
-          <!-- 新增：侧栏工具（搜索 + 统计） -->
-          <div class="sidebar-tools">
-            <input v-model="pluginKeyword" type="text" class="sidebar-search" placeholder="搜索插件..." />
-            <span class="sidebar-count">共 {{ availablePlugins.length }}，匹配 {{ filteredPlugins.length }}</span>
-          </div>
-          <div class="plugin-list">
-            <!-- 插件列表：使用过滤后的列表，并展示描述与计数 -->
-            <button 
-              v-for="pluginInfo in filteredPlugins" 
-              :key="pluginInfo.name"
-              @click="selectPlugin(pluginInfo.name)"
-              :class="{ 'active': selectedSection === 'plugins' && selectedPlugin === pluginInfo.name }"
-              :title="pluginInfo.info?.description || pluginInfo.name"
-              aria-label="选择插件"
-            >
-              <span class="item-title">{{ pluginInfo.name }}</span>
-              <span v-if="pluginInfo.info?.description" class="item-desc">{{ pluginInfo.info.description }}</span>
-              <span v-if="pluginInfo.info?.noteCount !== undefined" class="item-badge">{{ pluginInfo.info.noteCount }}</span>
-            </button>
-          </div>
-        </div>
+        <aside class="sidebar">
+          <!-- 主菜单 -->
+          <nav class="sidebar-nav">
+            <ul class="menu-list">
+              <li>
+                <button 
+                  @click="handleMenuSelect('services')"
+                  :class="{ 'active': selectedSection === 'services' }"
+                  class="menu-item"
+                >
+                  <span class="menu-icon">🏢</span>
+                  <span class="menu-label">Services</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  @click="handleMenuSelect('plugins')"
+                  :class="{ 'active': selectedSection === 'plugins' }"
+                  class="menu-item"
+                >
+                  <span class="menu-icon">🔌</span>
+                  <span class="menu-label">Plugins</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  @click="handleMenuSelect('teams')"
+                  :class="{ 'active': selectedSection === 'teams' }"
+                  class="menu-item"
+                >
+                  <span class="menu-icon">👥</span>
+                  <span class="menu-label">团队</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  @click="handleMenuSelect('personal')"
+                  :class="{ 'active': selectedSection === 'personal' }"
+                  class="menu-item"
+                >
+                  <span class="menu-icon">👤</span>
+                  <span class="menu-label">个人</span>
+                </button>
+              </li>
+              <li>
+                <button 
+                  @click="handleMenuSelect('security')"
+                  :class="{ 'active': selectedSection === 'security' }"
+                  class="menu-item"
+                >
+                  <span class="menu-icon">🔒</span>
+                  <span class="menu-label">安全中心</span>
+                </button>
+              </li>
+            </ul>
+          </nav>
+        </aside>
         
-        <div class="plugin-content">
-          <h2>{{ selectedSection === 'personal' ? '个人中心' : (selectedSection === 'teams' ? '协作团队' : 'Content') }}</h2>
-          <div class="plugin-renderer-container">
-            <transition name="plugin-switch" mode="out-in" appear>
-              <TeamsCenter v-if="selectedSection === 'teams'" />
-              <UserCenter 
-                v-else-if="selectedSection === 'personal'"
-                :current-user="currentUser"
-                @updated-user="currentUser = $event"
-              />
-              <PluginRenderer 
-                v-else-if="selectedPlugin"
-                :plugin-name="selectedPlugin"
-                :plugin-manager="pluginManager"
-                ref="pluginRendererRef"
-              />
-              <div v-else class="no-plugin-selected">
-                请选择一个插件/服务
+        <!-- 右侧内容区域 -->
+        <div class="content-area">
+          <header class="content-header">
+            <h2>
+              {{ 
+                selectedSection === 'services' ? 'Services' :
+                selectedSection === 'plugins' ? 'Plugins' :
+                selectedSection === 'teams' ? 'Treams' :
+                selectedSection === 'personal' ? 'Personal' :
+                selectedSection === 'security' ? 'Security' :
+                '内容'
+              }}
+            </h2>
+          </header>
+          
+          <main class="content-body">
+            <transition name="content-switch" mode="out-in" appear>
+              <!-- Services 内容 -->
+              <div v-if="selectedSection === 'services'" class="services-content">
+                <div class="service-card">
+                  <h3>🏢 Service</h3>
+                  <p>集研发、聚合、管理为一体</p>
+                </div>
+              </div>
+              
+              <!-- Plugins 内容 -->
+              <div v-else-if="selectedSection === 'plugins'" class="plugins-content">
+                <div class="plugins-layout">
+                  <!-- 插件列表区域 -->
+                  <div class="plugins-sidebar">
+                    <div class="plugins-header">
+                      <h3>插件列表</h3>
+                      <div class="plugins-tools">
+                        <input v-model="pluginKeyword" type="text" class="plugins-search" placeholder="搜索插件..." />
+                        <span class="plugins-count">共 {{ availablePlugins.length }}，匹配 {{ filteredPlugins.length }}</span>
+                      </div>
+                    </div>
+                    <div class="plugins-list">
+                      <button 
+                        v-for="pluginInfo in filteredPlugins" 
+                        :key="pluginInfo.name"
+                        @click="selectPlugin(pluginInfo.name)"
+                        :class="{ 'active': selectedPlugin === pluginInfo.name }"
+                        :title="pluginInfo.info?.description || pluginInfo.name"
+                        class="plugins-item"
+                      >
+                        <span class="item-title">{{ pluginInfo.name }}</span>
+                        <span v-if="pluginInfo.info?.description" class="item-desc">{{ pluginInfo.info.description }}</span>
+                        <span v-if="pluginInfo.info?.noteCount !== undefined" class="item-badge">{{ pluginInfo.info.noteCount }}</span>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- 插件内容区域 -->
+                  <div class="plugins-main">
+                    <div v-if="selectedPlugin" class="plugin-renderer-container">
+                      <PluginRenderer 
+                        :plugin-name="selectedPlugin"
+                        :plugin-manager="pluginManager"
+                        ref="pluginRendererRef"
+                      />
+                    </div>
+                    <div v-else class="no-plugin-selected">
+                      <div class="empty-state">
+                        <span class="empty-icon">🔌</span>
+                        <h3>请选择一个插件</h3>
+                        <p>从左侧插件列表中选择要使用的插件</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Teams 内容 -->
+              <div v-else-if="selectedSection === 'teams'" class="teams-content">
+                <TeamsCenter />
+              </div>
+              
+              <!-- Personal 内容 -->
+              <div v-else-if="selectedSection === 'personal'" class="personal-content">
+                <UserCenter 
+                  :current-user="currentUser"
+                  @updated-user="currentUser = $event"
+                />
+              </div>
+              
+              <!-- Security 内容 -->
+              <div v-else-if="selectedSection === 'security'" class="security-content">
+                <div class="security-card">
+                  <h3>🔒 安全中心</h3>
+                  <p>权限管控、认证加密、沙盒环境等</p>
+                </div>
               </div>
             </transition>
-          </div>
+          </main>
         </div>
       </main>
       
@@ -300,21 +406,50 @@ const handleMenuSelect = (key) => {
   flex-direction: column;
 }
 
-/* 头部样式 */
+/* 头部样式 - 优化版本 */
 .app-header {
-  background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-800) 100%);
+  background: linear-gradient(135deg, 
+    rgba(99, 102, 241, 0.95) 0%, 
+    rgba(79, 70, 229, 0.95) 25%,
+    rgba(67, 56, 202, 0.95) 75%,
+    rgba(55, 48, 163, 0.95) 100%
+  );
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
   color: white;
-  padding: var(--space-4) 0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: var(--space-3) 0;
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(12px);
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.app-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    transparent 50%, 
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  pointer-events: none;
 }
 
 .app-header:hover {
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.12),
+    0 2px 8px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
 }
 
 .header-content {
@@ -323,67 +458,141 @@ const handleMenuSelect = (key) => {
   align-items: center;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 var(--space-4);
-  min-height: 80px;
+  padding: 0 var(--space-5);
+  min-height: 72px;
+  position: relative;
+  z-index: 1;
 }
 
 .brand-section {
   flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .brand-container {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-4);
+  position: relative;
 }
 
 .brand-icon {
-  color: rgba(255, 255, 255, 0.9);
-  transition: transform 0.3s ease;
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 12px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-icon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.2) 0%, 
+    transparent 50%
+  );
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.brand-icon:hover::before {
+  opacity: 1;
 }
 
 .app-header:hover .brand-icon {
-  transform: rotate(5deg) scale(1.05);
+  transform: rotate(3deg) scale(1.08);
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .brand-text {
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .brand-text h1 {
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: var(--font-weight-bold);
   margin: 0;
-  background: linear-gradient(to right, #ffffff, rgba(255, 255, 255, 0.9));
+  background: linear-gradient(135deg, 
+    #ffffff 0%, 
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 255, 255, 0.85) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  letter-spacing: -0.025em;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.02em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
+  position: relative;
+}
+
+.brand-text h1::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0.8) 0%, 
+    transparent 100%
+  );
+  transition: width 0.3s ease;
+}
+
+.app-header:hover .brand-text h1::after {
+  width: 100%;
 }
 
 .brand-highlight {
   position: relative;
-  background: linear-gradient(135deg, #ffd700, #ffb800);
+  background: linear-gradient(135deg, 
+    #ffd700 0%, 
+    #ffb800 50%, 
+    #ffa500 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   font-weight: 800;
   margin-left: 4px;
+  text-shadow: 0 1px 3px rgba(255, 183, 0, 0.3);
 }
 
 .brand-text p {
   font-size: var(--font-size-sm);
-  opacity: 0.9;
-  margin: 2px 0 0;
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 0.02em;
+  opacity: 0;
+  margin: 4px 0 0;
+  color: rgba(255, 255, 255, 0.85);
+  letter-spacing: 0.01em;
+  font-weight: var(--font-weight-medium);
+  transform: translateY(-4px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-/* 用户菜单样式 */
+.app-header:hover .brand-text p {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 用户菜单样式 - 优化版本 */
 .user-menu {
   position: relative;
 }
@@ -392,79 +601,361 @@ const handleMenuSelect = (key) => {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  background-color: rgba(255, 255, 255, 0.1);
-  border: 1px solid transparent;
-  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-4);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.15) 0%, 
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-xl);
   color: white;
   cursor: pointer;
-  transition: var(--transition-all);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.menu-trigger::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.2) 50%, 
+    transparent 100%
+  );
+  transition: left 0.6s ease;
+}
+
+.menu-trigger:hover::before {
+  left: 100%;
 }
 
 .menu-trigger:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.25) 0%, 
+    rgba(255, 255, 255, 0.15) 100%
+  );
   border-color: rgba(255, 255, 255, 0.3);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.15),
+    0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .menu-trigger.active {
-  background-color: rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.3) 0%, 
+    rgba(255, 255, 255, 0.2) 100%
+  );
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-.menu-trigger:active {
-  transform: translateY(0);
-}
-
 .user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.2) 0%, 
+    rgba(255, 255, 255, 0.1) 100%
+  );
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  flex-shrink: 0;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.menu-trigger:hover .user-avatar {
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.05);
 }
 
 .user-name {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px;
+  font-weight: var(--font-weight-medium);
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .dropdown-arrow {
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .dropdown-arrow.rotate {
   transform: rotate(180deg);
 }
 
+/* 下拉菜单样式 */
 .dropdown {
   position: absolute;
-  right: 0;
   top: calc(100% + var(--space-2));
-  margin-top: var(--space-1);
-  background: var(--bg-primary);
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-xl);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  right: 0;
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: 
+    0 10px 40px rgba(0, 0, 0, 0.15),
+    0 2px 10px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   min-width: 200px;
-  z-index: 200;
-  animation: fadeInUp 0.2s ease forwards;
+  z-index: 1000;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  opacity: 0;
+  transform: translateY(-10px) scale(0.95);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: top right;
 }
 
-@keyframes fadeInUp {
+.dropdown.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+.dropdown-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary);
+  transform: scaleY(0);
+  transition: transform 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: linear-gradient(90deg, 
+    rgba(99, 102, 241, 0.08) 0%, 
+    rgba(99, 102, 241, 0.04) 100%
+  );
+  color: var(--primary);
+}
+
+.dropdown-item:hover::before {
+  transform: scaleY(1);
+}
+
+.dropdown-item.logout-item {
+  color: var(--error);
+}
+
+.dropdown-item.logout-item:hover {
+  background: linear-gradient(90deg, 
+    rgba(239, 68, 68, 0.08) 0%, 
+    rgba(239, 68, 68, 0.04) 100%
+  );
+  color: var(--error);
+}
+
+.dropdown-item.logout-item:hover::before {
+  background: var(--error);
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 0, 0, 0.08) 50%, 
+    transparent 100%
+  );
+  margin: var(--space-1) 0;
+}
+
+/* 主内容区域样式 */
+.app-main {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  background: var(--color-background);
+}
+
+/* 侧边栏样式 */
+.sidebar {
+  width: 280px;
+  background: white;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* 添加侧边栏装饰元素 */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), transparent);
+  border-radius: 0 0 0 100%;
+  z-index: 0;
+}
+
+.sidebar-nav {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+
+.menu-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  margin: 0 var(--space-3);
+  overflow: hidden;
+  background: var(--background);
+  backdrop-filter: blur(8px);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  text-align: left;
+  border-radius: var(--radius-md);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 优化的波纹点击效果 */
+.menu-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.menu-item::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.4);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.6s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.menu-item:active::after {
+  width: 400px;
+  height: 400px;
+  opacity: 1;
+}
+
+/* 添加额外的点击状态效果 */
+.menu-item:active {
+  transform: translateX(1px) translateY(1px);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.menu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary);
+  transform: scaleY(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+}
+
+.menu-item:hover {
+  background: linear-gradient(90deg, 
+    rgba(99, 102, 241, 0.1) 0%, 
+    rgba(99, 102, 241, 0.05) 100%
+  );
+  color: var(--primary);
+  transform: translateX(2px);
+}
+
+.menu-item:hover::before {
+  transform: scaleY(0.9);
+}
+
+.menu-item.active {
+  background: linear-gradient(90deg, 
+    rgba(99, 102, 241, 0.15) 0%, 
+    rgba(99, 102, 241, 0.08) 100%
+  );
+  color: var(--primary);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+}
+
+.menu-item.active::before {
+  transform: scaleY(1);
+}
+
+/* 菜单项进入动画 */
+.menu-item {
+  animation: slideIn 0.3s ease forwards;
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.menu-item:nth-child(1) { animation-delay: 0.1s; }
+.menu-item:nth-child(2) { animation-delay: 0.15s; }
+.menu-item:nth-child(3) { animation-delay: 0.2s; }
+.menu-item:nth-child(4) { animation-delay: 0.25s; }
+.menu-item:nth-child(5) { animation-delay: 0.3s; }
+
+@keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -472,532 +963,575 @@ const handleMenuSelect = (key) => {
   }
 }
 
-.dropdown::before {
-  content: '';
-  position: absolute;
-  right: var(--space-3);
-  top: -6px;
-  width: 12px;
-  height: 12px;
-  background: var(--bg-primary);
-  border-top: 1px solid var(--border-medium);
-  border-left: 1px solid var(--border-medium);
-  transform: rotate(45deg);
-}
-
-.dropdown button {
-  width: 100%;
-  text-align: left;
-  background: var(--bg-primary);
-  border: none;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-lg);
-  color: var(--text-primary);
-  cursor: pointer;
-  font-size: var(--font-size-sm);
-  transition: var(--transition-all);
+.menu-icon {
+  font-size: 1.3em;
+  width: 28px;
+  text-align: center;
+  transition: transform 0.3s ease;
   display: flex;
   align-items: center;
+  justify-content: center;
+  height: 28px;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: var(--radius-md);
+}
+
+.menu-item:hover .menu-icon {
+  transform: scale(1.1);
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.menu-item.active .menu-icon {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.menu-label {
+  flex: 1;
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+/* 优化侧边栏整体阴影和边界 */
+.sidebar:hover {
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.06);
+}
+
+/* 优化菜单分组 */
+.menu-list li:not(:last-child) {
+  margin-bottom: var(--space-1);
+}
+
+/* 插件内容区域样式 */
+.plugins-content {
+  height: 100%;
+}
+
+.plugins-layout {
+  display: flex;
+  height: 100%;
+  gap: var(--space-4);
+}
+
+.plugins-sidebar {
+  width: 320px;
+  min-width: 280px;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 200px);
+}
+
+.plugins-header {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.plugins-header h3 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.plugins-tools {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-2);
 }
 
-.dropdown button:hover {
-  background: var(--bg-secondary);
-  color: var(--primary-600);
+.plugins-search {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  transition: all 0.2s ease;
 }
 
-.dropdown button:focus {
-  outline: 2px solid var(--primary-600);
-  outline-offset: -2px;
+.plugins-search:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
-.dropdown button:active {
-  transform: scale(0.98);
+.plugins-count {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
 }
 
-.item-icon {
-  flex-shrink: 0;
-  opacity: 0.7;
+.plugins-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
 }
 
-.dropdown button:hover .item-icon {
-  opacity: 1;
+.plugins-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  width: 100%;
+  will-change: transform, background-color, border-color;
 }
 
-.logout-item {
-  color: var(--danger-600);
+.plugins-item:hover {
+  background: var(--color-background-hover);
+  border-color: var(--color-primary-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
-.logout-item:hover {
-  background-color: var(--danger-50);
-  color: var(--danger-700);
+.plugins-item.active {
+  background: var(--color-primary-light);
+  color: var(--color-text-primary);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-color: var(--color-primary);
 }
 
-/* 主内容区域 */
-.app-main {
+.plugins-item .item-title {
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--space-1);
+}
+
+.plugins-item .item-desc {
+  font-size: var(--font-size-xs);
+  opacity: 0.8;
+  line-height: 1.4;
+}
+
+.plugins-item .item-badge {
+  align-self: flex-end;
+  background: rgba(99, 102, 241, 0.2);
+  color: var(--color-primary);
+  font-size: var(--font-size-xs);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-1);
+}
+
+.plugins-item.active .item-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.plugins-main {
+  flex: 1;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  overflow: auto;
+  max-height: calc(100vh - 200px);
+}
+
+.plugin-renderer-container {
+  height: 100%;
+  width: 100%;
+}
+
+/* 空状态样式 */
+.no-plugin-selected {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-4);
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--font-size-lg);
+  color: var(--color-text-primary);
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+}
+
+/* 响应式设计 */
+@media (max-width: 1024px) {
+  .plugins-layout {
+    flex-direction: column;
+  }
+  
+  .plugins-sidebar {
+    width: 100%;
+    max-height: 300px;
+  }
+  
+  .plugins-main {
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .plugins-sidebar {
+    padding: var(--space-3);
+  }
+  
+  .plugins-main {
+    padding: var(--space-3);
+  }
+}
+
+/* 原有的插件子菜单样式保留用于向后兼容 */
+.plugin-submenu {
   flex: 1;
   display: flex;
-  max-width: 1200px;
-  margin: var(--space-6) auto;
-  width: 100%;
-  gap: var(--space-6);
-  padding: 0 var(--space-4);
+  flex-direction: column;
+  overflow: hidden;
 }
 
-/* 插件选择区域 */
-.plugin-selection {
-  width: 280px;
-  background: var(--bg-primary);
-  border-radius: var(--radius-xl);
+.submenu-header {
   padding: var(--space-4);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-light);
-  transition: var(--transition-all);
-  position: sticky;
-  top: calc(var(--space-4) * 5);
-  height: fit-content;
-  max-height: calc(100vh - 120px);
-  overflow-y: auto;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.plugin-selection:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
-}
-
-.plugin-selection h2 {
-  font-size: var(--font-size-xl);
+.submenu-header h3 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--space-3);
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
-/* 侧栏工具区样式 */
 .sidebar-tools {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  margin-bottom: var(--space-4);
 }
 
 .sidebar-search {
   width: 100%;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
-  background: var(--bg-secondary);
-  transition: var(--transition-all);
+  transition: all 0.2s ease;
 }
 
 .sidebar-search:focus {
   outline: none;
-  border-color: var(--primary-500);
+  border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-  background: var(--bg-primary);
 }
 
 .sidebar-count {
-  color: var(--text-tertiary);
   font-size: var(--font-size-xs);
-  text-align: center;
-  padding: var(--space-1) 0;
+  color: var(--color-text-tertiary);
 }
 
-/* 插件列表样式 */
 .plugin-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-2);
+}
+
+.plugin-item {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-}
-
-.plugin-list button {
-  position: relative;
+  align-items: flex-start;
+  gap: var(--space-1);
+  width: 100%;
   padding: var(--space-3);
-  border: 1px solid var(--border-light);
-  background: var(--bg-primary);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: white;
   cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: var(--space-2);
   text-align: left;
-  transition: var(--transition-all);
-  font-size: var(--font-size-sm);
-  color: var(--text-primary);
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  row-gap: 2px;
-  overflow: hidden;
 }
 
-.plugin-list button::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: 3px;
-  background: transparent;
-  transition: var(--transition-colors);
+.plugin-item:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
 }
 
-.plugin-list button:hover {
-  background: var(--bg-secondary);
-  border-color: var(--primary-300);
-  transform: translateX(2px);
-}
-
-.plugin-list button.active {
-  background: var(--primary-50);
-  color: var(--primary-700);
-  border-color: var(--primary-200);
-  box-shadow: var(--shadow-sm);
-}
-
-.plugin-list button.active::before {
-  background: var(--primary-500);
-}
-
-.plugin-list button:active {
-  transform: translateY(1px);
+.plugin-item.active {
+  border-color: var(--color-primary);
+  background: linear-gradient(135deg, 
+    rgba(99, 102, 241, 0.05) 0%, 
+    rgba(99, 102, 241, 0.02) 100%
+  );
+  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.15);
 }
 
 .item-title {
-  grid-column: 1 / 2;
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
 }
 
 .item-desc {
-  grid-column: 1 / 2;
-  color: var(--text-tertiary);
   font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
   line-height: 1.4;
 }
 
 .item-badge {
-  grid-column: 2 / 3;
-  align-self: start;
-  justify-self: end;
-  background: var(--primary-100);
-  color: var(--primary-700);
-  border: 1px solid var(--primary-200);
-  border-radius: var(--radius-full);
-  padding: 0 var(--space-2);
+  background: var(--color-primary);
+  color: white;
   font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  min-width: 20px;
-  text-align: center;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  margin-left: auto;
 }
 
-/* 插件内容区域 */
-.plugin-content {
+/* 内容区域样式 */
+.content-area {
   flex: 1;
-  background: var(--bg-primary);
-  border-radius: var(--radius-xl);
-  padding: var(--space-5);
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-light);
-  min-height: 500px;
-}
-
-.plugin-content h2 {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--space-4);
-  color: var(--text-primary);
-}
-
-/* 插件渲染器容器 */
-.plugin-renderer-container {
-  min-height: 420px;
-  padding: var(--space-4);
-  border: 2px dashed var(--border-medium);
-  border-radius: var(--radius-lg);
-  background: var(--bg-secondary);
-  transition: var(--transition-all);
-  position: relative;
-  overflow: hidden;
-}
-
-.plugin-renderer-container::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary-400), var(--primary-600), var(--primary-400));
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.3s ease;
-}
-
-.plugin-renderer-container:hover {
-  background: var(--bg-overlay);
-  border-color: var(--border-dark);
-  box-shadow: var(--shadow-sm) inset;
-}
-
-.plugin-renderer-container:hover::before {
-  transform: scaleX(1);
-}
-
-/* 内容切换动画 */
-.plugin-switch-enter-active, 
-.plugin-switch-leave-active {
-  transition: opacity var(--transition-normal), transform var(--transition-normal);
-}
-
-.plugin-switch-enter-from {
-  opacity: 0;
-  transform: translateY(8px);
-}
-
-.plugin-switch-enter-to {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.plugin-switch-leave-from {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.plugin-switch-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
-
-/* 无插件选择状态 */
-.no-plugin-selected {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+}
+
+.content-header {
+  padding: var(--space-5) var(--space-6) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: white;
+}
+
+.content-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.content-body {
+  flex: 1;
+  padding: var(--space-6);
+  overflow-y: auto;
+}
+
+/* 内容卡片样式 */
+.services-content,
+.plugins-content,
+.security-content {
+  height: 100%;
+}
+
+.service-card,
+.security-card {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--color-border);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.service-card h3,
+.security-card h3 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+}
+
+.service-card p,
+.security-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-base);
+}
+
+.no-plugin-selected {
+  display: flex;
   align-items: center;
   justify-content: center;
-  height: 300px;
-  color: var(--text-muted);
-  font-size: var(--font-size-lg);
+  height: 100%;
+  color: var(--color-text-tertiary);
+}
+
+.empty-state {
   text-align: center;
-  gap: var(--space-3);
+  padding: var(--space-8);
 }
 
-.no-plugin-selected::before {
-  content: '🔍';
-  font-size: 3rem;
-  opacity: 0.5;
+.empty-icon {
+  font-size: 4rem;
+  margin-bottom: var(--space-4);
+  display: block;
+  opacity: 0.6;
 }
 
-/* 页脚样式 */
+.empty-state h3 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: 1.25rem;
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.empty-state p {
+  margin: 0;
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* 过渡动画 */
+.content-switch-enter-active,
+.content-switch-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.content-switch-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.content-switch-leave-to {
+  opacity: 0;
+  transform: translateX(-20px);
+}
+
+/* 底部样式 */
 .app-footer {
-  background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-700) 100%);
-  border-top: 3px solid var(--primary-400);
-  color: white;
+  background: white;
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-3) 0;
   margin-top: auto;
-  padding: var(--space-2) 0;
-  position: relative;
-  overflow: hidden;
-}
-
-.app-footer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-              radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
-  z-index: 0;
 }
 
 .footer-content {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 var(--space-4);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  gap: var(--space-3);
-  position: relative;
-  z-index: 1;
-}
-
-.footer-left {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.footer-left .brand {
-  font-weight: var(--font-weight-bold);
-  color: white;
-  font-size: var(--font-size-lg);
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease;
-}
-
-.footer-left .brand:hover {
-  transform: scale(1.05);
-}
-
-.footer-left .sep {
-  color: rgba(255, 255, 255, 0.7);
-  display: inline;
+  padding: 0 var(--space-5);
 }
 
 .footer-right {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .version {
   font-size: var(--font-size-sm);
-  color: var(--primary-900);
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: var(--radius-full);
-  padding: var(--space-1) var(--space-2);
+  color: var(--color-text-tertiary);
   font-weight: var(--font-weight-medium);
-  backdrop-filter: blur(4px);
-  transition: all 0.2s ease;
-}
-
-.version:hover {
-  background: white;
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
 }
 
 .github-link {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  color: white;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: var(--radius-full);
-  width: 36px;
-  height: 36px;
-  transition: var(--transition-all);
-  backdrop-filter: blur(4px);
+  color: var(--color-text-tertiary);
+  transition: all 0.2s ease;
+  text-decoration: none;
 }
 
 .github-link:hover {
-  color: var(--primary-900);
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(255, 255, 255, 0.7);
-  box-shadow: var(--shadow-md);
+  color: var(--color-primary);
   transform: translateY(-2px);
 }
 
 .github-icon {
-  display: block;
+  transition: all 0.2s ease;
+}
+
+.github-link:hover .github-icon {
+  transform: scale(1.1);
 }
 
 /* 响应式设计 */
-@media (max-width: 1024px) {
-  .app-main {
-    gap: var(--space-4);
+@media (max-width: 768px) {
+  .sidebar {
+    width: 240px;
   }
   
-  .plugin-selection {
-    width: 250px;
+  .content-body {
+    padding: var(--space-4);
+  }
+  
+  .brand-text h1 {
+    font-size: 1.5rem;
+  }
+  
+  .brand-text p {
+    display: none;
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
   .app-main {
     flex-direction: column;
-    margin: var(--space-4) auto;
-    gap: var(--space-4);
   }
   
-  .plugin-selection {
+  .sidebar {
     width: 100%;
-    position: static;
-    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
   }
   
-  .header-content {
-    padding: 0 var(--space-3);
+  .sidebar-nav {
+    padding: var(--space-2) 0;
   }
   
-  .header-content h1 {
-    font-size: var(--font-size-xl);
+  .menu-list {
+    display: flex;
+    overflow-x: auto;
+    padding: 0 var(--space-2);
   }
   
-  .plugin-content {
-    padding: var(--space-3);
-  }
-  
-  .plugin-list button {
-    flex: 1;
-    min-width: 100%;
-  }
-  
-  .footer-content {
-    gap: var(--space-3);
-    padding: 0 var(--space-3);
-  }
-  
-  .footer-left {
+  .menu-item {
+    flex-shrink: 0;
+    min-width: 80px;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: var(--space-1);
+    padding: var(--space-2);
   }
   
-  .footer-left .sep {
+  .menu-label {
+    font-size: var(--font-size-xs);
+  }
+  
+  .plugin-submenu {
     display: none;
   }
   
-  .app-footer {
-     padding: var(--space-1) 0;
-   }
-}
-
-@media (max-width: 480px) {
-  .app-header {
-    padding: var(--space-3) 0;
+  .content-header {
+    padding: var(--space-3) var(--space-4) var(--space-2);
   }
   
-  .app-main {
-    padding: 0 var(--space-2);
-  }
-  
-  .plugin-selection,
-  .plugin-content {
+  .content-body {
     padding: var(--space-3);
-    border-radius: var(--radius-lg);
-  }
-  
-  .menu-trigger {
-    font-size: var(--font-size-xs);
-    padding: var(--space-1) var(--space-2);
-  }
-  
-  .dropdown {
-    min-width: 160px;
-  }
-  
-  .dropdown button {
-    font-size: var(--font-size-xs);
-    padding: var(--space-2) var(--space-2);
-  }
-  
-  .footer-content {
-    padding: 0 var(--space-2);
-  }
-  
-  .app-footer {
-     padding: var(--space-1) 0;
-   }
-  
-  .footer-left .brand {
-    font-size: var(--font-size-base);
   }
 }
 </style>
