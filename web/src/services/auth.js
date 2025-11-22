@@ -169,7 +169,17 @@ export const authService = {
   // 检查用户是否已登录
   isAuthenticated: () => {
     const token = localStorage.getItem('token')
+    console.log('认证检查 - 当前token存在:', !!token)
     return !!token
+  },
+  
+  // 清除所有认证相关数据（用于调试和解决登录问题）
+  clearAuthData: () => {
+    console.log('清除所有认证数据')
+    localStorage.removeItem('token')
+    localStorage.removeItem('refresh_token')
+    localStorage.removeItem('userInfo')
+    sessionStorage.removeItem('csrf_token')
   }
 }
 
