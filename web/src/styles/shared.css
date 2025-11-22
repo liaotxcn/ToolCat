@@ -1,0 +1,53 @@
+/* 基础按钮样式 */
+.base-button {
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: var(--transition-all);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* 可点击项样式 */
+.clickable-item {
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition-all);
+}
+
+.clickable-item::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.4);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+              height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.6s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.clickable-item:active::after {
+  width: 400px;
+  height: 400px;
+  opacity: 1;
+}
+
+/* 选中状态样式 */
+.active-state {
+  background: linear-gradient(90deg, 
+    rgba(99, 102, 241, 0.15) 0%, 
+    rgba(99, 102, 241, 0.08) 100%
+  );
+  color: var(--primary-600);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+}

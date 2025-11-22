@@ -1,6 +1,9 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import './style.css'
+import './styles/style.css'
+import './styles/shared.css'
+import './styles/patterns.css'
+import './styles/animations.css'
 import axios from 'axios'
 
 // 导入插件

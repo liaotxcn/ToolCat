@@ -1,0 +1,30 @@
+/* 悬停效果模式 */
+.hover-effect-light {
+  transition: var(--transition-all);
+}
+
+.hover-effect-light:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary-300);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 侧边指示器模式 */
+.sidebar-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary-600);
+  transform: scaleY(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+}
+
+.sidebar-indicator:hover::before,
+.sidebar-indicator.active::before {
+  transform: scaleY(1);
+}

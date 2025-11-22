@@ -3,12 +3,19 @@ import { ref, onMounted, computed } from 'vue'
 import PluginRenderer from './components/PluginRenderer.vue'
 import AuthContainer from './components/AuthContainer.vue'
 import AIAssistant from './components/AIAssistant.vue'
+import PluginItem from './components/PluginItem.vue'
+import MenuItem from './components/MenuItem.vue'
 import pluginManager from './pluginManager.js'
 import HelloPlugin from './plugins/HelloPlugin.js'
 import NotePlugin from './plugins/NotePlugin.js'
 import { authService } from './services/auth.js'
 import UserCenter from './components/UserCenter.vue'
 import TeamsCenter from './components/TeamsCenter.vue'
+
+// 导入共享样式
+import './styles/shared.css'
+import './styles/patterns.css'
+import './styles/animations.css'
 const appVersion = '1.0.0'
 
 // 认证状态
@@ -21,6 +28,15 @@ const availablePlugins = ref([])
 const selectedPlugin = ref(null)
 const selectedSection = ref('plugins')
 const pluginRendererRef = ref(null)
+
+// 侧边栏菜单数据
+const menuItems = [
+  { icon: '🏢', label: 'Services', value: 'services' },
+  { icon: '🔌', label: 'Plugins', value: 'plugins' },
+  { icon: '👥', label: '团队', value: 'teams' },
+  { icon: '👤', label: '个人', value: 'personal' },
+  { icon: '🔒', label: '安全中心', value: 'security' }
+]
 // 新增：侧栏搜索关键词与过滤列表
 const pluginKeyword = ref('')
 const filteredPlugins = computed(() => {
@@ -217,55 +233,15 @@ const handleMenuSelect = (key) => {
           <!-- 主菜单 -->
           <nav class="sidebar-nav">
             <ul class="menu-list">
-              <li>
-                <button 
-                  @click="handleMenuSelect('services')"
-                  :class="{ 'active': selectedSection === 'services' }"
-                  class="menu-item"
-                >
-                  <span class="menu-icon">🏢</span>
-                  <span class="menu-label">Services</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  @click="handleMenuSelect('plugins')"
-                  :class="{ 'active': selectedSection === 'plugins' }"
-                  class="menu-item"
-                >
-                  <span class="menu-icon">🔌</span>
-                  <span class="menu-label">Plugins</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  @click="handleMenuSelect('teams')"
-                  :class="{ 'active': selectedSection === 'teams' }"
-                  class="menu-item"
-                >
-                  <span class="menu-icon">👥</span>
-                  <span class="menu-label">团队</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  @click="handleMenuSelect('personal')"
-                  :class="{ 'active': selectedSection === 'personal' }"
-                  class="menu-item"
-                >
-                  <span class="menu-icon">👤</span>
-                  <span class="menu-label">个人</span>
-                </button>
-              </li>
-              <li>
-                <button 
-                  @click="handleMenuSelect('security')"
-                  :class="{ 'active': selectedSection === 'security' }"
-                  class="menu-item"
-                >
-                  <span class="menu-icon">🔒</span>
-                  <span class="menu-label">安全中心</span>
-                </button>
+              <li v-for="(item, index) in menuItems" :key="item.value">
+                <MenuItem
+                  :icon="item.icon"
+                  :label="item.label"
+                  :value="item.value"
+                  :is-active="selectedSection === item.value"
+                  :index="index"
+                  @select="handleMenuSelect"
+                />
               </li>
             </ul>
           </nav>
@@ -309,18 +285,15 @@ const handleMenuSelect = (key) => {
                       </div>
                     </div>
                     <div class="plugins-list">
-                      <button 
-                        v-for="pluginInfo in filteredPlugins" 
+                      <PluginItem
+                        v-for="pluginInfo in filteredPlugins"
                         :key="pluginInfo.name"
-                        @click="selectPlugin(pluginInfo.name)"
-                        :class="{ 'active': selectedPlugin === pluginInfo.name }"
-                        :title="pluginInfo.info?.description || pluginInfo.name"
-                        class="plugins-item"
-                      >
-                        <span class="item-title">{{ pluginInfo.name }}</span>
-                        <span v-if="pluginInfo.info?.description" class="item-desc">{{ pluginInfo.info.description }}</span>
-                        <span v-if="pluginInfo.info?.noteCount !== undefined" class="item-badge">{{ pluginInfo.info.noteCount }}</span>
-                      </button>
+                        :name="pluginInfo.name"
+                        :description="pluginInfo.info?.description"
+                        :badge-count="pluginInfo.info?.noteCount"
+                        :is-active="selectedPlugin === pluginInfo.name"
+                        @select="selectPlugin"
+                      />
                     </div>
                   </div>
                   
@@ -863,106 +836,7 @@ const handleMenuSelect = (key) => {
   overflow: hidden;
 }
 
-/* 优化的波纹点击效果 */
-.menu-item {
-  position: relative;
-  overflow: hidden;
-}
-
-.menu-item::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(99, 102, 241, 0.4);
-  transform: translate(-50%, -50%);
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
-              height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 0.6s ease;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.menu-item:active::after {
-  width: 400px;
-  height: 400px;
-  opacity: 1;
-}
-
-/* 添加额外的点击状态效果 */
-.menu-item:active {
-  transform: translateX(1px) translateY(1px);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.menu-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--primary);
-  transform: scaleY(0);
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 0 var(--radius-full) var(--radius-full) 0;
-}
-
-.menu-item:hover {
-  background: linear-gradient(90deg, 
-    rgba(99, 102, 241, 0.1) 0%, 
-    rgba(99, 102, 241, 0.05) 100%
-  );
-  color: var(--primary);
-  transform: translateX(2px);
-}
-
-.menu-item:hover::before {
-  transform: scaleY(0.9);
-}
-
-.menu-item.active {
-  background: linear-gradient(90deg, 
-    rgba(99, 102, 241, 0.15) 0%, 
-    rgba(99, 102, 241, 0.08) 100%
-  );
-  color: var(--primary);
-  font-weight: var(--font-weight-semibold);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
-}
-
-.menu-item.active::before {
-  transform: scaleY(1);
-}
-
-/* 菜单项进入动画 */
-.menu-item {
-  animation: slideIn 0.3s ease forwards;
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.menu-item:nth-child(1) { animation-delay: 0.1s; }
-.menu-item:nth-child(2) { animation-delay: 0.15s; }
-.menu-item:nth-child(3) { animation-delay: 0.2s; }
-.menu-item:nth-child(4) { animation-delay: 0.25s; }
-.menu-item:nth-child(5) { animation-delay: 0.3s; }
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
+/* 菜单项样式由MenuItem组件提供 */
 .menu-icon {
   font-size: 1.3em;
   width: 28px;
@@ -974,15 +848,6 @@ const handleMenuSelect = (key) => {
   height: 28px;
   background: rgba(99, 102, 241, 0.05);
   border-radius: var(--radius-md);
-}
-
-.menu-item:hover .menu-icon {
-  transform: scale(1.1);
-  background: rgba(99, 102, 241, 0.15);
-}
-
-.menu-item.active .menu-icon {
-  background: rgba(99, 102, 241, 0.2);
 }
 
 .menu-label {
@@ -1257,55 +1122,8 @@ const handleMenuSelect = (key) => {
   padding: var(--space-2);
 }
 
-.plugin-item {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
-  width: 100%;
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: white;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  margin-bottom: var(--space-2);
-  text-align: left;
-}
+/* 插件列表项样式由PluginItem组件提供 */
 
-.plugin-item:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
-}
-
-.plugin-item.active {
-  border-color: var(--color-primary);
-  background: linear-gradient(135deg, 
-    rgba(99, 102, 241, 0.05) 0%, 
-    rgba(99, 102, 241, 0.02) 100%
-  );
-  box-shadow: 0 2px 12px rgba(99, 102, 241, 0.15);
-}
-
-.item-title {
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-}
-
-.item-desc {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-  line-height: 1.4;
-}
-
-.item-badge {
-  background: var(--color-primary);
-  color: white;
-  font-size: var(--font-size-xs);
-  padding: 2px 6px;
-  border-radius: var(--radius-sm);
-  margin-left: auto;
-}
 
 /* 内容区域样式 */
 .content-area {
