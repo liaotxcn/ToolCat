@@ -14,6 +14,10 @@ import (
 	"go.uber.org/zap"
 )
 
+// RecordHTTPRequest 可替换的指标记录函数，默认为metrics.RecordHTTPRequest
+// 公开此变量以便在测试中可以替换
+var RecordHTTPRequest = metrics.RecordHTTPRequest
+
 // LoadBalancerController 负载均衡管理控制器
 type LoadBalancerController struct{}
 
@@ -93,7 +97,7 @@ func (lbc *LoadBalancerController) GetLoadBalancerStatus(c *gin.Context) {
 
 	// 记录请求指标
 	duration := time.Since(startTime).Seconds()
-	metrics.RecordHTTPRequest("GET", "/loadbalancer/status", "200", duration)
+	RecordHTTPRequest("GET", "/loadbalancer/status", "200", duration)
 
 	pkg.Info("Load balancer status requested",
 		zap.String("instance_id", config.Config.Server.InstanceID),
@@ -126,7 +130,7 @@ func (lbc *LoadBalancerController) GetInstanceHealth(c *gin.Context) {
 
 	// 记录请求指标
 	duration := time.Since(startTime).Seconds()
-	metrics.RecordHTTPRequest("GET", "/loadbalancer/instance/"+instanceID+"/health", "200", duration)
+	RecordHTTPRequest("GET", "/loadbalancer/instance/"+instanceID+"/health", "200", duration)
 
 	pkg.Info("Instance health check requested",
 		zap.String("instance_id", instanceID),
@@ -164,7 +168,7 @@ func (lbc *LoadBalancerController) UpdateInstanceWeight(c *gin.Context) {
 	// 目前只是模拟成功响应
 
 	duration := time.Since(startTime).Seconds()
-	metrics.RecordHTTPRequest("PUT", "/loadbalancer/instance/"+instanceID+"/weight", "200", duration)
+	RecordHTTPRequest("PUT", "/loadbalancer/instance/"+instanceID+"/weight", "200", duration)
 
 	pkg.Info("Instance weight updated",
 		zap.String("instance_id", instanceID),
@@ -193,7 +197,7 @@ func (lbc *LoadBalancerController) DrainInstance(c *gin.Context) {
 	// 目前只是模拟成功响应
 
 	duration := time.Since(startTime).Seconds()
-	metrics.RecordHTTPRequest("POST", "/loadbalancer/instance/"+instanceID+"/drain", "200", duration)
+	RecordHTTPRequest("POST", "/loadbalancer/instance/"+instanceID+"/drain", "200", duration)
 
 	pkg.Info("Instance drained",
 		zap.String("instance_id", instanceID),
@@ -220,7 +224,7 @@ func (lbc *LoadBalancerController) EnableInstance(c *gin.Context) {
 	// 目前只是模拟成功响应
 
 	duration := time.Since(startTime).Seconds()
-	metrics.RecordHTTPRequest("POST", "/loadbalancer/instance/"+instanceID+"/enable", "200", duration)
+	RecordHTTPRequest("POST", "/loadbalancer/instance/"+instanceID+"/enable", "200", duration)
 
 	pkg.Info("Instance enabled",
 		zap.String("instance_id", instanceID),
